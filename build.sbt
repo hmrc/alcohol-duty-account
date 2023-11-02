@@ -15,5 +15,6 @@ lazy val microservice = Project("alcohol-duty-account", file("."))
   .settings(integrationTestSettings(): _*)
   .settings(resolvers += Resolver.jcenterRepo)
   .settings(CodeCoverageSettings.settings: _*)
+  .settings(PlayKeys.playDefaultPort := 16002)
 
 addCommandAlias("runAllChecks", ";clean;compile;scalafmtCheckAll;coverage;test;it:test;scalastyle;coverageReport")
