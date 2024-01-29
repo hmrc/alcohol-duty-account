@@ -5,6 +5,8 @@ This is the backend microservice that provides account information for Alcohol D
 
 ## API Endpoints
 
+- [Get BTA tile data](api-docs/get-bta-tile-data.md): `GET /alcohol-duty-account/bta-tile-data`
+
 ## Running the service
 
 > `sbt run`
