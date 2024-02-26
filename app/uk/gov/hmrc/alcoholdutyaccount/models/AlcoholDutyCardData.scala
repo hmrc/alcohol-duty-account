@@ -36,7 +36,10 @@ object ApprovalStatus {
   }
 }
 
-final case class Return(dueReturnExists: Boolean, numberOfOverdueReturns: Int)
+final case class Return(
+  dueReturnExists: Option[Boolean] = None,
+  numberOfOverdueReturns: Option[Int] = None
+)
 object Return {
   implicit val writes: Writes[Return] = Json.writes[Return]
 }
@@ -45,7 +48,7 @@ final case class AlcoholDutyCardData(
   alcoholDutyReference: String,
   approvalStatus: ApprovalStatus,
   hasReturnsError: Boolean,
-  returns: Seq[Return]
+  returns: Return
 )
 
 object AlcoholDutyCardData {

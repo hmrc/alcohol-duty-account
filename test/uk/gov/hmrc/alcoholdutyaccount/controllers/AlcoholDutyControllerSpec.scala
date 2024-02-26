@@ -47,7 +47,7 @@ class AlcoholDutyControllerSpec extends AnyWordSpec with Matchers {
 
   val alcoholDutyReference = "testAlcoholDutyReference"
 
-  val obligationData = ObligationData(
+  val obligationDataOneDue = ObligationData(
     obligations = Seq(
       Obligation(
         obligationDetails = Seq(
@@ -55,7 +55,32 @@ class AlcoholDutyControllerSpec extends AnyWordSpec with Matchers {
             status = Open,
             inboundCorrespondenceFromDate = LocalDate.parse("2024-01-01"),
             inboundCorrespondenceToDate = LocalDate.parse("2024-01-31"),
-            inboundCorrespondenceDueDate = LocalDate.parse("2024-02-27"),
+            inboundCorrespondenceDueDate = LocalDate.now().plusDays(10),
+            inboundCorrespondenceDateReceived = None,
+            periodKey = "24XY"
+          )
+        )
+      )
+    )
+  )
+
+  val obligationDataOneDueOneOverdue = ObligationData(
+    obligations = Seq(
+      Obligation(
+        obligationDetails = Seq(
+          ObligationDetails(
+            status = Open,
+            inboundCorrespondenceFromDate = LocalDate.parse("2024-01-01"),
+            inboundCorrespondenceToDate = LocalDate.parse("2024-01-31"),
+            inboundCorrespondenceDueDate = LocalDate.now().plusDays(10),
+            inboundCorrespondenceDateReceived = None,
+            periodKey = "24XY"
+          ),
+          ObligationDetails(
+            status = Open,
+            inboundCorrespondenceFromDate = LocalDate.parse("2024-01-01"),
+            inboundCorrespondenceToDate = LocalDate.parse("2024-01-31"),
+            inboundCorrespondenceDueDate = LocalDate.now().minusDays(10),
             inboundCorrespondenceDateReceived = None,
             periodKey = "24XY"
           )
@@ -99,11 +124,28 @@ class AlcoholDutyControllerSpec extends AnyWordSpec with Matchers {
         alcoholDutyReference = "testAlcoholDutyReference",
         approvalStatus = Approved,
         hasReturnsError = false,
-        returns = Seq(Return(dueReturnExists = true, numberOfOverdueReturns = 0))
+        returns = Return(dueReturnExists = Some(true), numberOfOverdueReturns = Some(0))
       )
 
       subscriptionSummaryConnector.getSubscriptionSummary(alcoholDutyReference)(*) returnsF subscriptionSummary
-      obligationDataConnector.getObligationData(alcoholDutyReference)(*) returnsF obligationData
+      obligationDataConnector.getObligationData(alcoholDutyReference)(*) returnsF obligationDataOneDue
+
+      val result: Future[Result] = controller.btaTileData(alcoholDutyReference)(FakeRequest())
+      status(result) mustBe OK
+      contentAsJson(result) mustBe Json.toJson(expectedData)
+    }
+
+    "return 200 when is called with a valid alcoholDutyReference and the correct amount of overdue returns in the Return section" in {
+
+      val expectedData = AlcoholDutyCardData(
+        alcoholDutyReference = "testAlcoholDutyReference",
+        approvalStatus = Approved,
+        hasReturnsError = false,
+        returns = Return(dueReturnExists = Some(true), numberOfOverdueReturns = Some(1))
+      )
+
+      subscriptionSummaryConnector.getSubscriptionSummary(alcoholDutyReference)(*) returnsF subscriptionSummary
+      obligationDataConnector.getObligationData(alcoholDutyReference)(*) returnsF obligationDataOneDueOneOverdue
 
       val result: Future[Result] = controller.btaTileData(alcoholDutyReference)(FakeRequest())
       status(result) mustBe OK
@@ -116,7 +158,7 @@ class AlcoholDutyControllerSpec extends AnyWordSpec with Matchers {
         alcoholDutyReference = "testAlcoholDutyReference",
         approvalStatus = Approved,
         hasReturnsError = true,
-        returns = Seq.empty
+        returns = Return()
       )
 
       subscriptionSummaryConnector.getSubscriptionSummary(alcoholDutyReference)(*) returnsF subscriptionSummary
@@ -133,7 +175,7 @@ class AlcoholDutyControllerSpec extends AnyWordSpec with Matchers {
         alcoholDutyReference = "testAlcoholDutyReference",
         approvalStatus = Insolvent,
         hasReturnsError = false,
-        returns = Seq.empty
+        returns = Return()
       )
 
       subscriptionSummaryConnector.getSubscriptionSummary(alcoholDutyReference)(*) returnsF subscriptionSummaryInsolvent

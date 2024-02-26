@@ -20,7 +20,7 @@ import play.api.libs.json.Json
 import play.api.mvc.{Action, AnyContent, ControllerComponents, Result}
 import uk.gov.hmrc.alcoholdutyaccount.connectors.{ObligationDataConnector, SubscriptionSummaryConnector}
 import uk.gov.hmrc.alcoholdutyaccount.models._
-import uk.gov.hmrc.alcoholdutyaccount.models.hods.{Obligation, Open}
+import uk.gov.hmrc.alcoholdutyaccount.models.hods.{ObligationDetails, Open}
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
@@ -45,7 +45,7 @@ class AlcoholDutyController @Inject() (
         subscriptionSummary.approvalStatus match {
           case _ if subscriptionSummary.insolvencyFlag =>
             Future.successful(
-              Ok(Json.toJson(AlcoholDutyCardData(alcoholDutyReference, Insolvent, false, Seq.empty)))
+              Ok(Json.toJson(AlcoholDutyCardData(alcoholDutyReference, Insolvent, false, Return())))
             )
           case hods.Approved                           =>
             getObligationData(alcoholDutyReference).map { obData =>
@@ -53,7 +53,7 @@ class AlcoholDutyController @Inject() (
                 alcoholDutyReference = alcoholDutyReference,
                 approvalStatus = Approved,
                 hasReturnsError = obData.isEmpty,
-                returns = obData.getOrElse(Seq.empty)
+                returns = obData.getOrElse(Return())
               )
               Ok(Json.toJson(cardData))
             }
@@ -62,29 +62,27 @@ class AlcoholDutyController @Inject() (
       }
   }
 
-  private def getObligationData(alcoholDutyReference: String)(implicit hc: HeaderCarrier): Future[Option[Seq[Return]]] =
+  private def getObligationData(alcoholDutyReference: String)(implicit hc: HeaderCarrier): Future[Option[Return]] =
     obligationDataConnector
       .getObligationData(alcoholDutyReference)
       .fold {
-        None: Option[Seq[Return]]
+        None: Option[Return]
       } { obligationData =>
-        Some(obligationData.obligations.map(dueReturnExists))
+        Some(dueReturnExists(obligationData.obligations.flatMap(_.obligationDetails)))
       }
 
-  private def dueReturnExists(obligation: Obligation): Return = {
-    val dueReturnExists        = obligation.obligationDetails.exists(o =>
-      o.status == Open && o.inboundCorrespondenceDueDate.isAfter(LocalDate.now())
-    )
-    val numberOfOverdueReturns = obligation.obligationDetails.count(o =>
-      o.status == Open && o.inboundCorrespondenceDueDate.isBefore(LocalDate.now())
-    )
-    Return(dueReturnExists, numberOfOverdueReturns)
+  private def dueReturnExists(obligationDetails: Seq[ObligationDetails]): Return = {
+    val dueReturnExists        =
+      obligationDetails.exists(o => o.status == Open && o.inboundCorrespondenceDueDate.isAfter(LocalDate.now()))
+    val numberOfOverdueReturns =
+      obligationDetails.count(o => o.status == Open && o.inboundCorrespondenceDueDate.isBefore(LocalDate.now()))
+    Return(Some(dueReturnExists), Some(numberOfOverdueReturns))
   }
 
   private def getError(message: String): Result = BadRequest(
     Json.obj(
       "error" -> message,
-      "code"  -> "404"
+      "code"  -> "400"
     )
   )
 }
