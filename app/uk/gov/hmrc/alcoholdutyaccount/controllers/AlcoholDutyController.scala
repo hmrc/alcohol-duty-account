@@ -73,7 +73,9 @@ class AlcoholDutyController @Inject() (
 
   private def dueReturnExists(obligationDetails: Seq[ObligationDetails]): Return = {
     val dueReturnExists        =
-      obligationDetails.exists(o => o.status == Open && o.inboundCorrespondenceDueDate.isAfter(LocalDate.now()))
+      obligationDetails.exists { o =>
+        o.status == Open && o.inboundCorrespondenceDueDate.isAfter(LocalDate.now().minusDays(1))
+      }
     val numberOfOverdueReturns =
       obligationDetails.count(o => o.status == Open && o.inboundCorrespondenceDueDate.isBefore(LocalDate.now()))
     Return(Some(dueReturnExists), Some(numberOfOverdueReturns))
