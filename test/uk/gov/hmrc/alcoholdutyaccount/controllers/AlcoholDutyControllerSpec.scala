@@ -47,6 +47,14 @@ class AlcoholDutyControllerSpec extends AnyWordSpec with Matchers {
 
   val alcoholDutyReference = "testAlcoholDutyReference"
 
+  val noObligationDataOneDue = ObligationData(
+    obligations = Seq(
+      Obligation(
+        obligationDetails = Seq()
+      )
+    )
+  )
+
   val obligationDataOneDue = ObligationData(
     obligations = Seq(
       Obligation(
@@ -129,6 +137,23 @@ class AlcoholDutyControllerSpec extends AnyWordSpec with Matchers {
 
       subscriptionSummaryConnector.getSubscriptionSummary(alcoholDutyReference)(*) returnsF subscriptionSummary
       obligationDataConnector.getObligationData(alcoholDutyReference)(*) returnsF obligationDataOneDue
+
+      val result: Future[Result] = controller.btaTileData(alcoholDutyReference)(FakeRequest())
+      status(result) mustBe OK
+      contentAsJson(result) mustBe Json.toJson(expectedData)
+    }
+
+    "return 200 when is called with a valid alcoholDutyReference with no obligation" in {
+
+      val expectedData = AlcoholDutyCardData(
+        alcoholDutyReference = "testAlcoholDutyReference",
+        approvalStatus = Approved,
+        hasReturnsError = false,
+        returns = Return()
+      )
+
+      subscriptionSummaryConnector.getSubscriptionSummary(alcoholDutyReference)(*) returnsF subscriptionSummary
+      obligationDataConnector.getObligationData(alcoholDutyReference)(*) returnsF noObligationDataOneDue
 
       val result: Future[Result] = controller.btaTileData(alcoholDutyReference)(FakeRequest())
       status(result) mustBe OK

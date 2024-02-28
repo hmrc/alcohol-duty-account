@@ -71,15 +71,18 @@ class AlcoholDutyController @Inject() (
         Some(dueReturnExists(obligationData.obligations.flatMap(_.obligationDetails)))
       }
 
-  private def dueReturnExists(obligationDetails: Seq[ObligationDetails]): Return = {
-    val dueReturnExists        =
-      obligationDetails.exists { o =>
-        o.status == Open && o.inboundCorrespondenceDueDate.isAfter(LocalDate.now().minusDays(1))
-      }
-    val numberOfOverdueReturns =
-      obligationDetails.count(o => o.status == Open && o.inboundCorrespondenceDueDate.isBefore(LocalDate.now()))
-    Return(Some(dueReturnExists), Some(numberOfOverdueReturns))
-  }
+  private def dueReturnExists(obligationDetails: Seq[ObligationDetails]): Return =
+    if (obligationDetails.isEmpty) {
+      Return()
+    } else {
+      val dueReturnExists        =
+        obligationDetails.exists { o =>
+          o.status == Open && o.inboundCorrespondenceDueDate.isAfter(LocalDate.now().minusDays(1))
+        }
+      val numberOfOverdueReturns =
+        obligationDetails.count(o => o.status == Open && o.inboundCorrespondenceDueDate.isBefore(LocalDate.now()))
+      Return(Some(dueReturnExists), Some(numberOfOverdueReturns))
+    }
 
   private def getError(message: String): Result = BadRequest(
     Json.obj(
