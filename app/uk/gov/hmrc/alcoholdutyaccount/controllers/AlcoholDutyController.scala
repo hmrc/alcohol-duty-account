@@ -17,7 +17,7 @@
 package uk.gov.hmrc.alcoholdutyaccount.controllers
 
 import play.api.libs.json.Json
-import play.api.mvc.{Action, AnyContent, ControllerComponents, Result}
+import play.api.mvc.{Action, AnyContent, ControllerComponents}
 import uk.gov.hmrc.alcoholdutyaccount.connectors.{ObligationDataConnector, SubscriptionSummaryConnector}
 import uk.gov.hmrc.alcoholdutyaccount.models._
 import uk.gov.hmrc.alcoholdutyaccount.models.hods.{ObligationDetails, Open}
@@ -34,13 +34,14 @@ class AlcoholDutyController @Inject() (
   obligationDataConnector: ObligationDataConnector,
   cc: ControllerComponents
 )(implicit ec: ExecutionContext)
-    extends BackendController(cc) {
+    extends BackendController(cc)
+    with BaseController {
 
   def btaTileData(alcoholDutyReference: String): Action[AnyContent] = Action.async { implicit request =>
     subscriptionSummaryConnector
       .getSubscriptionSummary(alcoholDutyReference)
       .foldF {
-        Future.successful(getError("No subscription summary found"))
+        badRequest("No subscription summary found")
       } { subscriptionSummary =>
         subscriptionSummary.approvalStatus match {
           case _ if subscriptionSummary.insolvencyFlag =>
@@ -57,7 +58,7 @@ class AlcoholDutyController @Inject() (
               )
               Ok(Json.toJson(cardData))
             }
-          case _                                       => Future.successful(getError("Approval Status not yet supported"))
+          case _                                       => badRequest("Approval Status not yet supported")
         }
       }
   }
@@ -84,10 +85,4 @@ class AlcoholDutyController @Inject() (
       Return(Some(dueReturnExists), Some(numberOfOverdueReturns))
     }
 
-  private def getError(message: String): Result = BadRequest(
-    Json.obj(
-      "error" -> message,
-      "code"  -> "400"
-    )
-  )
 }
