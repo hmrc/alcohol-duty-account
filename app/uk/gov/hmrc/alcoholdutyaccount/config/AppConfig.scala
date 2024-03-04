@@ -35,8 +35,8 @@ class AppConfig @Inject() (config: Configuration) {
   private val obligationDataApiHost: String   = config.get[String]("microservice.services.obligation-data-api.host")
 
   def subscriptionSummaryApiUrl(alcoholReferenceId: String): String =
-    s"$subscriptionSummaryApiHost/$subscriptionSummaryApiRegime/$subscriptionSummaryApiIdType/$alcoholReferenceId/summary"
+    s"$subscriptionSummaryApiHost/subscription/$subscriptionSummaryApiRegime/$subscriptionSummaryApiIdType/$alcoholReferenceId/summary"
 
   def obligationDataApiUrl(alcoholReferenceId: String): String =
-    s"$obligationDataApiHost/$obligationDataApiIdType/$alcoholReferenceId/$obligationDataApiRegime"
+    s"$obligationDataApiHost/enterprise/obligation-data/$obligationDataApiIdType/$alcoholReferenceId/$obligationDataApiRegime"
 }
