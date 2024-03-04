@@ -33,9 +33,10 @@ class SubscriptionSummaryConnector @Inject() (
     alcoholDutyReference: String
   )(implicit hc: HeaderCarrier): OptionT[Future, SubscriptionSummary] =
     OptionT {
-      httpClient.GET[Either[UpstreamErrorResponse, HttpResponse]](url =
-        config.subscriptionSummaryApiUrl(alcoholDutyReference)
-      ) map {
+
+      val url = s"${config.subscriptionApiUrl}/subscription/AD/ZAD/$alcoholDutyReference/summary"
+
+      httpClient.GET[Either[UpstreamErrorResponse, HttpResponse]](url = url) map {
         case Right(response) if response.status == OK => response.json.asOpt[SubscriptionSummary]
         case _                                        => None
       }

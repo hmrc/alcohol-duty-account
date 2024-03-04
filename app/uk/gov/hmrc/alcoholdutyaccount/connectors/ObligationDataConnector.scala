@@ -33,8 +33,11 @@ class ObligationDataConnector @Inject() (
 
   def getObligationData(alcoholDutyReference: String)(implicit hc: HeaderCarrier): OptionT[Future, ObligationData] =
     OptionT {
+
+      val url = s"${config.obligationDataApiUrl}/enterprise/obligation-data/ZAD/$alcoholDutyReference/AD"
+
       httpClient
-        .GET[Either[UpstreamErrorResponse, HttpResponse]](url = config.obligationDataApiUrl(alcoholDutyReference))
+        .GET[Either[UpstreamErrorResponse, HttpResponse]](url = url)
         .map {
           case Right(response) if response.status == OK => response.json.asOpt[ObligationData]
           case _                                        => None

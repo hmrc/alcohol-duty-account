@@ -18,25 +18,14 @@ package uk.gov.hmrc.alcoholdutyaccount.config
 
 import javax.inject.{Inject, Singleton}
 import play.api.Configuration
+import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 
 @Singleton
-class AppConfig @Inject() (config: Configuration) {
+class AppConfig @Inject() (config: Configuration, servicesConfig: ServicesConfig) {
 
   val appName: String = config.get[String]("appName")
 
-  private val subscriptionSummaryApiIdType       =
-    config.get[String]("microservice.services.subscription-summary-api.id-type")
-  private val subscriptionSummaryApiRegime       = config.get[String]("microservice.services.subscription-summary-api.regime")
-  private val subscriptionSummaryApiHost: String =
-    config.get[String]("microservice.services.subscription-summary-api.host")
+  val subscriptionApiUrl: String   = servicesConfig.baseUrl("subscription")
+  val obligationDataApiUrl: String = servicesConfig.baseUrl("obligation")
 
-  private val obligationDataApiIdType: String = config.get[String]("microservice.services.obligation-data-api.id-type")
-  private val obligationDataApiRegime: String = config.get[String]("microservice.services.obligation-data-api.regime")
-  private val obligationDataApiHost: String   = config.get[String]("microservice.services.obligation-data-api.host")
-
-  def subscriptionSummaryApiUrl(alcoholReferenceId: String): String =
-    s"$subscriptionSummaryApiHost/subscription/$subscriptionSummaryApiRegime/$subscriptionSummaryApiIdType/$alcoholReferenceId/summary"
-
-  def obligationDataApiUrl(alcoholReferenceId: String): String =
-    s"$obligationDataApiHost/enterprise/obligation-data/$obligationDataApiIdType/$alcoholReferenceId/$obligationDataApiRegime"
 }
