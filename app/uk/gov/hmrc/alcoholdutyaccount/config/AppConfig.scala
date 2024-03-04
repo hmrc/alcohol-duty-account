@@ -24,13 +24,15 @@ class AppConfig @Inject() (config: Configuration) {
 
   val appName: String = config.get[String]("appName")
 
-  private val subscriptionSummaryApiIdType       = config.get[String]("subscription-summary-api.id-type")
-  private val subscriptionSummaryApiRegime       = config.get[String]("subscription-summary-api.regime")
-  private val subscriptionSummaryApiHost: String = config.get[String]("subscription-summary-api.host")
+  private val subscriptionSummaryApiIdType       =
+    config.get[String]("microservice.services.subscription-summary-api.id-type")
+  private val subscriptionSummaryApiRegime       = config.get[String]("microservice.services.subscription-summary-api.regime")
+  private val subscriptionSummaryApiHost: String =
+    config.get[String]("microservice.services.subscription-summary-api.host")
 
-  private val obligationDataApiIdType: String = config.get[String]("obligation-data-api.id-type")
-  private val obligationDataApiRegime: String = config.get[String]("obligation-data-api.regime")
-  private val obligationDataApiHost: String   = config.get[String]("obligation-data-api.host")
+  private val obligationDataApiIdType: String = config.get[String]("microservice.services.obligation-data-api.id-type")
+  private val obligationDataApiRegime: String = config.get[String]("microservice.services.obligation-data-api.regime")
+  private val obligationDataApiHost: String   = config.get[String]("microservice.services.obligation-data-api.host")
 
   def subscriptionSummaryApiUrl(alcoholReferenceId: String): String =
     s"$subscriptionSummaryApiHost/$subscriptionSummaryApiRegime/$subscriptionSummaryApiIdType/$alcoholReferenceId/summary"
