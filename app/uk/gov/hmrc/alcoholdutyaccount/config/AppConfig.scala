@@ -27,5 +27,6 @@ class AppConfig @Inject() (config: Configuration, servicesConfig: ServicesConfig
 
   val subscriptionApiUrl: String   = servicesConfig.baseUrl("subscription")
   val obligationDataApiUrl: String = servicesConfig.baseUrl("obligation")
+  val financialDataApiUrl: String  = servicesConfig.baseUrl("financial")
 
 }

@@ -14,19 +14,10 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.alcoholdutyaccount.controllers
+package uk.gov.hmrc.alcoholdutyaccount.models
 
-import org.apache.pekko.util.ByteString
-import play.api.http.HttpEntity
-import play.api.libs.json.Json
-import play.api.mvc.{ResponseHeader, Result}
-import uk.gov.hmrc.alcoholdutyaccount.models.ErrorResponse
-
-trait BaseController {
-
-  def error(errorResponse: ErrorResponse): Result = Result(
-    header = ResponseHeader(errorResponse.status),
-    body = HttpEntity.Strict(ByteString(Json.toBytes(Json.toJson(errorResponse))), Some("application/json"))
-  )
-
+import play.api.libs.json.{Json, OFormat}
+case class ErrorResponse(status: Int, message: String)
+object ErrorResponse {
+  implicit val format: OFormat[ErrorResponse] = Json.format[ErrorResponse]
 }

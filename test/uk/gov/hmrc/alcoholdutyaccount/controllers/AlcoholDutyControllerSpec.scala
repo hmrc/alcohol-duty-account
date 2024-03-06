@@ -16,9 +16,10 @@
 
 package uk.gov.hmrc.alcoholdutyaccount.controllers
 
-import cats.data.OptionT
+import cats.data.EitherT
 import org.mockito.ArgumentMatchersSugar.*
-import org.mockito.MockitoSugar.{mock, when}
+import org.mockito.IdiomaticMockito.StubbingOps
+import org.mockito.MockitoSugar.mock
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
@@ -30,180 +31,31 @@ import play.api.http.Status.{BAD_REQUEST, OK}
 import play.api.libs.json.Json
 import play.api.mvc.Result
 import play.api.test.Helpers.{contentAsJson, defaultAwaitTimeout, status}
-import uk.gov.hmrc.alcoholdutyaccount.connectors.{ObligationDataConnector, SubscriptionSummaryConnector}
 import uk.gov.hmrc.alcoholdutyaccount.models.AlcoholDutyCardData
 import uk.gov.hmrc.alcoholdutyaccount.models._
-import uk.gov.hmrc.alcoholdutyaccount.models.hods.{Beer, CiderOrPerry, Obligation, ObligationData, ObligationDetails, Open, Spirits, SubscriptionSummary, WineAndOtherFermentedProduct}
+import uk.gov.hmrc.alcoholdutyaccount.service.AlcoholDutyService
 
-import java.time.LocalDate
 import scala.concurrent.Future
 
 class AlcoholDutyControllerSpec extends AnyWordSpec with Matchers {
-  val subscriptionSummaryConnector: SubscriptionSummaryConnector = mock[SubscriptionSummaryConnector]
-  val obligationDataConnector: ObligationDataConnector           = mock[ObligationDataConnector]
-  val cc                                                         = Helpers.stubControllerComponents()
 
-  val controller = new AlcoholDutyController(subscriptionSummaryConnector, obligationDataConnector, cc)
-
-  val alcoholDutyReference = "testAlcoholDutyReference"
-
-  val noObligationDataOneDue = ObligationData(
-    obligations = Seq(
-      Obligation(
-        obligationDetails = Seq()
-      )
-    )
-  )
-
-  val obligationDataOneDue = ObligationData(
-    obligations = Seq(
-      Obligation(
-        obligationDetails = Seq(
-          ObligationDetails(
-            status = Open,
-            inboundCorrespondenceFromDate = LocalDate.parse("2024-01-01"),
-            inboundCorrespondenceToDate = LocalDate.parse("2024-01-31"),
-            inboundCorrespondenceDueDate = LocalDate.now().plusDays(10),
-            inboundCorrespondenceDateReceived = None,
-            periodKey = "24XY"
-          )
-        )
-      )
-    )
-  )
-
-  val obligationDataOneDueOneOverdue = ObligationData(
-    obligations = Seq(
-      Obligation(
-        obligationDetails = Seq(
-          ObligationDetails(
-            status = Open,
-            inboundCorrespondenceFromDate = LocalDate.parse("2024-01-01"),
-            inboundCorrespondenceToDate = LocalDate.parse("2024-01-31"),
-            inboundCorrespondenceDueDate = LocalDate.now().plusDays(10),
-            inboundCorrespondenceDateReceived = None,
-            periodKey = "24XY"
-          ),
-          ObligationDetails(
-            status = Open,
-            inboundCorrespondenceFromDate = LocalDate.parse("2024-01-01"),
-            inboundCorrespondenceToDate = LocalDate.parse("2024-01-31"),
-            inboundCorrespondenceDueDate = LocalDate.now().minusDays(10),
-            inboundCorrespondenceDateReceived = None,
-            periodKey = "24XY"
-          )
-        )
-      )
-    )
-  )
-
-  val subscriptionSummary = SubscriptionSummary(
-    typeOfAlcoholApprovedForList = Set(Beer, CiderOrPerry, WineAndOtherFermentedProduct, Spirits),
-    smallCiderFlag = false,
-    approvalStatus = hods.Approved,
-    insolvencyFlag = false
-  )
-
-  val subscriptionSummaryInsolvent = SubscriptionSummary(
-    typeOfAlcoholApprovedForList = Set.empty,
-    smallCiderFlag = false,
-    approvalStatus = hods.Approved,
-    insolvencyFlag = true
-  )
-
-  val subscriptionSummaryRevoked = SubscriptionSummary(
-    typeOfAlcoholApprovedForList = Set.empty,
-    smallCiderFlag = false,
-    approvalStatus = hods.Revoked,
-    insolvencyFlag = false
-  )
-
-  val subscriptionSummaryDeRegistered = SubscriptionSummary(
-    typeOfAlcoholApprovedForList = Set.empty,
-    smallCiderFlag = false,
-    approvalStatus = hods.DeRegistered,
-    insolvencyFlag = false
-  )
+  val alcoholDutyService: AlcoholDutyService = mock[AlcoholDutyService]
+  val cc                                     = Helpers.stubControllerComponents()
+  val controller                             = new AlcoholDutyController(alcoholDutyService, cc)
 
   "GET /bta-tile-data" should {
     "return 200 when is called with a valid alcoholDutyReference" in {
-
-      val expectedData = AlcoholDutyCardData(
+      val alcoholDutyReference = "testAlcoholDutyReference"
+      val expectedData         = AlcoholDutyCardData(
         alcoholDutyReference = "testAlcoholDutyReference",
         approvalStatus = Approved,
         hasReturnsError = false,
-        returns = Return(dueReturnExists = Some(true), numberOfOverdueReturns = Some(0))
+        hasPaymentError = false,
+        returns = Returns(dueReturnExists = Some(true), numberOfOverdueReturns = Some(0)),
+        payments = Payments(isMultiplePaymentDue = Some(true), totalPaymentAmount = Some(2), chargeReference = None)
       )
 
-      subscriptionSummaryConnector.getSubscriptionSummary(alcoholDutyReference)(*) returnsF subscriptionSummary
-      obligationDataConnector.getObligationData(alcoholDutyReference)(*) returnsF obligationDataOneDue
-
-      val result: Future[Result] = controller.btaTileData(alcoholDutyReference)(FakeRequest())
-      status(result) mustBe OK
-      contentAsJson(result) mustBe Json.toJson(expectedData)
-    }
-
-    "return 200 when is called with a valid alcoholDutyReference with no obligation" in {
-
-      val expectedData = AlcoholDutyCardData(
-        alcoholDutyReference = "testAlcoholDutyReference",
-        approvalStatus = Approved,
-        hasReturnsError = false,
-        returns = Return()
-      )
-
-      subscriptionSummaryConnector.getSubscriptionSummary(alcoholDutyReference)(*) returnsF subscriptionSummary
-      obligationDataConnector.getObligationData(alcoholDutyReference)(*) returnsF noObligationDataOneDue
-
-      val result: Future[Result] = controller.btaTileData(alcoholDutyReference)(FakeRequest())
-      status(result) mustBe OK
-      contentAsJson(result) mustBe Json.toJson(expectedData)
-    }
-
-    "return 200 when is called with a valid alcoholDutyReference and the correct amount of overdue returns in the Return section" in {
-
-      val expectedData = AlcoholDutyCardData(
-        alcoholDutyReference = "testAlcoholDutyReference",
-        approvalStatus = Approved,
-        hasReturnsError = false,
-        returns = Return(dueReturnExists = Some(true), numberOfOverdueReturns = Some(1))
-      )
-
-      subscriptionSummaryConnector.getSubscriptionSummary(alcoholDutyReference)(*) returnsF subscriptionSummary
-      obligationDataConnector.getObligationData(alcoholDutyReference)(*) returnsF obligationDataOneDueOneOverdue
-
-      val result: Future[Result] = controller.btaTileData(alcoholDutyReference)(FakeRequest())
-      status(result) mustBe OK
-      contentAsJson(result) mustBe Json.toJson(expectedData)
-    }
-
-    "return 200 when is called with a valid alcoholDutyReference with an error in the return" in {
-
-      val expectedData = AlcoholDutyCardData(
-        alcoholDutyReference = "testAlcoholDutyReference",
-        approvalStatus = Approved,
-        hasReturnsError = true,
-        returns = Return()
-      )
-
-      subscriptionSummaryConnector.getSubscriptionSummary(alcoholDutyReference)(*) returnsF subscriptionSummary
-      when(obligationDataConnector.getObligationData(*)(*))
-        .thenReturn(OptionT.none[Future, ObligationData])
-
-      val result: Future[Result] = controller.btaTileData(alcoholDutyReference)(FakeRequest())
-      status(result) mustBe OK
-      contentAsJson(result) mustBe Json.toJson(expectedData)
-    }
-
-    "return 200 when is called with a valid alcoholDutyReference but not call the obligation data api if the status is Insolvent" in {
-      val expectedData = AlcoholDutyCardData(
-        alcoholDutyReference = "testAlcoholDutyReference",
-        approvalStatus = Insolvent,
-        hasReturnsError = false,
-        returns = Return()
-      )
-
-      subscriptionSummaryConnector.getSubscriptionSummary(alcoholDutyReference)(*) returnsF subscriptionSummaryInsolvent
+      alcoholDutyService.getAlcoholDutyCardData(*)(*) returnsF expectedData
 
       val result: Future[Result] = controller.btaTileData(alcoholDutyReference)(FakeRequest())
       status(result) mustBe OK
@@ -211,30 +63,14 @@ class AlcoholDutyControllerSpec extends AnyWordSpec with Matchers {
     }
 
     "return 400 when is called with an invalid alcoholDutyReference" in {
+      val alcoholDutyReference = "testAlcoholDutyReference"
+      val expectedError        = ErrorResponse(BAD_REQUEST, "Invalid alcohol duty reference")
 
-      when(subscriptionSummaryConnector.getSubscriptionSummary(*)(*))
-        .thenReturn(OptionT.none[Future, SubscriptionSummary])
-
-      val result: Future[Result] = controller.btaTileData(alcoholDutyReference)(FakeRequest())
-      status(result) mustBe BAD_REQUEST
-    }
-
-    "return 400 when is called with a valid alcoholDutyReference but the status Revoked" in {
-
-      subscriptionSummaryConnector.getSubscriptionSummary(alcoholDutyReference)(*) returnsF subscriptionSummaryRevoked
+      alcoholDutyService.getAlcoholDutyCardData(*)(*) returns EitherT.leftT(expectedError)
 
       val result: Future[Result] = controller.btaTileData(alcoholDutyReference)(FakeRequest())
       status(result) mustBe BAD_REQUEST
-    }
-
-    "return 400 when is called with a valid alcoholDutyReference but the status De-registered" in {
-
-      subscriptionSummaryConnector.getSubscriptionSummary(alcoholDutyReference)(
-        *
-      ) returnsF subscriptionSummaryDeRegistered
-
-      val result: Future[Result] = controller.btaTileData(alcoholDutyReference)(FakeRequest())
-      status(result) mustBe BAD_REQUEST
+      contentAsJson(result) mustBe Json.toJson(expectedError)
     }
   }
 }

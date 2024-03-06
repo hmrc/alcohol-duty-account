@@ -23,33 +23,70 @@ import org.scalatest.matchers.should.Matchers.convertToAnyShouldWrapper
 import play.api.http.Status.{NOT_FOUND, OK}
 import uk.gov.hmrc.alcoholdutyaccount.base.SpecBase
 import uk.gov.hmrc.alcoholdutyaccount.config.AppConfig
-import uk.gov.hmrc.alcoholdutyaccount.models.hods.ObligationData
+import uk.gov.hmrc.alcoholdutyaccount.models.hods.{Document, FinancialTransaction, FinancialTransactionItem}
 import uk.gov.hmrc.http.{HeaderCarrier, HttpClient, HttpResponse, UpstreamErrorResponse}
 
 import scala.concurrent.ExecutionContext
 
-class ObligationDataConnectorSpec extends SpecBase {
+class FinancialDataConnectorSpec extends SpecBase {
 
   implicit val ec: ExecutionContext = ExecutionContext.global
   implicit val hc: HeaderCarrier    = HeaderCarrier()
 
   val mockConfig: AppConfig  = mock[AppConfig]
   val httpClient: HttpClient = mock[HttpClient]
-  val connector              = new ObligationDataConnector(config = mockConfig, httpClient = httpClient)
 
-  val obligationData = ObligationData(
-    obligations = Seq.empty
-  )
+  val connector = new FinancialDataConnector(config = mockConfig, httpClient = httpClient)
 
-  "ObligationDataConnector" - {
-    "successfully retrieves an obligation data object" in {
-      httpClient.GET[Either[UpstreamErrorResponse, HttpResponse]](*, *, *)(*, *, *) returnsF Right(
-        HttpResponse(OK, """{"obligations":[]}""")
+  "FinancialDataConnector" - {
+    "successfully retrieves financial document object" in {
+
+      val expectedFinancialData = Document(
+        financialTransactions = Seq(
+          FinancialTransaction(
+            periodKey = "18AA",
+            chargeReference = "XM002610011594",
+            originalAmount = 100.00,
+            outstandingAmount = 50.00,
+            mainTransaction = "1234",
+            subTransaction = "5678",
+            items = Seq(
+              FinancialTransactionItem(
+                subItem = "001",
+                paymentAmount = 50.00
+              )
+            )
+          )
+        )
       )
 
-      whenReady(connector.getObligationData("ID001").value) { result =>
-        result shouldBe Some(obligationData)
+      val json =
+        """
+              |{
+              |  "financialTransactions": [{
+              |    "periodKey": "18AA",
+              |    "chargeReference": "XM002610011594",
+              |    "originalAmount": 100.00,
+              |    "outstandingAmount": 50.00,
+              |    "mainTransaction": "1234",
+              |    "subTransaction": "5678",
+              |    "items": [{
+              |      "subItem": "001",
+              |      "amount": 100.00,
+              |      "paymentAmount": 50.00
+              |      }]
+              |    }]
+              |}
+              |""".stripMargin
+
+      httpClient.GET[Either[UpstreamErrorResponse, HttpResponse]](*, *, *)(*, *, *) returnsF Right(
+        HttpResponse(OK, json)
+      )
+
+      whenReady(connector.getFinancialData("ID001").value) { result =>
+        result shouldBe Some(expectedFinancialData)
       }
+
     }
 
     "return None if the response has a status different from 200" in {
@@ -57,7 +94,7 @@ class ObligationDataConnectorSpec extends SpecBase {
         HttpResponse(NOT_FOUND, "{}")
       )
 
-      whenReady(connector.getObligationData("ID001").value) { result =>
+      whenReady(connector.getFinancialData("ID001").value) { result =>
         result shouldBe None
       }
     }
