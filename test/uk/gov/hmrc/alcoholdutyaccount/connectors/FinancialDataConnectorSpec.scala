@@ -23,7 +23,7 @@ import org.scalatest.matchers.should.Matchers.convertToAnyShouldWrapper
 import play.api.http.Status.{NOT_FOUND, OK}
 import uk.gov.hmrc.alcoholdutyaccount.base.SpecBase
 import uk.gov.hmrc.alcoholdutyaccount.config.AppConfig
-import uk.gov.hmrc.alcoholdutyaccount.models.hods.{Document, FinancialTransaction, FinancialTransactionItem}
+import uk.gov.hmrc.alcoholdutyaccount.models.hods.{FinancialTransaction, FinancialTransactionDocument, FinancialTransactionItem}
 import uk.gov.hmrc.http.{HeaderCarrier, HttpClient, HttpResponse, UpstreamErrorResponse}
 
 import scala.concurrent.ExecutionContext
@@ -41,7 +41,7 @@ class FinancialDataConnectorSpec extends SpecBase {
   "FinancialDataConnector" - {
     "successfully retrieves financial document object" in {
 
-      val expectedFinancialData = Document(
+      val expectedFinancialData = FinancialTransactionDocument(
         financialTransactions = Seq(
           FinancialTransaction(
             periodKey = "18AA",

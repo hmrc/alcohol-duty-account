@@ -19,7 +19,7 @@ package uk.gov.hmrc.alcoholdutyaccount.connectors
 import cats.data.OptionT
 import play.api.http.Status.OK
 import uk.gov.hmrc.alcoholdutyaccount.config.AppConfig
-import uk.gov.hmrc.alcoholdutyaccount.models.hods.Document
+import uk.gov.hmrc.alcoholdutyaccount.models.hods.FinancialTransactionDocument
 import uk.gov.hmrc.http.{HeaderCarrier, HttpClient, HttpReadsInstances, HttpResponse, UpstreamErrorResponse}
 
 import javax.inject.Inject
@@ -29,11 +29,13 @@ class FinancialDataConnector @Inject() (config: AppConfig, implicit val httpClie
   ec: ExecutionContext
 ) extends HttpReadsInstances {
 
-  def getFinancialData(alcoholDutyReference: String)(implicit hc: HeaderCarrier): OptionT[Future, Document] =
+  def getFinancialData(
+    alcoholDutyReference: String
+  )(implicit hc: HeaderCarrier): OptionT[Future, FinancialTransactionDocument] =
     OptionT {
       val url = s"${config.financialDataApiUrl}/enterprise/financial-data/ZAD/$alcoholDutyReference/AD"
       httpClient.GET[Either[UpstreamErrorResponse, HttpResponse]](url = url).map {
-        case Right(response) if response.status == OK => response.json.asOpt[Document]
+        case Right(response) if response.status == OK => response.json.asOpt[FinancialTransactionDocument]
         case _                                        => None
       }
     }

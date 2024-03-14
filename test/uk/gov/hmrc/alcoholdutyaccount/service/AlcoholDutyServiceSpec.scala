@@ -27,7 +27,7 @@ import org.scalatest.wordspec.AnyWordSpec
 import play.api.http.Status.{NOT_FOUND, NOT_IMPLEMENTED}
 import uk.gov.hmrc.alcoholdutyaccount.connectors.{FinancialDataConnector, ObligationDataConnector, SubscriptionSummaryConnector}
 import uk.gov.hmrc.alcoholdutyaccount.models._
-import uk.gov.hmrc.alcoholdutyaccount.models.hods.{Beer, Document, FinancialTransaction, FinancialTransactionItem, Fulfilled, Obligation, ObligationData, ObligationDetails, Open, SubscriptionSummary}
+import uk.gov.hmrc.alcoholdutyaccount.models.hods.{Beer, FinancialTransaction, FinancialTransactionDocument, FinancialTransactionItem, Fulfilled, Obligation, ObligationData, ObligationDetails, Open, SubscriptionSummary}
 import uk.gov.hmrc.http.HeaderCarrier
 
 import java.time.LocalDate
@@ -151,7 +151,7 @@ class AlcoholDutyServiceSpec extends AnyWordSpec with Matchers with ScalaFutures
     }
 
     "extract an empty Payments object if there are no financial transactions" in {
-      val financialDocument = Document(
+      val financialDocument = FinancialTransactionDocument(
         financialTransactions = Seq.empty
       )
       val result            = service.extractPayments(financialDocument)
@@ -159,7 +159,7 @@ class AlcoholDutyServiceSpec extends AnyWordSpec with Matchers with ScalaFutures
     }
 
     "extract a Payments object with a charging reference for a single financial transaction" in {
-      val financialDocument = Document(
+      val financialDocument = FinancialTransactionDocument(
         financialTransactions = Seq(
           FinancialTransaction(
             periodKey = "18AA",
@@ -200,7 +200,7 @@ class AlcoholDutyServiceSpec extends AnyWordSpec with Matchers with ScalaFutures
     }
 
     "extract a Payments object without a charging reference for multiple financial transactions" in {
-      val financialDocument = Document(
+      val financialDocument = FinancialTransactionDocument(
         financialTransactions = Seq(
           FinancialTransaction(
             periodKey = "18AA",
@@ -275,7 +275,7 @@ class AlcoholDutyServiceSpec extends AnyWordSpec with Matchers with ScalaFutures
   }
 
   "getPaymentInformation should return None if the financialDataConnector returns None" in {
-    when(financialDataConnector.getFinancialData(*)(*)).thenReturn(OptionT.none[Future, Document])
+    when(financialDataConnector.getFinancialData(*)(*)).thenReturn(OptionT.none[Future, FinancialTransactionDocument])
 
     val result = service.getPaymentInformation("testAlcoholDutyReference")
     result onComplete {
@@ -285,7 +285,7 @@ class AlcoholDutyServiceSpec extends AnyWordSpec with Matchers with ScalaFutures
   }
 
   "getPaymentInformation should return a Payments object if the financialDataConnector returns a Document" in {
-    val financialDocument = Document(financialTransactions = Seq.empty)
+    val financialDocument = FinancialTransactionDocument(financialTransactions = Seq.empty)
     financialDataConnector.getFinancialData(*)(*) returnsF financialDocument
 
     service.getPaymentInformation("testAlcoholDutyReference").onComplete { result =>
@@ -320,7 +320,7 @@ class AlcoholDutyServiceSpec extends AnyWordSpec with Matchers with ScalaFutures
     )
     obligationDataConnector.getObligationData(*)(*) returnsF obligationDataOneDue
 
-    val financialDocument = Document(financialTransactions = Seq.empty)
+    val financialDocument = FinancialTransactionDocument(financialTransactions = Seq.empty)
     financialDataConnector.getFinancialData(*)(*) returnsF financialDocument
 
     whenReady(service.getAlcoholDutyCardData("testAlcoholDutyReference").value) { result =>
@@ -348,7 +348,7 @@ class AlcoholDutyServiceSpec extends AnyWordSpec with Matchers with ScalaFutures
 
     obligationDataConnector.getObligationData(*)(*) returns OptionT.none[Future, ObligationData]
 
-    val financialDocument = Document(financialTransactions = Seq.empty)
+    val financialDocument = FinancialTransactionDocument(financialTransactions = Seq.empty)
     financialDataConnector.getFinancialData(*)(*) returnsF financialDocument
 
     whenReady(service.getAlcoholDutyCardData("testAlcoholDutyReference").value) { result =>
@@ -370,7 +370,7 @@ class AlcoholDutyServiceSpec extends AnyWordSpec with Matchers with ScalaFutures
     val obligationDataOneDue = ObligationData(obligations = Seq.empty)
     obligationDataConnector.getObligationData(*)(*) returnsF obligationDataOneDue
 
-    financialDataConnector.getFinancialData(*)(*) returns OptionT.none[Future, Document]
+    financialDataConnector.getFinancialData(*)(*) returns OptionT.none[Future, FinancialTransactionDocument]
 
     whenReady(service.getAlcoholDutyCardData("testAlcoholDutyReference").value) { result =>
       result shouldBe Right(

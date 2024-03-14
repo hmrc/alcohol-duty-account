@@ -16,7 +16,7 @@
 
 package uk.gov.hmrc.alcoholdutyaccount.models.hods
 
-import play.api.libs.json.{Json, Reads}
+import play.api.libs.json.{Format, Json}
 
 case class FinancialTransactionItem(
   subItem: String,
@@ -24,7 +24,7 @@ case class FinancialTransactionItem(
 )
 
 object FinancialTransactionItem {
-  implicit val reads: Reads[FinancialTransactionItem] = Json.reads[FinancialTransactionItem]
+  implicit val format: Format[FinancialTransactionItem] = Json.format[FinancialTransactionItem]
 }
 
 case class FinancialTransaction(
@@ -38,10 +38,10 @@ case class FinancialTransaction(
 )
 
 object FinancialTransaction {
-  implicit val reads: Reads[FinancialTransaction] = Json.reads[FinancialTransaction]
+  implicit val format: Format[FinancialTransaction] = Json.format[FinancialTransaction]
 }
-case class Document(financialTransactions: Seq[FinancialTransaction])
+case class FinancialTransactionDocument(financialTransactions: Seq[FinancialTransaction])
 
-object Document {
-  implicit val reads: Reads[Document] = Json.reads[Document]
+object FinancialTransactionDocument {
+  implicit val format: Format[FinancialTransactionDocument] = Json.format[FinancialTransactionDocument]
 }

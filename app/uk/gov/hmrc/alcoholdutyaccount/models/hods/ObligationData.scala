@@ -25,7 +25,7 @@ case class ObligationData(
 )
 
 object ObligationData {
-  implicit val reads: Reads[ObligationData] = Json.reads[ObligationData]
+  implicit val format: Format[ObligationData] = Json.format[ObligationData]
 }
 
 sealed trait ObligationStatus
@@ -43,6 +43,10 @@ object ObligationStatus {
         }
       case e: JsError          => e
     }
+  implicit val writes: Writes[ObligationStatus]   = {
+    case Open      => JsString("O")
+    case Fulfilled => JsString("F")
+  }
 }
 
 final case class ObligationDetails(
@@ -55,12 +59,12 @@ final case class ObligationDetails(
 )
 
 object ObligationDetails {
-  implicit val reads: Reads[ObligationDetails] = Json.reads[ObligationDetails]
+  implicit val format: Format[ObligationDetails] = Json.format[ObligationDetails]
 }
 
 final case class Obligation(
   obligationDetails: Seq[ObligationDetails]
 )
 object Obligation {
-  implicit val reads: Reads[Obligation] = Json.reads[Obligation]
+  implicit val format: Format[Obligation] = Json.format[Obligation]
 }
