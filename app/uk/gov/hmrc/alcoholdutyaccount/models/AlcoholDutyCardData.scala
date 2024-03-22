@@ -36,10 +36,18 @@ object ApprovalStatus {
   }
 }
 
+final case class Balance(
+  totalPaymentAmount: BigDecimal,
+  isMultiplePaymentDue: Boolean,
+  chargeReference: Option[String]
+)
+
+object Balance {
+  implicit val writes: Writes[Balance] = Json.writes[Balance]
+}
+
 final case class Payments(
-  totalPaymentAmount: Option[BigDecimal] = None,
-  isMultiplePaymentDue: Option[Boolean] = None,
-  chargeReference: Option[String] = None
+  balance: Option[Balance] = None
 )
 
 object Payments {

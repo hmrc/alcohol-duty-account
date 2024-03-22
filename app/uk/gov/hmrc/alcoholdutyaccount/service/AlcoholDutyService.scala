@@ -20,7 +20,7 @@ import cats.data.EitherT
 import cats.implicits._
 import play.api.http.Status.{NOT_FOUND, NOT_IMPLEMENTED}
 import uk.gov.hmrc.alcoholdutyaccount.connectors.{FinancialDataConnector, ObligationDataConnector, SubscriptionSummaryConnector}
-import uk.gov.hmrc.alcoholdutyaccount.models.{AlcoholDutyCardData, Approved, ErrorResponse, InsolventCardData, Payments, Returns, hods}
+import uk.gov.hmrc.alcoholdutyaccount.models.{AlcoholDutyCardData, Approved, Balance, ErrorResponse, InsolventCardData, Payments, Returns, hods}
 import uk.gov.hmrc.alcoholdutyaccount.models.hods.{FinancialTransactionDocument, ObligationDetails, Open}
 import uk.gov.hmrc.http.HeaderCarrier
 
@@ -106,15 +106,23 @@ class AlcoholDutyService @Inject() (
       case 1 =>
         val (chargingReference, transaction) = payments.head
         Payments(
-          totalPaymentAmount = Some(transaction.map(_.outstandingAmount).sum),
-          isMultiplePaymentDue = Some(false),
-          chargeReference = Some(chargingReference)
+          balance = Some(
+            Balance(
+              totalPaymentAmount = transaction.map(_.outstandingAmount).sum,
+              isMultiplePaymentDue = false,
+              chargeReference = Some(chargingReference)
+            )
+          )
         )
       case _ =>
         Payments(
-          totalPaymentAmount = Some(financialDocument.financialTransactions.map(_.outstandingAmount).sum),
-          isMultiplePaymentDue = Some(true),
-          chargeReference = None
+          balance = Some(
+            Balance(
+              totalPaymentAmount = financialDocument.financialTransactions.map(_.outstandingAmount).sum,
+              isMultiplePaymentDue = true,
+              chargeReference = None
+            )
+          )
         )
     }
   }

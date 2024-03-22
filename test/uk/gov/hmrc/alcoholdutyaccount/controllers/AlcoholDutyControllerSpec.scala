@@ -52,7 +52,8 @@ class AlcoholDutyControllerSpec extends AnyWordSpec with Matchers {
         hasReturnsError = false,
         hasPaymentError = false,
         returns = Returns(dueReturnExists = Some(true), numberOfOverdueReturns = Some(0)),
-        payments = Payments(isMultiplePaymentDue = Some(true), totalPaymentAmount = Some(2), chargeReference = None)
+        payments =
+          Payments(balance = Some(Balance(isMultiplePaymentDue = true, totalPaymentAmount = 2, chargeReference = None)))
       )
 
       alcoholDutyService.getAlcoholDutyCardData(*)(*) returnsF expectedData

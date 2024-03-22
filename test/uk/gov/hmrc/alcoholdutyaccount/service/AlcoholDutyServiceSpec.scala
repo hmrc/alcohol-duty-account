@@ -193,9 +193,13 @@ class AlcoholDutyServiceSpec extends AnyWordSpec with Matchers with ScalaFutures
       )
       val result            = service.extractPayments(financialDocument)
       result shouldBe Payments(
-        totalPaymentAmount = Some(100.00),
-        isMultiplePaymentDue = Some(false),
-        chargeReference = Some("X1234567890")
+        balance = Some(
+          Balance(
+            totalPaymentAmount = 100.00,
+            isMultiplePaymentDue = false,
+            chargeReference = Some("X1234567890")
+          )
+        )
       )
     }
 
@@ -248,9 +252,13 @@ class AlcoholDutyServiceSpec extends AnyWordSpec with Matchers with ScalaFutures
       )
       val result            = service.extractPayments(financialDocument)
       result shouldBe Payments(
-        totalPaymentAmount = Some(350.00),
-        isMultiplePaymentDue = Some(true),
-        chargeReference = None
+        balance = Some(
+          Balance(
+            totalPaymentAmount = 350.00,
+            isMultiplePaymentDue = true,
+            chargeReference = None
+          )
+        )
       )
     }
   }

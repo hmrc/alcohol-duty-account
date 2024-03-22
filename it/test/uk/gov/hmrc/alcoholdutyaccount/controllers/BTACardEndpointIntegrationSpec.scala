@@ -19,7 +19,7 @@ package uk.gov.hmrc.alcoholdutyaccount.controllers
 import play.api.libs.json.Json
 import play.api.test.FakeRequest
 import uk.gov.hmrc.alcoholdutyaccount.base.ISpecBase
-import uk.gov.hmrc.alcoholdutyaccount.models.{AlcoholDutyCardData, Approved, InsolventCardData, Payments, Returns}
+import uk.gov.hmrc.alcoholdutyaccount.models.{AlcoholDutyCardData, Approved, Balance, InsolventCardData, Payments, Returns}
 
 class BTACardEndpointIntegrationSpec
   extends ISpecBase {
@@ -41,9 +41,13 @@ class BTACardEndpointIntegrationSpec
           numberOfOverdueReturns=Some(1)
         ),
         payments = Payments(
-          totalPaymentAmount = Some(100),
-          isMultiplePaymentDue = Some(false),
-          chargeReference = Some("X1234567890")
+          balance = Some(
+            Balance(
+              totalPaymentAmount = 100,
+              isMultiplePaymentDue = false,
+              chargeReference = Some("X1234567890")
+            )
+          )
         )
       )
 
@@ -129,9 +133,13 @@ class BTACardEndpointIntegrationSpec
         hasPaymentError = false,
         returns = Returns(),
         payments = Payments(
-          totalPaymentAmount = Some(100),
-          isMultiplePaymentDue = Some(false),
-          chargeReference = Some("X1234567890")
+          balance = Some(
+            Balance(
+              totalPaymentAmount = 100,
+              isMultiplePaymentDue = false,
+              chargeReference = Some("X1234567890")
+            )
+          )
         )
       )
 
