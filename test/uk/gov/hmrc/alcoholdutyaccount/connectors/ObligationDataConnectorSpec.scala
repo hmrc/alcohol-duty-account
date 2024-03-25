@@ -20,6 +20,7 @@ import org.mockito.ArgumentMatchersSugar.*
 import org.mockito.MockitoSugar.mock
 import org.mockito.cats.IdiomaticMockitoCats.StubbingOpsCats
 import org.scalatest.matchers.should.Matchers.convertToAnyShouldWrapper
+import play.api.http.Status.{NOT_FOUND, OK}
 import uk.gov.hmrc.alcoholdutyaccount.base.SpecBase
 import uk.gov.hmrc.alcoholdutyaccount.config.AppConfig
 import uk.gov.hmrc.alcoholdutyaccount.models.hods.ObligationData
@@ -43,7 +44,7 @@ class ObligationDataConnectorSpec extends SpecBase {
   "ObligationDataConnector" - {
     "successfully retrieves an obligation data object" in {
       httpClient.GET[Either[UpstreamErrorResponse, HttpResponse]](*, *, *)(*, *, *) returnsF Right(
-        HttpResponse(200, """{"obligations":[]}""")
+        HttpResponse(OK, """{"obligations":[]}""")
       )
 
       whenReady(connector.getObligationData("ID001").value) { result =>
@@ -53,7 +54,7 @@ class ObligationDataConnectorSpec extends SpecBase {
 
     "return None if the response has a status different from 200" in {
       httpClient.GET[Either[UpstreamErrorResponse, HttpResponse]](*, *, *)(*, *, *) returnsF Right(
-        HttpResponse(404, "{}")
+        HttpResponse(NOT_FOUND, "{}")
       )
 
       whenReady(connector.getObligationData("ID001").value) { result =>

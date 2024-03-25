@@ -36,19 +36,50 @@ object ApprovalStatus {
   }
 }
 
-final case class Return(
+final case class Balance(
+  totalPaymentAmount: BigDecimal,
+  isMultiplePaymentDue: Boolean,
+  chargeReference: Option[String]
+)
+
+object Balance {
+  implicit val writes: Writes[Balance] = Json.writes[Balance]
+}
+
+final case class Payments(
+  balance: Option[Balance] = None
+)
+
+object Payments {
+  implicit val writes: Writes[Payments] = Json.writes[Payments]
+}
+
+final case class Returns(
   dueReturnExists: Option[Boolean] = None,
   numberOfOverdueReturns: Option[Int] = None
 )
-object Return {
-  implicit val writes: Writes[Return] = Json.writes[Return]
+object Returns {
+  implicit val writes: Writes[Returns] = Json.writes[Returns]
 }
 
-final case class AlcoholDutyCardData(
+object InsolventCardData {
+  def apply(alcoholDutyReference: String): AlcoholDutyCardData = AlcoholDutyCardData(
+    alcoholDutyReference = alcoholDutyReference,
+    approvalStatus = Insolvent,
+    hasReturnsError = false,
+    hasPaymentError = false,
+    returns = Returns(),
+    payments = Payments()
+  )
+}
+
+case class AlcoholDutyCardData(
   alcoholDutyReference: String,
   approvalStatus: ApprovalStatus,
   hasReturnsError: Boolean,
-  returns: Return
+  hasPaymentError: Boolean,
+  returns: Returns,
+  payments: Payments
 )
 
 object AlcoholDutyCardData {

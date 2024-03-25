@@ -12,9 +12,19 @@ lazy val microservice = Project("alcohol-duty-account", file("."))
     scalacOptions += "-Wconf:src=routes/.*:s",
     scalafmtOnCompile := true,
   )
+  .settings(inConfig(Test)(testSettings): _*)
   .settings(resolvers += Resolver.jcenterRepo)
   .settings(CodeCoverageSettings.settings: _*)
   .settings(PlayKeys.playDefaultPort := 16002)
+
+lazy val testSettings: Seq[Def.Setting[_]] = Seq(
+  unmanagedSourceDirectories := Seq(
+    baseDirectory.value / "test",
+    baseDirectory.value / "test-common"
+  ),
+  fork := true,
+  scalafmtOnCompile := true
+)
 
 lazy val it = project
   .enablePlugins(PlayScala)

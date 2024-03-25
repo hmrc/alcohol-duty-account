@@ -28,10 +28,12 @@ class AlcoholDutyCardDataSpec extends SpecBase {
         alcoholDutyReference = "REF01",
         approvalStatus = Approved,
         hasReturnsError = false,
-        returns = Return(
+        hasPaymentError = false,
+        returns = Returns(
           dueReturnExists = Some(true),
           numberOfOverdueReturns = Some(1)
-        )
+        ),
+        payments = Payments()
       )
 
       val result = Json.toJson(alcoholDutyCardData)
@@ -42,10 +44,12 @@ class AlcoholDutyCardDataSpec extends SpecBase {
           |  "alcoholDutyReference":"REF01",
           |  "approvalStatus":"Approved",
           |  "hasReturnsError":false,
+          |  "hasPaymentError":false,
           |  "returns": {
           |    "dueReturnExists":true,
           |    "numberOfOverdueReturns":1
-          |  }
+          |  },
+          |  "payments": {}
           |}""".stripMargin
 
       result shouldBe Json.parse(expectedJson)
@@ -57,7 +61,9 @@ class AlcoholDutyCardDataSpec extends SpecBase {
           alcoholDutyReference = "REF01",
           approvalStatus = approvalStatus,
           hasReturnsError = false,
-          returns = Return()
+          hasPaymentError = false,
+          returns = Returns(),
+          payments = Payments()
         )
 
         val result = Json.toJson(alcoholDutyCardData)
@@ -68,7 +74,9 @@ class AlcoholDutyCardDataSpec extends SpecBase {
             |  "alcoholDutyReference":"REF01",
             |  "approvalStatus":"$approvalStatus",
             |  "hasReturnsError":false,
-            |  "returns": {}
+            |  "hasPaymentError":false,
+            |  "returns": {},
+            |  "payments": {}
             |}""".stripMargin
 
         result shouldBe Json.parse(expectedJson)

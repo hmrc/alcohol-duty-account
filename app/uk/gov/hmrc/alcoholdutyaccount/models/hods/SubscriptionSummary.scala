@@ -39,6 +39,13 @@ object ApprovalType {
         }
       case e: JsError          => e
     }
+
+  implicit val writes: Writes[ApprovalType] = {
+    case Beer                         => JsString("01")
+    case CiderOrPerry                 => JsString("02")
+    case WineAndOtherFermentedProduct => JsString("03")
+    case Spirits                      => JsString("04")
+  }
 }
 
 sealed trait ApprovalStatus
@@ -59,6 +66,12 @@ object ApprovalStatus {
         }
       case e: JsError          => e
     }
+
+  implicit val writes: Writes[ApprovalStatus] = {
+    case Approved     => JsString("01")
+    case DeRegistered => JsString("02")
+    case Revoked      => JsString("03")
+  }
 }
 
 final case class SubscriptionSummary(
@@ -76,5 +89,10 @@ object SubscriptionSummary {
     case s             => JsError(s"$s is not a valid Boolean")
   }
 
-  implicit val reads: Reads[SubscriptionSummary] = Json.reads[SubscriptionSummary]
+  implicit val booleanWrites: Writes[Boolean] = {
+    case false => JsString("0")
+    case true  => JsString("1")
+  }
+
+  implicit val format: Format[SubscriptionSummary] = Json.format[SubscriptionSummary]
 }

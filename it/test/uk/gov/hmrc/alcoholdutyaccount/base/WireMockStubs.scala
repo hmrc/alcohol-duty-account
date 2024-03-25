@@ -14,19 +14,8 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.alcoholdutyaccount.controllers
+package uk.gov.hmrc.alcoholdutyaccount.base
 
-import org.apache.pekko.util.ByteString
-import play.api.http.HttpEntity
-import play.api.libs.json.Json
-import play.api.mvc.{ResponseHeader, Result}
-import uk.gov.hmrc.alcoholdutyaccount.models.ErrorResponse
+import uk.gov.hmrc.alcoholdutyaccount.common.AlcoholDutyTestData
 
-trait BaseController {
-
-  def error(errorResponse: ErrorResponse): Result = Result(
-    header = ResponseHeader(errorResponse.status),
-    body = HttpEntity.Strict(ByteString(Json.toBytes(Json.toJson(errorResponse))), Some("application/json"))
-  )
-
-}
+trait WireMockStubs extends AlcoholDutyTestData with AuthStubs with SubscriptionSummaryStubs with ObligationDataStubs  with FinancialDataStubs
