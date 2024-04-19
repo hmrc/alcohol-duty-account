@@ -16,11 +16,13 @@
 
 package uk.gov.hmrc.alcoholdutyaccount.connectors
 
-import cats.data.OptionT
-import play.api.http.Status.OK
+import cats.data.EitherT
+import play.api.{Logger, Logging}
+import play.api.http.Status.{INTERNAL_SERVER_ERROR, NOT_FOUND}
 import uk.gov.hmrc.alcoholdutyaccount.config.AppConfig
-import uk.gov.hmrc.alcoholdutyaccount.models.hods.ObligationData
+import uk.gov.hmrc.alcoholdutyaccount.models.hods.{ObligationData, Open}
 import uk.gov.hmrc.http.{HttpClient, _}
+import uk.gov.hmrc.play.bootstrap.backend.http.ErrorResponse
 
 import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
@@ -29,18 +31,49 @@ class ObligationDataConnector @Inject() (
   config: AppConfig,
   implicit val httpClient: HttpClient
 )(implicit ec: ExecutionContext)
-    extends HttpReadsInstances {
+    extends HttpReadsInstances
+    with Logging {
+  override protected val logger: Logger = Logger(this.getClass)
 
-  def getObligationData(alcoholDutyReference: String)(implicit hc: HeaderCarrier): OptionT[Future, ObligationData] =
-    OptionT {
+  private val idType     = config.obligationIdType
+  private val regimeType = config.obligationRegimeType
 
-      val url = s"${config.obligationDataApiUrl}/enterprise/obligation-data/ZAD/$alcoholDutyReference/AD"
+  def getOpenObligationDetails(
+    alcoholDutyReference: String
+  )(implicit hc: HeaderCarrier): EitherT[Future, ErrorResponse, ObligationData] =
+    EitherT {
+
+      val url = s"${config.obligationDataApiUrl}/enterprise/obligation-data/$idType/$alcoholDutyReference/$regimeType"
+      logger.info(s"Fetching all open obligation data for appaId $alcoholDutyReference")
+
+      val params = Seq("status" -> Open.value)
 
       httpClient
-        .GET[Either[UpstreamErrorResponse, HttpResponse]](url = url)
+        .GET[Either[UpstreamErrorResponse, HttpResponse]](url = url, queryParams = params)
         .map {
-          case Right(response) if response.status == OK => response.json.asOpt[ObligationData]
-          case _                                        => None
+          case Right(response) =>
+            response.json
+              .asOpt[ObligationData]
+              .fold[Either[ErrorResponse, ObligationData]] {
+                logger.warn(s"Unable to parse obligation data for appaId $alcoholDutyReference")
+                Left(ErrorResponse(INTERNAL_SERVER_ERROR, "Unable to parse obligation data"))
+              } {
+                logger.info(s"Retrieved open obligation data for appaId $alcoholDutyReference")
+                Right(_)
+              }
+          case Left(error)     => Left(processError(error, alcoholDutyReference))
         }
+    }
+
+  private def processError(error: UpstreamErrorResponse, alcoholDutyReference: String): ErrorResponse =
+    error.statusCode match {
+      case NOT_FOUND =>
+        logger.info(s"No obligation data found for appaId $alcoholDutyReference")
+        ErrorResponse(NOT_FOUND, "")
+      case _         =>
+        logger.warn(
+          s"An error was returned while trying to fetch obligation data appaId $alcoholDutyReference: ${error.message}"
+        )
+        ErrorResponse(INTERNAL_SERVER_ERROR, "An error occurred")
     }
 }

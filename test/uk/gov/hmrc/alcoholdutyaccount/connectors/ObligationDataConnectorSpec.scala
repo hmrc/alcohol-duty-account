@@ -16,51 +16,112 @@
 
 package uk.gov.hmrc.alcoholdutyaccount.connectors
 
-import org.mockito.ArgumentMatchersSugar.*
-import org.mockito.MockitoSugar.mock
-import org.mockito.cats.IdiomaticMockitoCats.StubbingOpsCats
-import org.scalatest.matchers.should.Matchers.convertToAnyShouldWrapper
-import play.api.http.Status.{NOT_FOUND, OK}
-import uk.gov.hmrc.alcoholdutyaccount.base.SpecBase
-import uk.gov.hmrc.alcoholdutyaccount.config.AppConfig
-import uk.gov.hmrc.alcoholdutyaccount.models.hods.ObligationData
-import uk.gov.hmrc.http.{HeaderCarrier, HttpClient, HttpResponse, UpstreamErrorResponse}
+import play.api.http.Status.{BAD_REQUEST, INTERNAL_SERVER_ERROR, NOT_FOUND, OK}
+import play.api.libs.json.Json
+import uk.gov.hmrc.alcoholdutyaccount.models.ReturnPeriod
+import uk.gov.hmrc.alcoholdutyaccount.models.hods.{Obligation, ObligationData, ObligationDetails, Open}
+import uk.gov.hmrc.play.bootstrap.backend.http.ErrorResponse
 
-import scala.concurrent.ExecutionContext
+import java.time.LocalDate
+import scala.concurrent.ExecutionContext.Implicits.global
 
-class ObligationDataConnectorSpec extends SpecBase {
-
-  implicit val ec: ExecutionContext = ExecutionContext.global
-  implicit val hc: HeaderCarrier    = HeaderCarrier()
-
-  val mockConfig: AppConfig  = mock[AppConfig]
-  val httpClient: HttpClient = mock[HttpClient]
-  val connector              = new ObligationDataConnector(config = mockConfig, httpClient = httpClient)
-
-  val obligationData = ObligationData(
-    obligations = Seq.empty
-  )
+class ObligationDataConnectorSpec extends ConnectorBase {
+  protected val endpointName = "obligation"
 
   "ObligationDataConnector" - {
-    "successfully retrieves an obligation data object" in {
-      httpClient.GET[Either[UpstreamErrorResponse, HttpResponse]](*, *, *)(*, *, *) returnsF Right(
-        HttpResponse(OK, """{"obligations":[]}""")
-      )
-
-      whenReady(connector.getObligationData("ID001").value) { result =>
-        result shouldBe Some(obligationData)
+    "successfully get open obligation data when no period key specified" in new SetUp {
+      stubGetWithParameters(url, expectedQueryParams, OK, Json.toJson(obligationData).toString)
+      whenReady(connector.getOpenObligationDetails(alcoholDutyReference).value) { result =>
+        result mustBe Right(obligationData)
+        verifyGetWithParameters(url, expectedQueryParams)
       }
     }
 
-    "return None if the response has a status different from 200" in {
-      httpClient.GET[Either[UpstreamErrorResponse, HttpResponse]](*, *, *)(*, *, *) returnsF Right(
-        HttpResponse(NOT_FOUND, "{}")
-      )
-
-      whenReady(connector.getObligationData("ID001").value) { result =>
-        result shouldBe None
+    "return not found if obligation data object cannot be found for the period key with no server error message" in new SetUp {
+      stubGetWithParameters(url, expectedQueryParams, NOT_FOUND, "")
+      whenReady(connector.getOpenObligationDetails(alcoholDutyReference).value) { result =>
+        result mustBe Left(ErrorResponse(NOT_FOUND, ""))
+        verifyGetWithParameters(url, expectedQueryParams)
       }
     }
+
+    "return not found if obligation data object cannot be found for the period key" in new SetUp {
+      stubGetWithParameters(url, expectedQueryParams, NOT_FOUND, notFoundErrorMessage)
+      whenReady(connector.getOpenObligationDetails(alcoholDutyReference).value) { result =>
+        result mustBe Left(ErrorResponse(NOT_FOUND, ""))
+        verifyGetWithParameters(url, expectedQueryParams)
+      }
+    }
+
+    "return an INTERNAL_SERVER_ERROR error if an error other than NOT_FOUND when fetching obligation data with no server error message" in new SetUp {
+      stubGetWithParameters(url, expectedQueryParams, BAD_REQUEST, "")
+      whenReady(connector.getOpenObligationDetails(alcoholDutyReference).value) { result =>
+        result mustBe Left(ErrorResponse(INTERNAL_SERVER_ERROR, "An error occurred"))
+        verifyGetWithParameters(url, expectedQueryParams)
+      }
+    }
+
+    "return an INTERNAL_SERVER_ERROR error if an error other than NOT_FOUND when fetching obligation data" in new SetUp {
+      stubGetWithParameters(url, expectedQueryParams, BAD_REQUEST, otherErrorMessage)
+      whenReady(connector.getOpenObligationDetails(alcoholDutyReference).value) { result =>
+        result mustBe Left(ErrorResponse(INTERNAL_SERVER_ERROR, "An error occurred"))
+        verifyGetWithParameters(url, expectedQueryParams)
+      }
+    }
+  }
+
+  class SetUp extends ConnectorFixture {
+    val connector            = new ObligationDataConnector(config = config, httpClient = httpClient)
+    val idType               = config.obligationIdType
+    val alcoholDutyReference = "XMADP0000000200"
+    val regimeType           = config.obligationRegimeType
+    val periodStart          = LocalDate.of(2023, 1, 1)
+    val periodEnd            = LocalDate.of(2023, 1, 31)
+    val periodKey            = "24AE"
+    val returnPeriod         = ReturnPeriod(periodKey, 2024, 5)
+    val expectedQueryParams  = Map(
+      "status" -> Open.value
+    )
+    val url                  = s"${config.obligationDataApiUrl}/enterprise/obligation-data/$idType/$alcoholDutyReference/$regimeType"
+
+    val obligationData = ObligationData(obligations =
+      Seq(
+        Obligation(
+          obligationDetails = Seq(
+            ObligationDetails(
+              status = Open,
+              inboundCorrespondenceFromDate = periodStart,
+              inboundCorrespondenceToDate = periodEnd,
+              inboundCorrespondenceDateReceived = None,
+              inboundCorrespondenceDueDate = LocalDate.now().plusDays(1),
+              periodKey = periodKey
+            )
+          )
+        )
+      )
+    )
+
+    val notFoundErrorMessage = """{
+                                 |    "code": "NOT_FOUND",
+                                 |    "reason": "The remote endpoint has indicated that no associated data found."
+                                 |}
+                                 |""".stripMargin
+
+    val otherErrorMessage =
+      """
+        |{
+        |    "failures": [
+        |        {
+        |            "code": "INVALID_IDTYPE",
+        |            "reason": "Submission has not passed validation. Invalid parameter idType"
+        |        },
+        |        {
+        |            "code": "INVALID_IDNUMBER",
+        |            "reason": "Submission has not passed validation. Invalid parameter idNumber"
+        |        }
+        |    ]
+        |}
+        |""".stripMargin
   }
 
 }

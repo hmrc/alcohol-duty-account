@@ -28,9 +28,16 @@ object ObligationData {
   implicit val format: Format[ObligationData] = Json.format[ObligationData]
 }
 
-sealed trait ObligationStatus
-case object Open extends ObligationStatus
-case object Fulfilled extends ObligationStatus
+sealed trait ObligationStatus {
+  val value: String
+}
+
+case object Open extends ObligationStatus {
+  val value = "O"
+}
+case object Fulfilled extends ObligationStatus {
+  val value = "F"
+}
 
 object ObligationStatus {
   implicit val jsonReads: Reads[ObligationStatus] = (json: JsValue) =>

@@ -20,9 +20,10 @@ import cats.data.EitherT
 import cats.implicits._
 import play.api.http.Status.{NOT_FOUND, NOT_IMPLEMENTED}
 import uk.gov.hmrc.alcoholdutyaccount.connectors.{FinancialDataConnector, ObligationDataConnector, SubscriptionSummaryConnector}
-import uk.gov.hmrc.alcoholdutyaccount.models.{AlcoholDutyCardData, Approved, Balance, ErrorResponse, InsolventCardData, Payments, Returns, hods}
-import uk.gov.hmrc.alcoholdutyaccount.models.hods.{FinancialTransactionDocument, ObligationDetails, Open}
+import uk.gov.hmrc.alcoholdutyaccount.models.{AlcoholDutyCardData, Approved, Balance, InsolventCardData, Payments, ReturnPeriod, Returns, hods}
+import uk.gov.hmrc.alcoholdutyaccount.models.hods.{FinancialTransactionDocument, ObligationData, ObligationDetails}
 import uk.gov.hmrc.http.HeaderCarrier
+import uk.gov.hmrc.play.bootstrap.backend.http.ErrorResponse
 
 import java.time.LocalDate
 import javax.inject.{Inject, Singleton}
@@ -34,6 +35,24 @@ class AlcoholDutyService @Inject() (
   obligationDataConnector: ObligationDataConnector,
   financialDataConnector: FinancialDataConnector
 )(implicit ec: ExecutionContext) {
+  def getObligations(
+    alcoholDutyReference: String,
+    returnPeriod: ReturnPeriod
+  )(implicit hc: HeaderCarrier): EitherT[Future, ErrorResponse, ObligationDetails] =
+    obligationDataConnector
+      .getOpenObligationDetails(alcoholDutyReference)
+      .map(findObligationDetailsForPeriod(_, returnPeriod))
+      .transform {
+        case l @ Left(_)                    => l.asInstanceOf[Either[ErrorResponse, ObligationDetails]]
+        case Right(None)                    => Left(ErrorResponse(NOT_FOUND, ""))
+        case Right(Some(obligationDetails)) => Right[ErrorResponse, ObligationDetails](obligationDetails)
+      }
+
+  private def findObligationDetailsForPeriod(
+    obligationData: ObligationData,
+    returnPeriod: ReturnPeriod
+  ): Option[ObligationDetails] =
+    obligationData.obligations.flatMap(_.obligationDetails).find(_.periodKey == returnPeriod.periodKey)
 
   def getAlcoholDutyCardData(
     alcoholDutyReference: String
@@ -53,7 +72,7 @@ class AlcoholDutyService @Inject() (
   private def getObligationAndFinancialInfo(alcoholDutyReference: String)(implicit
     hc: HeaderCarrier
   ): Future[Either[ErrorResponse, AlcoholDutyCardData]] = for {
-    obData <- getObligationData(alcoholDutyReference)
+    obData <- getReturnDetails(alcoholDutyReference)
     fData  <- getPaymentInformation(alcoholDutyReference)
   } yield AlcoholDutyCardData(
     alcoholDutyReference = alcoholDutyReference,
@@ -64,11 +83,12 @@ class AlcoholDutyService @Inject() (
     payments = fData.getOrElse(Payments())
   ).asRight
 
-  private[service] def getObligationData(
+  private[service] def getReturnDetails(
     alcoholDutyReference: String
   )(implicit hc: HeaderCarrier): Future[Option[Returns]] =
     obligationDataConnector
-      .getObligationData(alcoholDutyReference)
+      .getOpenObligationDetails(alcoholDutyReference)
+      .toOption
       .fold {
         None: Option[Returns]
       } { obligationData =>
@@ -79,12 +99,12 @@ class AlcoholDutyService @Inject() (
     if (obligationDetails.isEmpty) {
       Returns()
     } else {
+      val now = LocalDate.now()
+
       val dueReturnExists        =
-        obligationDetails.exists { o =>
-          o.status == Open && o.inboundCorrespondenceDueDate.isAfter(LocalDate.now().minusDays(1))
-        }
+        obligationDetails.exists(_.inboundCorrespondenceDueDate.isAfter(now.minusDays(1)))
       val numberOfOverdueReturns =
-        obligationDetails.count(o => o.status == Open && o.inboundCorrespondenceDueDate.isBefore(LocalDate.now()))
+        obligationDetails.count(_.inboundCorrespondenceDueDate.isBefore(now))
       Returns(Some(dueReturnExists), Some(numberOfOverdueReturns))
     }
 
@@ -94,7 +114,7 @@ class AlcoholDutyService @Inject() (
     financialDataConnector
       .getFinancialData(alcoholDutyReference)
       .fold {
-        None: Option[Payments]
+        Option.empty[Payments]
       } { financialData =>
         Some(extractPayments(financialData))
       }

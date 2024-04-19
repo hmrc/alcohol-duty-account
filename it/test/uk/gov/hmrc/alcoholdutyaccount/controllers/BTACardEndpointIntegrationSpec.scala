@@ -28,7 +28,7 @@ class BTACardEndpointIntegrationSpec
     "respond with 200 status" in {
       stubAuthorised()
       stubGetSubscriptionSummary(approvedSubscriptionSummary)
-      stubGetObligations(obligationData)
+      stubGetObligations(obligationDataSingleOpen)
       stubGetFinancialData(financialDocument)
 
       val expectedBTATileData = AlcoholDutyCardData(
@@ -64,7 +64,7 @@ class BTACardEndpointIntegrationSpec
     "respond with 200 status for insolvent subscription" in {
       stubAuthorised()
       stubGetSubscriptionSummary(insolventSubscriptionSummary)
-      stubGetObligations(obligationData)
+      stubGetObligations(obligationDataSingleOpen)
       stubGetFinancialData(financialDocument)
 
       val expectedBTACardData = InsolventCardData(alcoholDutyReference)
@@ -81,7 +81,7 @@ class BTACardEndpointIntegrationSpec
     "respond with NOT_IMPLEMENTED status for subscription status de-registered" in {
       stubAuthorised()
       stubGetSubscriptionSummary(deregisteredSubscriptionSummary)
-      stubGetObligations(obligationData)
+      stubGetObligations(obligationDataSingleOpen)
       stubGetFinancialData(financialDocument)
 
       val response = callRoute(
@@ -95,7 +95,7 @@ class BTACardEndpointIntegrationSpec
     "respond with NOT_IMPLEMENTED status for subscription status revoked" in {
       stubAuthorised()
       stubGetSubscriptionSummary(revokedSubscriptionSummary)
-      stubGetObligations(obligationData)
+      stubGetObligations(obligationDataSingleOpen)
       stubGetFinancialData(financialDocument)
 
       val response = callRoute(
@@ -109,7 +109,7 @@ class BTACardEndpointIntegrationSpec
     "respond with NOT_FOUND status for errors in the subscription api call" in {
       stubAuthorised()
       stubSubscriptionSummaryNotFound()
-      stubGetObligations(obligationData)
+      stubGetObligations(obligationDataSingleOpen)
       stubGetFinancialData(financialDocument)
 
       val response = callRoute(
@@ -155,7 +155,7 @@ class BTACardEndpointIntegrationSpec
     "respond with 200 status for errors in the financial api call" in {
       stubAuthorised()
       stubGetSubscriptionSummary(approvedSubscriptionSummary)
-      stubGetObligations(obligationData)
+      stubGetObligations(obligationDataSingleOpen)
       stubFinancialDataNotFound()
 
       val expectedBTATileData = AlcoholDutyCardData(

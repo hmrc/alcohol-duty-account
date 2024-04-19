@@ -18,7 +18,7 @@ package uk.gov.hmrc.alcoholdutyaccount.base
 
 import com.github.tomakehurst.wiremock.client.WireMock._
 import com.github.tomakehurst.wiremock.stubbing.StubMapping
-import play.api.http.Status.{NOT_FOUND, OK}
+import play.api.http.Status.{INTERNAL_SERVER_ERROR, NOT_FOUND, OK}
 import play.api.libs.json.Json
 import uk.gov.hmrc.alcoholdutyaccount.base.WireMockHelper.stub
 import uk.gov.hmrc.alcoholdutyaccount.models.hods.ObligationData
@@ -29,7 +29,7 @@ trait ObligationDataStubs { self: WireMockStubs =>
     stub(
       get(
         urlEqualTo(
-          s"/enterprise/obligation-data/ZAD/$alcoholDutyReference/AD"
+          s"/enterprise/obligation-data/ZAD/$alcoholDutyReference/AD?status=O"
         )
       ),
       aResponse()
@@ -41,7 +41,7 @@ trait ObligationDataStubs { self: WireMockStubs =>
     stub(
       get(
         urlEqualTo(
-          s"/enterprise/obligation-data/ZAD/$alcoholDutyReference/AD"
+          s"/enterprise/obligation-data/ZAD/$alcoholDutyReference/AD?status=O"
         )
       ),
       aResponse()
@@ -49,4 +49,15 @@ trait ObligationDataStubs { self: WireMockStubs =>
         .withBody("No obligation data found")
     )
 
+  def stubObligationsError(): StubMapping =
+    stub(
+      get(
+        urlEqualTo(
+          s"/enterprise/obligation-data/ZAD/$alcoholDutyReference/AD?status=O"
+        )
+      ),
+      aResponse()
+        .withStatus(INTERNAL_SERVER_ERROR)
+        .withBody("No obligation data found")
+    )
 }

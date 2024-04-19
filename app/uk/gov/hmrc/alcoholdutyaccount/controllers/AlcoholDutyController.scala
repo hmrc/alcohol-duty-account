@@ -16,13 +16,17 @@
 
 package uk.gov.hmrc.alcoholdutyaccount.controllers
 
+import cats.data.EitherT
+import cats.implicits._
 import play.api.libs.json.Json
 import play.api.mvc.{Action, AnyContent, ControllerComponents}
+import uk.gov.hmrc.alcoholdutyaccount.models.ReturnPeriod
 import uk.gov.hmrc.alcoholdutyaccount.service.AlcoholDutyService
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
+import uk.gov.hmrc.play.bootstrap.backend.http.ErrorResponse
 
 import javax.inject.{Inject, Singleton}
-import scala.concurrent.ExecutionContext
+import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton()
 class AlcoholDutyController @Inject() (
@@ -32,6 +36,22 @@ class AlcoholDutyController @Inject() (
     extends BackendController(cc)
     with BaseController {
 
+  def obligationDetails(alcoholDutyReference: String, periodKey: String): Action[AnyContent] = Action.async {
+    implicit request =>
+      (for {
+        returnPeriod      <-
+          EitherT(
+            Future.successful(
+              ReturnPeriod.fromPeriodKey(periodKey).leftMap(errorStr => ErrorResponse(BAD_REQUEST, errorStr))
+            )
+          )
+        obligationDetails <- alcoholDutyService.getObligations(alcoholDutyReference, returnPeriod)
+      } yield obligationDetails).fold(
+        error,
+        obligationDetails => Ok(Json.toJson(obligationDetails))
+      )
+  }
+
   def btaTileData(alcoholDutyReference: String): Action[AnyContent] = Action.async { implicit request =>
     alcoholDutyService
       .getAlcoholDutyCardData(alcoholDutyReference)
@@ -40,5 +60,4 @@ class AlcoholDutyController @Inject() (
         alcoholDutyCardData => Ok(Json.toJson(alcoholDutyCardData))
       )
   }
-
 }

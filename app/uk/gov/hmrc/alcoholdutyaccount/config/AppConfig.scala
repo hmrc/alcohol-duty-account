@@ -29,4 +29,6 @@ class AppConfig @Inject() (config: Configuration, servicesConfig: ServicesConfig
   val obligationDataApiUrl: String = servicesConfig.baseUrl("obligation")
   val financialDataApiUrl: String  = servicesConfig.baseUrl("financial")
 
+  val obligationIdType: String     = config.get[String]("microservice.obligations.idType")
+  val obligationRegimeType: String = config.get[String]("microservice.obligations.regimeType")
 }
