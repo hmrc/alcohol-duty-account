@@ -26,6 +26,7 @@ import uk.gov.hmrc.play.bootstrap.backend.http.ErrorResponse
 
 import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
+import scala.util.Try
 
 class ObligationDataConnector @Inject() (
   config: AppConfig,
@@ -35,15 +36,13 @@ class ObligationDataConnector @Inject() (
     with Logging {
   override protected val logger: Logger = Logger(this.getClass)
 
-  private val idType     = config.obligationIdType
-  private val regimeType = config.obligationRegimeType
-
   def getOpenObligationDetails(
     alcoholDutyReference: String
   )(implicit hc: HeaderCarrier): EitherT[Future, ErrorResponse, ObligationData] =
     EitherT {
 
-      val url = s"${config.obligationDataApiUrl}/enterprise/obligation-data/$idType/$alcoholDutyReference/$regimeType"
+      val url =
+        s"${config.obligationDataApiUrl}/enterprise/obligation-data/${config.idType}/$alcoholDutyReference/${config.regimeType}"
       logger.info(s"Fetching all open obligation data for appaId $alcoholDutyReference")
 
       val params = Seq("status" -> Open.value)
@@ -52,8 +51,10 @@ class ObligationDataConnector @Inject() (
         .GET[Either[UpstreamErrorResponse, HttpResponse]](url = url, queryParams = params)
         .map {
           case Right(response) =>
-            response.json
-              .asOpt[ObligationData]
+            Try {
+              response.json
+                .asOpt[ObligationData]
+            }.toOption.flatten
               .fold[Either[ErrorResponse, ObligationData]] {
                 logger.warn(s"Unable to parse obligation data for appaId $alcoholDutyReference")
                 Left(ErrorResponse(INTERNAL_SERVER_ERROR, "Unable to parse obligation data"))
@@ -69,7 +70,7 @@ class ObligationDataConnector @Inject() (
     error.statusCode match {
       case NOT_FOUND =>
         logger.info(s"No obligation data found for appaId $alcoholDutyReference")
-        ErrorResponse(NOT_FOUND, "")
+        ErrorResponse(NOT_FOUND, "Obligation data not found")
       case _         =>
         logger.warn(
           s"An error was returned while trying to fetch obligation data appaId $alcoholDutyReference: ${error.message}"

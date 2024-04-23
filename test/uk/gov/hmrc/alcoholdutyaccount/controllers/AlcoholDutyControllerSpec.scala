@@ -30,16 +30,35 @@ import play.api.http.Status.{BAD_REQUEST, INTERNAL_SERVER_ERROR, OK}
 import play.api.libs.json.Json
 import play.api.mvc.Result
 import play.api.test.Helpers.{contentAsJson, defaultAwaitTimeout, status}
+import uk.gov.hmrc.alcoholdutyaccount.common.AlcoholDutyTestData
 import uk.gov.hmrc.alcoholdutyaccount.models.AlcoholDutyCardData
 import uk.gov.hmrc.alcoholdutyaccount.models._
-import uk.gov.hmrc.alcoholdutyaccount.models.hods.{ObligationDetails, Open}
 import uk.gov.hmrc.alcoholdutyaccount.service.AlcoholDutyService
 import uk.gov.hmrc.play.bootstrap.backend.http.ErrorResponse
 
-import java.time.LocalDate
 import scala.concurrent.Future
 
 class AlcoholDutyControllerSpec extends AnyWordSpec with Matchers {
+
+  "GET /subscriptionSummary" should {
+    "return OK when is called with a valid alcoholDutyReference" in new SetUp {
+      alcoholDutyService.getSubscriptionSummary(eqTo(alcoholDutyReference))(*) returnsF approvedSubscriptionSummary
+
+      val result: Future[Result] = controller.subscriptionSummary(alcoholDutyReference)(FakeRequest())
+      status(result) mustBe OK
+      contentAsJson(result) mustBe Json.toJson(approvedSubscriptionSummary)
+    }
+
+    "return any error returned from the service" in new SetUp {
+      when(alcoholDutyService.getSubscriptionSummary(*)(*))
+        .thenReturn(EitherT.fromEither(Left(ErrorResponse(INTERNAL_SERVER_ERROR, "An error occurred"))))
+
+      val result: Future[Result] = controller.subscriptionSummary(alcoholDutyReference)(FakeRequest())
+      status(result) mustBe INTERNAL_SERVER_ERROR
+
+      verify(alcoholDutyService, times(1)).getSubscriptionSummary(*)(*)
+    }
+  }
 
   "GET /obligationDetails" should {
     "return OK when is called with a valid alcoholDutyReference" in new SetUp {
@@ -90,25 +109,12 @@ class AlcoholDutyControllerSpec extends AnyWordSpec with Matchers {
     }
   }
 
-  class SetUp {
+  class SetUp extends AlcoholDutyTestData {
     val alcoholDutyService: AlcoholDutyService = mock[AlcoholDutyService]
     val cc                                     = Helpers.stubControllerComponents()
     val controller                             = new AlcoholDutyController(alcoholDutyService, cc)
 
-    val alcoholDutyReference = "XMADP0000000200"
-    val periodKey            = "24AE"
-    val badPeriodKey         = "blah"
-    val returnPeriod         = ReturnPeriod(periodKey, 2024, 5)
-    val periodStart          = LocalDate.of(2023, 1, 1)
-    val periodEnd            = LocalDate.of(2023, 1, 31)
-    val obligationDetails    = ObligationDetails(
-      status = Open,
-      inboundCorrespondenceFromDate = periodStart,
-      inboundCorrespondenceToDate = periodEnd,
-      inboundCorrespondenceDateReceived = None,
-      inboundCorrespondenceDueDate = LocalDate.now().plusDays(1),
-      periodKey = periodKey
-    )
+    val badPeriodKey = "blah"
 
     val cardData = AlcoholDutyCardData(
       alcoholDutyReference = "testAlcoholDutyReference",

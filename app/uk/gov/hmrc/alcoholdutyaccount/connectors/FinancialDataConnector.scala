@@ -17,6 +17,7 @@
 package uk.gov.hmrc.alcoholdutyaccount.connectors
 
 import cats.data.OptionT
+import play.api.{Logger, Logging}
 import play.api.http.Status.OK
 import uk.gov.hmrc.alcoholdutyaccount.config.AppConfig
 import uk.gov.hmrc.alcoholdutyaccount.models.hods.FinancialTransactionDocument
@@ -27,15 +28,21 @@ import scala.concurrent.{ExecutionContext, Future}
 
 class FinancialDataConnector @Inject() (config: AppConfig, implicit val httpClient: HttpClient)(implicit
   ec: ExecutionContext
-) extends HttpReadsInstances {
+) extends HttpReadsInstances
+    with Logging {
+  override protected val logger: Logger = Logger(this.getClass)
 
   def getFinancialData(
     alcoholDutyReference: String
   )(implicit hc: HeaderCarrier): OptionT[Future, FinancialTransactionDocument] =
     OptionT {
       val url = s"${config.financialDataApiUrl}/enterprise/financial-data/ZAD/$alcoholDutyReference/AD"
+
+      logger.info(s"Fetching financial transaction document for appaId $alcoholDutyReference")
+
       httpClient.GET[Either[UpstreamErrorResponse, HttpResponse]](url = url).map {
-        case Right(response) if response.status == OK => response.json.asOpt[FinancialTransactionDocument]
+        case Right(response) if response.status == OK =>
+          response.json.asOpt[FinancialTransactionDocument]
         case _                                        => None
       }
     }

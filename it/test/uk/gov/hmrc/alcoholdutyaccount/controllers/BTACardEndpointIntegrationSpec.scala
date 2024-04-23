@@ -18,11 +18,10 @@ package uk.gov.hmrc.alcoholdutyaccount.controllers
 
 import play.api.libs.json.Json
 import play.api.test.FakeRequest
-import uk.gov.hmrc.alcoholdutyaccount.base.ISpecBase
+import uk.gov.hmrc.alcoholdutyaccount.base.{FinancialDataStubs, ISpecBase, ObligationDataStubs, SubscriptionSummaryStubs}
 import uk.gov.hmrc.alcoholdutyaccount.models.{AlcoholDutyCardData, Approved, Balance, InsolventCardData, Payments, Returns}
 
-class BTACardEndpointIntegrationSpec
-  extends ISpecBase {
+class BTACardEndpointIntegrationSpec extends ISpecBase with FinancialDataStubs with ObligationDataStubs with SubscriptionSummaryStubs {
 
   "the service BTA Card endpoint should" should {
     "respond with 200 status" in {

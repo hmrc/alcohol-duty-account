@@ -23,8 +23,6 @@ import java.time.LocalDate
 
 trait AlcoholDutyTestData {
 
-  val testInternalId: String = "internalId"
-
   val approvedSubscriptionSummary = SubscriptionSummary(
     typeOfAlcoholApprovedForList = Set(Beer, CiderOrPerry, WineAndOtherFermentedProduct, Spirits),
     smallCiderFlag = false,
@@ -71,7 +69,7 @@ trait AlcoholDutyTestData {
     inboundCorrespondenceToDate = LocalDate.of(2024, 1, 1),
     inboundCorrespondenceDateReceived = None,
     inboundCorrespondenceDueDate = LocalDate.of(2024, 1, 1),
-    periodKey = "24AE"
+    periodKey = periodKey
   )
 
   val obligationDetails2 = obligationDetails.copy(periodKey = periodKey2)

@@ -36,6 +36,25 @@ import scala.util.Success
 
 class AlcoholDutyServiceSpec extends SpecBase {
   "AlcoholDutyService" - {
+    "getSubscriptionSummary should" - {
+      "return summary data from the connector when successful" in new SetUp {
+        when(subscriptionSummaryConnector.getSubscriptionSummary(alcoholDutyReference))
+          .thenReturn(EitherT.fromEither(Right(approvedSubscriptionSummary)))
+        whenReady(service.getSubscriptionSummary(alcoholDutyReference).value) {
+          _ mustBe Right(approvedSubscriptionSummary)
+        }
+      }
+
+      "return an error if the connector is unable to obtain obligation data or an error occurred" in new SetUp {
+        val error = ErrorResponse(INTERNAL_SERVER_ERROR, "An error occurred")
+        when(subscriptionSummaryConnector.getSubscriptionSummary(alcoholDutyReference))
+          .thenReturn(EitherT.fromEither(Left(error)))
+        whenReady(service.getSubscriptionSummary(alcoholDutyReference).value) {
+          _ mustBe Left(error)
+        }
+      }
+    }
+
     "getObligations should" - {
       "return obligation data from the connector where one open return matches the period key" in new SetUp {
         when(obligationDataConnector.getOpenObligationDetails(alcoholDutyReference))
@@ -49,7 +68,7 @@ class AlcoholDutyServiceSpec extends SpecBase {
         when(obligationDataConnector.getOpenObligationDetails(alcoholDutyReference))
           .thenReturn(EitherT.fromEither(Right(obligationDataMultipleOpen)))
         whenReady(service.getObligations(alcoholDutyReference, returnPeriod4).value) {
-          _ mustBe Left(ErrorResponse(NOT_FOUND, ""))
+          _ mustBe Left(ErrorResponse(NOT_FOUND, "Obligation details not found for period key 24AH"))
         }
       }
 
@@ -184,7 +203,7 @@ class AlcoholDutyServiceSpec extends SpecBase {
         when(obligationDataConnector.getOpenObligationDetails(*)(*))
           .thenReturn(EitherT.fromEither(Left(ErrorResponse(NOT_FOUND, ""))))
 
-        val result = service.getReturnDetails("testAlcoholDutyReference")
+        val result = service.getReturnDetails(alcoholDutyReference)
         result onComplete {
           case Success(value) => value mustBe None
           case _              => fail("Expected a successful future")
@@ -196,7 +215,7 @@ class AlcoholDutyServiceSpec extends SpecBase {
         when(obligationDataConnector.getOpenObligationDetails(*)(*))
           .thenReturn(EitherT.fromEither(Right(obligationDataOneDue)))
 
-        service.getReturnDetails("testAlcoholDutyReference").onComplete { result =>
+        service.getReturnDetails(alcoholDutyReference).onComplete { result =>
           result mustBe Success(Some(Returns()))
         }
       }
@@ -207,7 +226,7 @@ class AlcoholDutyServiceSpec extends SpecBase {
         when(financialDataConnector.getFinancialData(*)(*))
           .thenReturn(OptionT.none[Future, FinancialTransactionDocument])
 
-        val result = service.getPaymentInformation("testAlcoholDutyReference")
+        val result = service.getPaymentInformation(alcoholDutyReference)
         result onComplete {
           case Success(value) => value mustBe None
           case _              => fail("Expected a successful future")
@@ -217,7 +236,7 @@ class AlcoholDutyServiceSpec extends SpecBase {
       "return a empty Payments object if the financialDataConnector returns an empty Document" in new SetUp {
         financialDataConnector.getFinancialData(*)(*) returnsF emptyFinancialDocument
 
-        service.getPaymentInformation("testAlcoholDutyReference").onComplete { result =>
+        service.getPaymentInformation(alcoholDutyReference).onComplete { result =>
           result mustBe Success(Some(Payments()))
         }
       }
@@ -254,10 +273,10 @@ class AlcoholDutyServiceSpec extends SpecBase {
 
         financialDataConnector.getFinancialData(*)(*) returnsF emptyFinancialDocument
 
-        whenReady(service.getAlcoholDutyCardData("testAlcoholDutyReference").value) { result =>
+        whenReady(service.getAlcoholDutyCardData(alcoholDutyReference).value) { result =>
           result mustBe Right(
             AlcoholDutyCardData(
-              "testAlcoholDutyReference",
+              alcoholDutyReference,
               Approved,
               false,
               false,
@@ -282,9 +301,9 @@ class AlcoholDutyServiceSpec extends SpecBase {
 
         financialDataConnector.getFinancialData(*)(*) returnsF emptyFinancialDocument
 
-        whenReady(service.getAlcoholDutyCardData("testAlcoholDutyReference").value) { result =>
+        whenReady(service.getAlcoholDutyCardData(alcoholDutyReference).value) { result =>
           result mustBe Right(
-            AlcoholDutyCardData("testAlcoholDutyReference", Approved, true, false, Returns(), Payments())
+            AlcoholDutyCardData(alcoholDutyReference, Approved, true, false, Returns(), Payments())
           )
         }
       }
@@ -304,9 +323,9 @@ class AlcoholDutyServiceSpec extends SpecBase {
 
         financialDataConnector.getFinancialData(*)(*) returns OptionT.none[Future, FinancialTransactionDocument]
 
-        whenReady(service.getAlcoholDutyCardData("testAlcoholDutyReference").value) { result =>
+        whenReady(service.getAlcoholDutyCardData(alcoholDutyReference).value) { result =>
           result mustBe Right(
-            AlcoholDutyCardData("testAlcoholDutyReference", Approved, false, true, Returns(), Payments())
+            AlcoholDutyCardData(alcoholDutyReference, Approved, false, true, Returns(), Payments())
           )
         }
       }
@@ -320,21 +339,21 @@ class AlcoholDutyServiceSpec extends SpecBase {
         )
         subscriptionSummaryConnector.getSubscriptionSummary(*)(*) returnsF subscriptionSummary
 
-        whenReady(service.getAlcoholDutyCardData("testAlcoholDutyReference").value) { result =>
+        whenReady(service.getAlcoholDutyCardData(alcoholDutyReference).value) { result =>
           result mustBe Right(
-            InsolventCardData("testAlcoholDutyReference")
+            InsolventCardData(alcoholDutyReference)
           )
         }
       }
 
       "return an error if the subscription summary return an error" in new SetUp {
+        val error = ErrorResponse(INTERNAL_SERVER_ERROR, "An error occurred")
 
-        subscriptionSummaryConnector.getSubscriptionSummary(*)(*) returns OptionT.none[Future, SubscriptionSummary]
+        when(subscriptionSummaryConnector.getSubscriptionSummary(alcoholDutyReference))
+          .thenReturn(EitherT.fromEither(Left(error)))
 
-        whenReady(service.getAlcoholDutyCardData("testAlcoholDutyReference").value) { result =>
-          result mustBe Left(
-            ErrorResponse(NOT_FOUND, "Subscription Summary not found")
-          )
+        whenReady(service.getAlcoholDutyCardData(alcoholDutyReference).value) { result =>
+          result mustBe Left(error)
         }
       }
 
@@ -348,7 +367,7 @@ class AlcoholDutyServiceSpec extends SpecBase {
           )
           subscriptionSummaryConnector.getSubscriptionSummary(*)(*) returnsF subscriptionSummary
 
-          whenReady(service.getAlcoholDutyCardData("testAlcoholDutyReference").value) { result =>
+          whenReady(service.getAlcoholDutyCardData(alcoholDutyReference).value) { result =>
             result mustBe Left(
               ErrorResponse(NOT_IMPLEMENTED, "Approval Status not yet supported")
             )

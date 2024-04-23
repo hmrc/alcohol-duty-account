@@ -36,6 +36,15 @@ class AlcoholDutyController @Inject() (
     extends BackendController(cc)
     with BaseController {
 
+  def subscriptionSummary(alcoholDutyReference: String): Action[AnyContent] = Action.async { implicit request =>
+    alcoholDutyService
+      .getSubscriptionSummary(alcoholDutyReference)
+      .fold(
+        error,
+        obligationDetails => Ok(Json.toJson(obligationDetails))
+      )
+  }
+
   def obligationDetails(alcoholDutyReference: String, periodKey: String): Action[AnyContent] = Action.async {
     implicit request =>
       (for {

@@ -16,37 +16,20 @@
 
 package uk.gov.hmrc.alcoholdutyaccount.base
 
-import com.github.tomakehurst.wiremock.client.WireMock.{aResponse, get, urlEqualTo}
-import com.github.tomakehurst.wiremock.stubbing.StubMapping
 import play.api.http.Status.{NOT_FOUND, OK}
 import play.api.libs.json.Json
-import uk.gov.hmrc.alcoholdutyaccount.base.WireMockHelper.stub
+import uk.gov.hmrc.alcoholdutyaccount.common.{AlcoholDutyTestData, WireMockHelper}
+import uk.gov.hmrc.alcoholdutyaccount.config.AppConfig
 import uk.gov.hmrc.alcoholdutyaccount.models.hods.FinancialTransactionDocument
 
-trait FinancialDataStubs { self: WireMockStubs =>
+trait FinancialDataStubs  extends WireMockHelper with AlcoholDutyTestData { ISpecBase =>
+  val config: AppConfig
 
-  def stubGetFinancialData(financialTransactionDocument: FinancialTransactionDocument): StubMapping =
-    stub(
-      get(
-        urlEqualTo(
-          s"/enterprise/financial-data/ZAD/$alcoholDutyReference/AD"
-        )
-      ),
-      aResponse()
-        .withStatus(OK)
-        .withBody(Json.toJson(financialTransactionDocument).toString())
-    )
+  private val url = s"${config.financialDataApiUrl}/enterprise/financial-data/${config.idType}/$alcoholDutyReference/${config.regimeType}"
 
-  def stubFinancialDataNotFound(): StubMapping =
-    stub(
-      get(
-        urlEqualTo(
-          s"/enterprise/financial-data/ZAD/$alcoholDutyReference/AD"
-        )
-      ),
-      aResponse()
-        .withStatus(NOT_FOUND)
-        .withBody("No obligation data found")
-    )
+  def stubGetFinancialData(financialTransactionDocument: FinancialTransactionDocument): Unit =
+    stubGet(url, OK, Json.toJson(financialTransactionDocument).toString())
 
+  def stubFinancialDataNotFound(): Unit =
+    stubGet(url, NOT_FOUND, "No financial data found")
 }

@@ -16,67 +16,55 @@
 
 package uk.gov.hmrc.alcoholdutyaccount.connectors
 
-import org.mockito.ArgumentMatchersSugar.*
-import uk.gov.hmrc.alcoholdutyaccount.base.SpecBase
-import uk.gov.hmrc.alcoholdutyaccount.config.AppConfig
-import org.mockito.MockitoSugar.mock
-import org.mockito.cats.IdiomaticMockitoCats.StubbingOpsCats
-import org.scalatest.matchers.should.Matchers.convertToAnyShouldWrapper
-import uk.gov.hmrc.alcoholdutyaccount.models._
-import uk.gov.hmrc.alcoholdutyaccount.models.hods._
-import uk.gov.hmrc.http.{HeaderCarrier, HttpClient, HttpResponse, UpstreamErrorResponse}
+import org.scalatest.concurrent.ScalaFutures
+import play.api.http.Status.{BAD_REQUEST, INTERNAL_SERVER_ERROR, NOT_FOUND, OK}
+import play.api.libs.json.Json
+import uk.gov.hmrc.alcoholdutyaccount.base.{ConnectorTestHelpers, SpecBase}
+import uk.gov.hmrc.alcoholdutyaccount.common.AlcoholDutyTestData
+import uk.gov.hmrc.play.bootstrap.backend.http.ErrorResponse
 
-import scala.concurrent.ExecutionContext
+import scala.concurrent.ExecutionContext.Implicits.global
 
-class SubscriptionSummaryConnectorSpec extends SpecBase {
-
-  implicit val ec: ExecutionContext = ExecutionContext.global
-  implicit val hc: HeaderCarrier    = HeaderCarrier()
-
-  val mockConfig: AppConfig                    = mock[AppConfig]
-  val httpClient: HttpClient                   = mock[HttpClient]
-  val connector                                = new SubscriptionSummaryConnector(config = mockConfig, httpClient = httpClient)
-  val subscriptionSummary: SubscriptionSummary = SubscriptionSummary(
-    typeOfAlcoholApprovedForList = Set(
-      Beer,
-      CiderOrPerry,
-      WineAndOtherFermentedProduct,
-      Spirits
-    ),
-    smallCiderFlag = false,
-    approvalStatus = hods.Approved,
-    insolvencyFlag = false
-  )
+class SubscriptionSummaryConnectorSpec extends SpecBase with ScalaFutures with ConnectorTestHelpers {
+  protected val endpointName = "subscription"
 
   "SubscriptionSummaryConnector" - {
-    "successfully retrieves a subscription summary" in {
-
-      val json = """
-          |{
-          |  "typeOfAlcoholApprovedForList": ["01", "02", "03", "04"],
-          |  "smallCiderFlag": "0",
-          |  "approvalStatus": "01",
-          |  "insolvencyFlag": "0"
-          |}
-          |""".stripMargin
-
-      httpClient.GET[Either[UpstreamErrorResponse, HttpResponse]](*, *, *)(*, *, *) returnsF Right(
-        HttpResponse(200, json)
-      )
-
-      whenReady(connector.getSubscriptionSummary("ID001").value) { result =>
-        result shouldBe Some(subscriptionSummary)
+    "successfully get subscription summary data" in new SetUp {
+      stubGet(url, OK, Json.toJson(approvedSubscriptionSummary).toString)
+      whenReady(connector.getSubscriptionSummary(alcoholDutyReference).value) { result =>
+        result mustBe Right(approvedSubscriptionSummary)
+        verifyGet(url)
       }
     }
 
-    "return None if the response has a status different from 200" in {
-      httpClient.GET[Either[UpstreamErrorResponse, HttpResponse]](*, *, *)(*, *, *) returnsF Right(
-        HttpResponse(404, "{}")
-      )
-
-      whenReady(connector.getSubscriptionSummary("ID001").value) { result =>
-        result shouldBe None
+    "return an INTERNAL_SERVER_ERROR if the data retrieved cannot be parsed" in new SetUp {
+      stubGet(url, OK, "blah")
+      whenReady(connector.getSubscriptionSummary(alcoholDutyReference).value) { result =>
+        result mustBe Left(ErrorResponse(INTERNAL_SERVER_ERROR, "Unable to parse subscription summary"))
+        verifyGet(url)
       }
     }
+
+    "return not found if subscription summary data cannot be found" in new SetUp {
+      stubGet(url, NOT_FOUND, "")
+      whenReady(connector.getSubscriptionSummary(alcoholDutyReference).value) { result =>
+        result mustBe Left(ErrorResponse(NOT_FOUND, "Subscription summary not found"))
+        verifyGet(url)
+      }
+    }
+
+    "return an INTERNAL_SERVER_ERROR error if an error other than NOT_FOUND when fetching obligation data" in new SetUp {
+      stubGet(url, BAD_REQUEST, "")
+      whenReady(connector.getSubscriptionSummary(alcoholDutyReference).value) { result =>
+        result mustBe Left(ErrorResponse(INTERNAL_SERVER_ERROR, "An error occurred"))
+        verifyGet(url)
+      }
+    }
+  }
+
+  class SetUp extends ConnectorFixture with AlcoholDutyTestData {
+    val connector = new SubscriptionSummaryConnector(config = config, httpClient = httpClient)
+    val url       =
+      s"${config.subscriptionApiUrl}/subscription/${config.regimeType}/${config.idType}/$alcoholDutyReference/summary"
   }
 }
