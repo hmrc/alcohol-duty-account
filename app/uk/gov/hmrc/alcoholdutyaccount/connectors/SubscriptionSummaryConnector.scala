@@ -27,6 +27,7 @@ import uk.gov.hmrc.play.bootstrap.backend.http.ErrorResponse
 import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Try
+
 class SubscriptionSummaryConnector @Inject() (
   config: AppConfig,
   implicit val httpClient: HttpClient
