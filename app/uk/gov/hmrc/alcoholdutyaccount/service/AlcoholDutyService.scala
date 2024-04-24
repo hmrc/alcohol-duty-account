@@ -20,8 +20,9 @@ import cats.data.EitherT
 import cats.implicits._
 import play.api.http.Status.{NOT_FOUND, NOT_IMPLEMENTED}
 import uk.gov.hmrc.alcoholdutyaccount.connectors.{FinancialDataConnector, ObligationDataConnector, SubscriptionSummaryConnector}
-import uk.gov.hmrc.alcoholdutyaccount.models.{AlcoholDutyCardData, Approved, Balance, InsolventCardData, Payments, ReturnPeriod, Returns, hods}
-import uk.gov.hmrc.alcoholdutyaccount.models.hods.{FinancialTransactionDocument, ObligationData, ObligationDetails, SubscriptionSummary}
+import uk.gov.hmrc.alcoholdutyaccount.models.ApprovalStatus.Approved
+import uk.gov.hmrc.alcoholdutyaccount.models.{AdrObligationData, AdrSubscriptionSummary, AlcoholDutyCardData, Balance, InsolventCardData, Payments, ReturnPeriod, Returns, hods}
+import uk.gov.hmrc.alcoholdutyaccount.models.hods.{FinancialTransactionDocument, ObligationData, ObligationDetails}
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.bootstrap.backend.http.ErrorResponse
 
@@ -35,23 +36,31 @@ class AlcoholDutyService @Inject() (
   obligationDataConnector: ObligationDataConnector,
   financialDataConnector: FinancialDataConnector
 )(implicit ec: ExecutionContext) {
+
   def getSubscriptionSummary(
     alcoholDutyReference: String
-  )(implicit hc: HeaderCarrier): EitherT[Future, ErrorResponse, SubscriptionSummary] =
-    subscriptionSummaryConnector.getSubscriptionSummary(alcoholDutyReference)
+  )(implicit hc: HeaderCarrier): EitherT[Future, ErrorResponse, AdrSubscriptionSummary] = EitherT {
+    subscriptionSummaryConnector
+      .getSubscriptionSummary(alcoholDutyReference)
+      .foldF(
+        errorResponse => Future.successful(Left(errorResponse)),
+        subscriptionSummary => Future.successful(Right(AdrSubscriptionSummary(subscriptionSummary)))
+      )
+  }
 
   def getObligations(
     alcoholDutyReference: String,
     returnPeriod: ReturnPeriod
-  )(implicit hc: HeaderCarrier): EitherT[Future, ErrorResponse, ObligationDetails] =
+  )(implicit hc: HeaderCarrier): EitherT[Future, ErrorResponse, AdrObligationData] =
     obligationDataConnector
       .getOpenObligationDetails(alcoholDutyReference)
       .map(findObligationDetailsForPeriod(_, returnPeriod))
       .transform {
-        case l @ Left(_)                    => l.asInstanceOf[Either[ErrorResponse, ObligationDetails]]
+        case l @ Left(_)                    => l.asInstanceOf[Either[ErrorResponse, AdrObligationData]]
         case Right(None)                    =>
           Left(ErrorResponse(NOT_FOUND, s"Obligation details not found for period key ${returnPeriod.periodKey}"))
-        case Right(Some(obligationDetails)) => Right[ErrorResponse, ObligationDetails](obligationDetails)
+        case Right(Some(obligationDetails)) =>
+          Right[ErrorResponse, AdrObligationData](AdrObligationData(obligationDetails))
       }
 
   private def findObligationDetailsForPeriod(
@@ -63,7 +72,7 @@ class AlcoholDutyService @Inject() (
   def getAlcoholDutyCardData(
     alcoholDutyReference: String
   )(implicit hc: HeaderCarrier): EitherT[Future, ErrorResponse, AlcoholDutyCardData] =
-    getSubscriptionSummary(alcoholDutyReference).flatMapF {
+    subscriptionSummaryConnector.getSubscriptionSummary(alcoholDutyReference).flatMapF {
       case subscriptionSummary if subscriptionSummary.insolvencyFlag                  =>
         Future.successful(Right(InsolventCardData(alcoholDutyReference)))
       case subscriptionSummary if subscriptionSummary.approvalStatus == hods.Approved =>

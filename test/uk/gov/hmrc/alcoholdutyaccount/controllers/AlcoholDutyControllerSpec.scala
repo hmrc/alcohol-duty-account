@@ -32,6 +32,7 @@ import play.api.mvc.Result
 import play.api.test.Helpers.{contentAsJson, defaultAwaitTimeout, status}
 import uk.gov.hmrc.alcoholdutyaccount.common.AlcoholDutyTestData
 import uk.gov.hmrc.alcoholdutyaccount.models.AlcoholDutyCardData
+import uk.gov.hmrc.alcoholdutyaccount.models.ApprovalStatus.Approved
 import uk.gov.hmrc.alcoholdutyaccount.models._
 import uk.gov.hmrc.alcoholdutyaccount.service.AlcoholDutyService
 import uk.gov.hmrc.play.bootstrap.backend.http.ErrorResponse
@@ -42,11 +43,11 @@ class AlcoholDutyControllerSpec extends AnyWordSpec with Matchers {
 
   "GET /subscriptionSummary" should {
     "return OK when is called with a valid alcoholDutyReference" in new SetUp {
-      alcoholDutyService.getSubscriptionSummary(eqTo(alcoholDutyReference))(*) returnsF approvedSubscriptionSummary
+      alcoholDutyService.getSubscriptionSummary(eqTo(alcoholDutyReference))(*) returnsF approvedAdrSubscriptionSummary
 
       val result: Future[Result] = controller.subscriptionSummary(alcoholDutyReference)(FakeRequest())
       status(result) mustBe OK
-      contentAsJson(result) mustBe Json.toJson(approvedSubscriptionSummary)
+      contentAsJson(result) mustBe Json.toJson(approvedAdrSubscriptionSummary)
     }
 
     "return any error returned from the service" in new SetUp {
@@ -62,15 +63,15 @@ class AlcoholDutyControllerSpec extends AnyWordSpec with Matchers {
 
   "GET /obligationDetails" should {
     "return OK when is called with a valid alcoholDutyReference" in new SetUp {
-      alcoholDutyService.getObligations(eqTo(alcoholDutyReference), eqTo(returnPeriod))(*) returnsF obligationDetails
+      alcoholDutyService.getObligations(eqTo(alcoholDutyReference), eqTo(returnPeriod))(*) returnsF adrObligationDetails
 
       val result: Future[Result] = controller.obligationDetails(alcoholDutyReference, periodKey)(FakeRequest())
       status(result) mustBe OK
-      contentAsJson(result) mustBe Json.toJson(obligationDetails)
+      contentAsJson(result) mustBe Json.toJson(adrObligationDetails)
     }
 
     "return BAD_REQUEST when periodKey is invalid" in new SetUp {
-      alcoholDutyService.getObligations(*, *)(*) returnsF obligationDetails
+      alcoholDutyService.getObligations(*, *)(*) returnsF adrObligationDetails
 
       val result: Future[Result] = controller.obligationDetails(alcoholDutyReference, badPeriodKey)(FakeRequest())
       status(result) mustBe BAD_REQUEST

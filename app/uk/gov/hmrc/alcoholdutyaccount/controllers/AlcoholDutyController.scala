@@ -41,7 +41,7 @@ class AlcoholDutyController @Inject() (
       .getSubscriptionSummary(alcoholDutyReference)
       .fold(
         error,
-        obligationDetails => Ok(Json.toJson(obligationDetails))
+        subscriptionSummary => Ok(Json.toJson(subscriptionSummary))
       )
   }
 

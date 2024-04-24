@@ -16,7 +16,7 @@
 
 package uk.gov.hmrc.alcoholdutyaccount.common
 
-import uk.gov.hmrc.alcoholdutyaccount.models.ReturnPeriod
+import uk.gov.hmrc.alcoholdutyaccount.models.{AdrObligationData, AdrSubscriptionSummary, AlcoholRegime, ApprovalStatus, ObligationStatus, ReturnPeriod}
 import uk.gov.hmrc.alcoholdutyaccount.models.hods._
 
 import java.time.LocalDate
@@ -129,4 +129,16 @@ trait AlcoholDutyTestData {
     )
   )
 
+  val approvedAdrSubscriptionSummary = new AdrSubscriptionSummary(
+    approvalStatus = ApprovalStatus.Approved,
+    regimes = Set(
+      AlcoholRegime.Beer,
+      AlcoholRegime.Wine,
+      AlcoholRegime.Cider,
+      AlcoholRegime.Spirits,
+      AlcoholRegime.OtherFermentedProduct
+    )
+  )
+
+  val adrObligationDetails = new AdrObligationData(ObligationStatus.Open)
 }

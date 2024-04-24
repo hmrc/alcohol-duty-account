@@ -37,7 +37,7 @@ class ObligationDetailsIntegrationSpec extends ISpecBase {
       )
 
       status(response) shouldBe OK
-      contentAsJson(response) shouldBe Json.toJson(obligationDetails)
+      contentAsJson(response) shouldBe Json.toJson(adrObligationDetails)
 
       verifyGetWithParameters(url, expectedQueryParams)
     }

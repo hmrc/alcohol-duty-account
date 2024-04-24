@@ -36,7 +36,7 @@ class SubscriptionSummaryIntegrationSpec extends ISpecBase with ConnectorTestHel
       )
 
       status(response) shouldBe OK
-      contentAsJson(response) shouldBe Json.toJson(approvedSubscriptionSummary)
+      contentAsJson(response) shouldBe Json.toJson(approvedAdrSubscriptionSummary)
 
       verifyGet(url)
     }

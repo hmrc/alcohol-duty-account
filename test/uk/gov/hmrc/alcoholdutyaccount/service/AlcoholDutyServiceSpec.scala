@@ -25,6 +25,7 @@ import play.api.http.Status.{INTERNAL_SERVER_ERROR, NOT_FOUND, NOT_IMPLEMENTED}
 import uk.gov.hmrc.alcoholdutyaccount.base.SpecBase
 import uk.gov.hmrc.alcoholdutyaccount.common.AlcoholDutyTestData
 import uk.gov.hmrc.alcoholdutyaccount.connectors.{FinancialDataConnector, ObligationDataConnector, SubscriptionSummaryConnector}
+import uk.gov.hmrc.alcoholdutyaccount.models.ApprovalStatus.Approved
 import uk.gov.hmrc.alcoholdutyaccount.models._
 import uk.gov.hmrc.alcoholdutyaccount.models.hods.{Beer, FinancialTransaction, FinancialTransactionDocument, FinancialTransactionItem, Obligation, ObligationData, ObligationDetails, Open, SubscriptionSummary}
 import uk.gov.hmrc.http.HeaderCarrier
@@ -41,7 +42,7 @@ class AlcoholDutyServiceSpec extends SpecBase {
         when(subscriptionSummaryConnector.getSubscriptionSummary(alcoholDutyReference))
           .thenReturn(EitherT.fromEither(Right(approvedSubscriptionSummary)))
         whenReady(service.getSubscriptionSummary(alcoholDutyReference).value) {
-          _ mustBe Right(approvedSubscriptionSummary)
+          _ mustBe Right(approvedAdrSubscriptionSummary)
         }
       }
 
@@ -60,7 +61,7 @@ class AlcoholDutyServiceSpec extends SpecBase {
         when(obligationDataConnector.getOpenObligationDetails(alcoholDutyReference))
           .thenReturn(EitherT.fromEither(Right(obligationDataMultipleOpen)))
         whenReady(service.getObligations(alcoholDutyReference, returnPeriod).value) {
-          _ mustBe Right(obligationDetails)
+          _ mustBe Right(adrObligationDetails)
         }
       }
 
