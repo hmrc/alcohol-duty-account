@@ -65,6 +65,14 @@ class AlcoholDutyServiceSpec extends SpecBase {
         }
       }
 
+      "return obligation data from the connector where one fulfilled return matches the period key" in new SetUp {
+        when(obligationDataConnector.getOpenObligationDetails(alcoholDutyReference))
+          .thenReturn(EitherT.fromEither(Right(obligationDataSingleFulfilled)))
+        whenReady(service.getObligations(alcoholDutyReference, returnPeriod).value) {
+          _ mustBe Right(adrObligationDetailsFulfilled)
+        }
+      }
+
       "return NOT_FOUND where no return matches the period key" in new SetUp {
         when(obligationDataConnector.getOpenObligationDetails(alcoholDutyReference))
           .thenReturn(EitherT.fromEither(Right(obligationDataMultipleOpen)))

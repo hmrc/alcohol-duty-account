@@ -16,6 +16,7 @@
 
 package uk.gov.hmrc.alcoholdutyaccount.models
 
+import play.api.libs.json.{JsResultException, JsString, Json}
 import uk.gov.hmrc.alcoholdutyaccount.base.SpecBase
 
 import java.time.YearMonth
@@ -86,6 +87,29 @@ class ReturnPeriodSpec extends SpecBase {
           ReturnPeriod.fromPeriodKey("28AC") mustBe Right(ReturnPeriod("28AC", 2028, 3))
         }
       }
+    }
+
+    "return the correct Json when parsed" in {
+      val periodKey    = "24AA"
+      val returnPeriod = ReturnPeriod.apply(periodKey, 2024, 1)
+
+      val expectedJson = JsString(periodKey)
+
+      Json.toJson(returnPeriod) mustBe expectedJson
+    }
+
+    "return a ReturnPeriod from Json" in {
+      val periodKey     = "24AA"
+      val expectedValue = ReturnPeriod.apply(periodKey, 2024, 1)
+
+      val result = JsString(periodKey).asOpt[ReturnPeriod]
+
+      result mustBe Some(expectedValue)
+    }
+
+    "throw an IllegalArgumentException" in {
+      val periodKey = "blabla"
+      an[IllegalArgumentException] should be thrownBy JsString(periodKey).as[ReturnPeriod]
     }
   }
 }

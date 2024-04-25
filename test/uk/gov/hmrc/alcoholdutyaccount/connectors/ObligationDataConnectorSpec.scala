@@ -38,6 +38,14 @@ class ObligationDataConnectorSpec extends SpecBase with ScalaFutures with Connec
       }
     }
 
+    "successfully get fulfilled obligation data" in new SetUp {
+      stubGetWithParameters(url, expectedQueryParams, OK, Json.toJson(obligationDataSingleFulfilled).toString)
+      whenReady(connector.getOpenObligationDetails(alcoholDutyReference).value) { result =>
+        result mustBe Right(obligationDataSingleFulfilled)
+        verifyGetWithParameters(url, expectedQueryParams)
+      }
+    }
+
     "return an INTERNAL_SERVER_ERROR if the data retrieved cannot be parsed" in new SetUp {
       stubGetWithParameters(url, expectedQueryParams, OK, "blah")
       whenReady(connector.getOpenObligationDetails(alcoholDutyReference).value) { result =>

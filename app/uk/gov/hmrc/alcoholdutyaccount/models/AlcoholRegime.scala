@@ -28,6 +28,4 @@ object AlcoholRegime extends Enum[AlcoholRegime] with PlayJsonEnum[AlcoholRegime
   case object Wine extends AlcoholRegime
   case object Spirits extends AlcoholRegime
   case object OtherFermentedProduct extends AlcoholRegime
-
-  override def toString: String = "alcoholRegime"
 }

@@ -94,6 +94,23 @@ trait AlcoholDutyTestData {
     )
   )
 
+  val fulfilledObligationDetails = ObligationDetails(
+    status = Fulfilled,
+    inboundCorrespondenceFromDate = LocalDate.of(2024, 1, 1),
+    inboundCorrespondenceToDate = LocalDate.of(2024, 1, 1),
+    inboundCorrespondenceDateReceived = None,
+    inboundCorrespondenceDueDate = LocalDate.of(2024, 1, 1),
+    periodKey = periodKey
+  )
+
+  val obligationDataSingleFulfilled = ObligationData(
+    obligations = Seq(
+      Obligation(
+        obligationDetails = Seq(fulfilledObligationDetails)
+      )
+    )
+  )
+
   val emptyFinancialDocument = FinancialTransactionDocument(financialTransactions = Seq.empty)
 
   val financialDocument = FinancialTransactionDocument(
@@ -140,5 +157,6 @@ trait AlcoholDutyTestData {
     )
   )
 
-  val adrObligationDetails = new AdrObligationData(ObligationStatus.Open)
+  val adrObligationDetails          = new AdrObligationData(ObligationStatus.Open)
+  val adrObligationDetailsFulfilled = new AdrObligationData(ObligationStatus.Fulfilled)
 }
