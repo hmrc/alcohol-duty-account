@@ -16,7 +16,7 @@
 
 package uk.gov.hmrc.alcoholdutyaccount.models
 
-import play.api.libs.json.{JsResultException, JsString, Json}
+import play.api.libs.json.{JsString, Json}
 import uk.gov.hmrc.alcoholdutyaccount.base.SpecBase
 
 import java.time.YearMonth

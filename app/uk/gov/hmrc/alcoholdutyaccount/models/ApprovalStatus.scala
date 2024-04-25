@@ -17,25 +17,6 @@
 package uk.gov.hmrc.alcoholdutyaccount.models
 
 import enumeratum.{Enum, EnumEntry, PlayJsonEnum}
-// import play.api.libs.json.{JsString, Writes}
-
-//sealed trait ApprovalStatus
-//
-//case object Approved extends ApprovalStatus
-//case object SmallCiderProducer extends ApprovalStatus
-//case object Insolvent extends ApprovalStatus
-//case object DeRegistered extends ApprovalStatus
-//case object Revoked extends ApprovalStatus
-//
-//object ApprovalStatus {
-//  implicit val writes: Writes[ApprovalStatus] = {
-//    case Approved           => JsString("Approved")
-//    case SmallCiderProducer => JsString("SmallCiderProducer")
-//    case Insolvent          => JsString("Insolvent")
-//    case DeRegistered       => JsString("DeRegistered")
-//    case Revoked            => JsString("Revoked")
-//  }
-//}
 
 sealed trait ApprovalStatus extends EnumEntry
 object ApprovalStatus extends Enum[ApprovalStatus] with PlayJsonEnum[ApprovalStatus] {
