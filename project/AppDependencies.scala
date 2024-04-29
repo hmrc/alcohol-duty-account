@@ -2,7 +2,7 @@ import sbt._
 
 object AppDependencies {
 
-  private val bootstrapVersion = "8.4.0"
+  private val bootstrapVersion = "8.5.0"
 
   val compile = Seq(
     "org.typelevel"           %% "cats-core"                  % "2.10.0",
