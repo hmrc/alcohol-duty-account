@@ -44,15 +44,15 @@ object ObligationStatus {
     json.validate[String] match {
       case JsSuccess(value, _) =>
         value match {
-          case "O" => JsSuccess(Open)
-          case "F" => JsSuccess(Fulfilled)
-          case s   => JsError(s"$s is not a valid ObligationStatus")
+          case Open.value      => JsSuccess(Open)
+          case Fulfilled.value => JsSuccess(Fulfilled)
+          case s               => JsError(s"$s is not a valid ObligationStatus")
         }
       case e: JsError          => e
     }
   implicit val writes: Writes[ObligationStatus]   = {
-    case Open      => JsString("O")
-    case Fulfilled => JsString("F")
+    case Open      => JsString(Open.value)
+    case Fulfilled => JsString(Open.value)
   }
 }
 

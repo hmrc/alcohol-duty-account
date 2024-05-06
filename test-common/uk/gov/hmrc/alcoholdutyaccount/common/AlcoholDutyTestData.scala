@@ -16,6 +16,7 @@
 
 package uk.gov.hmrc.alcoholdutyaccount.common
 
+import org.scalacheck.Gen
 import uk.gov.hmrc.alcoholdutyaccount.models.{AdrObligationData, AdrSubscriptionSummary, AlcoholRegime, ApprovalStatus, ObligationStatus, ReturnPeriod}
 import uk.gov.hmrc.alcoholdutyaccount.models.hods._
 
@@ -51,17 +52,24 @@ trait AlcoholDutyTestData {
     insolvencyFlag = false
   )
 
-  val alcoholDutyReference = "XMADP0000000200"
+  def generateAlcoholDutyReference(): Gen[String] = for {
+    idNumSection <- Gen.listOfN(10, Gen.numChar)
+  } yield s"XMADP$idNumSection"
+
+  def generateProductKey(): Gen[String] = for {
+    year <- Gen.listOfN(2, Gen.numChar)
+    month <- Gen.chooseNum(0, 11)
+  } yield s"${year}A${(month + 'A').toChar}"
 
   val periodKey  = "24AE"
   val periodKey2 = "24AF"
   val periodKey3 = "24AG"
   val periodKey4 = "24AH"
 
-  val returnPeriod  = ReturnPeriod(periodKey, 2024, 5)
-  val returnPeriod2 = ReturnPeriod(periodKey2, 2024, 6)
-  val returnPeriod3 = ReturnPeriod(periodKey3, 2024, 7)
-  val returnPeriod4 = ReturnPeriod(periodKey4, 2024, 8)
+  val returnPeriod  = ReturnPeriod(periodKey)
+  val returnPeriod2 = ReturnPeriod(periodKey2)
+  val returnPeriod3 = ReturnPeriod(periodKey3)
+  val returnPeriod4 = ReturnPeriod(periodKey4)
 
   val obligationDetails = ObligationDetails(
     status = Open,

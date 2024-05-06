@@ -45,10 +45,10 @@ class ObligationDataConnector @Inject() (
         s"${config.obligationDataApiUrl}/enterprise/obligation-data/${config.idType}/$alcoholDutyReference/${config.regimeType}"
       logger.info(s"Fetching all open obligation data for appaId $alcoholDutyReference")
 
-      val params = Seq("status" -> Open.value)
+      val obligationStatusOpenFilter = "status" -> Open.value
 
       httpClient
-        .GET[Either[UpstreamErrorResponse, HttpResponse]](url = url, queryParams = params)
+        .GET[Either[UpstreamErrorResponse, HttpResponse]](url = url, queryParams = Seq(obligationStatusOpenFilter))
         .map {
           case Right(response) =>
             Try {

@@ -63,30 +63,32 @@ class AlcoholDutyControllerSpec extends AnyWordSpec with Matchers {
 
   "GET /obligationDetails" should {
     "return OK when is called with a valid alcoholDutyReference" in new SetUp {
-      alcoholDutyService.getObligations(eqTo(alcoholDutyReference), eqTo(returnPeriod))(*) returnsF adrObligationDetails
+      alcoholDutyService.getOpenObligations(eqTo(alcoholDutyReference), eqTo(returnPeriod))(
+        *
+      ) returnsF adrObligationDetails
 
-      val result: Future[Result] = controller.obligationDetails(alcoholDutyReference, periodKey)(FakeRequest())
+      val result: Future[Result] = controller.openObligationDetails(alcoholDutyReference, periodKey)(FakeRequest())
       status(result) mustBe OK
       contentAsJson(result) mustBe Json.toJson(adrObligationDetails)
     }
 
     "return BAD_REQUEST when periodKey is invalid" in new SetUp {
-      alcoholDutyService.getObligations(*, *)(*) returnsF adrObligationDetails
+      alcoholDutyService.getOpenObligations(*, *)(*) returnsF adrObligationDetails
 
-      val result: Future[Result] = controller.obligationDetails(alcoholDutyReference, badPeriodKey)(FakeRequest())
+      val result: Future[Result] = controller.openObligationDetails(alcoholDutyReference, badPeriodKey)(FakeRequest())
       status(result) mustBe BAD_REQUEST
 
-      verify(alcoholDutyService, never).getObligations(*, *)(*)
+      verify(alcoholDutyService, never).getOpenObligations(*, *)(*)
     }
 
     "return any error returned from the service" in new SetUp {
-      when(alcoholDutyService.getObligations(*, *)(*))
+      when(alcoholDutyService.getOpenObligations(*, *)(*))
         .thenReturn(EitherT.fromEither(Left(ErrorResponse(INTERNAL_SERVER_ERROR, "An error occurred"))))
 
-      val result: Future[Result] = controller.obligationDetails(alcoholDutyReference, periodKey)(FakeRequest())
+      val result: Future[Result] = controller.openObligationDetails(alcoholDutyReference, periodKey)(FakeRequest())
       status(result) mustBe INTERNAL_SERVER_ERROR
 
-      verify(alcoholDutyService, times(1)).getObligations(*, *)(*)
+      verify(alcoholDutyService, times(1)).getOpenObligations(*, *)(*)
     }
   }
 

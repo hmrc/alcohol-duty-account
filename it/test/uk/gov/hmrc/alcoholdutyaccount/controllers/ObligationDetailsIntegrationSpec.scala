@@ -32,7 +32,7 @@ class ObligationDetailsIntegrationSpec extends ISpecBase {
       stubGetWithParameters(url, expectedQueryParams, OK, Json.toJson(obligationDataSingleOpen).toString)
 
       val response = callRoute(
-        FakeRequest("GET", routes.AlcoholDutyController.obligationDetails(alcoholDutyReference, periodKey).url)
+        FakeRequest("GET", routes.AlcoholDutyController.openObligationDetails(alcoholDutyReference, periodKey).url)
           .withHeaders("Authorization" -> "Bearer 12345")
       )
 
@@ -47,7 +47,7 @@ class ObligationDetailsIntegrationSpec extends ISpecBase {
       stubGetWithParameters(url, expectedQueryParams, OK, "blah")
 
       val response = callRoute(
-        FakeRequest("GET", routes.AlcoholDutyController.obligationDetails(alcoholDutyReference, periodKey).url)
+        FakeRequest("GET", routes.AlcoholDutyController.openObligationDetails(alcoholDutyReference, periodKey).url)
           .withHeaders("Authorization" -> "Bearer 12345")
       )
 
@@ -62,7 +62,7 @@ class ObligationDetailsIntegrationSpec extends ISpecBase {
       stubGetWithParameters(url, expectedQueryParams, NOT_FOUND, notFoundErrorMessage)
 
       val response = callRoute(
-        FakeRequest("GET", routes.AlcoholDutyController.obligationDetails(alcoholDutyReference, periodKey).url)
+        FakeRequest("GET", routes.AlcoholDutyController.openObligationDetails(alcoholDutyReference, periodKey).url)
           .withHeaders("Authorization" -> "Bearer 12345")
       )
 
@@ -79,7 +79,7 @@ class ObligationDetailsIntegrationSpec extends ISpecBase {
       stubGetWithParameters(url, expectedQueryParams, OK, Json.toJson(obligationDataSingleOpen).toString)
 
       val response = callRoute(
-        FakeRequest("GET", routes.AlcoholDutyController.obligationDetails(alcoholDutyReference, testPeriodKey).url)
+        FakeRequest("GET", routes.AlcoholDutyController.openObligationDetails(alcoholDutyReference, testPeriodKey).url)
           .withHeaders("Authorization" -> "Bearer 12345")
       )
 
@@ -94,7 +94,7 @@ class ObligationDetailsIntegrationSpec extends ISpecBase {
       stubGetWithParameters(url, expectedQueryParams, BAD_REQUEST, otherErrorMessage)
 
       val response = callRoute(
-        FakeRequest("GET", routes.AlcoholDutyController.obligationDetails(alcoholDutyReference, periodKey).url)
+        FakeRequest("GET", routes.AlcoholDutyController.openObligationDetails(alcoholDutyReference, periodKey).url)
           .withHeaders("Authorization" -> "Bearer 12345")
       )
 
@@ -106,6 +106,9 @@ class ObligationDetailsIntegrationSpec extends ISpecBase {
   }
 
   class SetUp extends AlcoholDutyTestData {
+
+    val alcoholDutyReference: String = generateAlcoholDutyReference().sample.get
+
     val expectedQueryParams = Map(
       "status" -> Open.value
     )

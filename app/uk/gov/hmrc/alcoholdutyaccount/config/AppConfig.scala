@@ -29,6 +29,6 @@ class AppConfig @Inject() (config: Configuration, servicesConfig: ServicesConfig
   val obligationDataApiUrl: String = servicesConfig.baseUrl("obligation")
   val financialDataApiUrl: String  = servicesConfig.baseUrl("financial")
 
-  val idType: String     = config.get[String]("microservice.idType")
-  val regimeType: String = config.get[String]("microservice.regimeType")
+  val idType: String     = config.get[String]("microservice.downsteam-apis.idType")
+  val regimeType: String = config.get[String]("microservice.downsteam-apis.regimeType")
 }

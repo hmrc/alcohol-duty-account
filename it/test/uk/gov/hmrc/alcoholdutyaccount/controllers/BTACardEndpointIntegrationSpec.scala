@@ -25,6 +25,9 @@ import uk.gov.hmrc.alcoholdutyaccount.models.{AlcoholDutyCardData, Balance, Inso
 class BTACardEndpointIntegrationSpec extends ISpecBase with FinancialDataStubs with ObligationDataStubs with SubscriptionSummaryStubs {
 
   "the service BTA Card endpoint should" should {
+
+    val alcoholDutyReference:String = generateAlcoholDutyReference().sample.get
+
     "respond with 200 status" in {
       stubAuthorised()
       stubGetSubscriptionSummary(approvedSubscriptionSummary)

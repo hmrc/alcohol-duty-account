@@ -48,7 +48,7 @@ class AlcoholDutyService @Inject() (
       )
   }
 
-  def getObligations(
+  def getOpenObligations(
     alcoholDutyReference: String,
     returnPeriod: ReturnPeriod
   )(implicit hc: HeaderCarrier): EitherT[Future, ErrorResponse, AdrObligationData] =
