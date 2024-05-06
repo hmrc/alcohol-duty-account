@@ -62,8 +62,9 @@ class FinancialDataConnectorSpec extends SpecBase with ScalaFutures with Connect
   }
 
   class SetUp extends ConnectorFixture with AlcoholDutyTestData {
-    val connector = new FinancialDataConnector(config = config, httpClient = httpClient)
-    val url       =
+    val alcoholDutyReference: String = generateAlcoholDutyReference().sample.get
+    val connector                    = new FinancialDataConnector(config = config, httpClient = httpClient)
+    val url                          =
       s"${config.financialDataApiUrl}/enterprise/financial-data/${config.idType}/$alcoholDutyReference/${config.regimeType}"
   }
 }

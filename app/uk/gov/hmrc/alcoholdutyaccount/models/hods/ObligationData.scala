@@ -52,7 +52,7 @@ object ObligationStatus {
     }
   implicit val writes: Writes[ObligationStatus]   = {
     case Open      => JsString(Open.value)
-    case Fulfilled => JsString(Open.value)
+    case Fulfilled => JsString(Fulfilled.value)
   }
 }
 

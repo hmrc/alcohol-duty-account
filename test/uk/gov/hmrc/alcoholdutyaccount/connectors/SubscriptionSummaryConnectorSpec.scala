@@ -63,8 +63,9 @@ class SubscriptionSummaryConnectorSpec extends SpecBase with ScalaFutures with C
   }
 
   class SetUp extends ConnectorFixture with AlcoholDutyTestData {
-    val connector = new SubscriptionSummaryConnector(config = config, httpClient = httpClient)
-    val url       =
+    val alcoholDutyReference: String = generateAlcoholDutyReference().sample.get
+    val connector                    = new SubscriptionSummaryConnector(config = config, httpClient = httpClient)
+    val url                          =
       s"${config.subscriptionApiUrl}/subscription/${config.regimeType}/${config.idType}/$alcoholDutyReference/summary"
   }
 }

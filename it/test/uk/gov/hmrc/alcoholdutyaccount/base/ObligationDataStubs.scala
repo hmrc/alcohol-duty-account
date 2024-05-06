@@ -25,7 +25,8 @@ import uk.gov.hmrc.alcoholdutyaccount.models.hods.{ObligationData, Open}
 trait ObligationDataStubs extends WireMockHelper with AlcoholDutyTestData { ISpecBase =>
   val config: AppConfig
 
-  private val url = s"${config.obligationDataApiUrl}/enterprise/obligation-data/${config.idType}/$alcoholDutyReference/${config.regimeType}"
+  private def url(alcoholDutyReference:String):String =
+    s"${config.obligationDataApiUrl}/enterprise/obligation-data/${config.idType}/$alcoholDutyReference/${config.regimeType}"
 
   val queryParams = Map(
     "status" -> Open.value
@@ -45,12 +46,12 @@ trait ObligationDataStubs extends WireMockHelper with AlcoholDutyTestData { ISpe
         |}
         |""".stripMargin
 
-  def stubGetObligations(obligationData: ObligationData): Unit =
-    stubGetWithParameters(url, queryParams, OK, Json.toJson(obligationData).toString())
+  def stubGetObligations(alcoholDutyReference:String, obligationData: ObligationData): Unit =
+    stubGetWithParameters(url(alcoholDutyReference), queryParams, OK, Json.toJson(obligationData).toString())
 
-  def stubObligationsNotFound(): Unit =
-    stubGetWithParameters(url, queryParams, NOT_FOUND, notFoundErrorMessage)
+  def stubObligationsNotFound(alcoholDutyReference:String): Unit =
+    stubGetWithParameters(url(alcoholDutyReference), queryParams, NOT_FOUND, notFoundErrorMessage)
 
-  def stubObligationsError(): Unit =
-    stubGetWithParameters(url, queryParams, INTERNAL_SERVER_ERROR, "No obligation data found")
+  def stubObligationsError(alcoholDutyReference:String): Unit =
+    stubGetWithParameters(url(alcoholDutyReference), queryParams, INTERNAL_SERVER_ERROR, "No obligation data found")
 }

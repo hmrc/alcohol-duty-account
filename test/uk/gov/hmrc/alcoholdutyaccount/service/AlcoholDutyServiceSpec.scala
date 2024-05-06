@@ -35,8 +35,10 @@ import java.time.LocalDate
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Success
 
-class AlcoholDutyServiceSpec extends SpecBase {
+class AlcoholDutyServiceSpec extends SpecBase with AlcoholDutyTestData {
   "AlcoholDutyService" - {
+    val alcoholDutyReference: String = generateAlcoholDutyReference().sample.get
+
     "getSubscriptionSummary should" - {
       "return summary data from the connector when successful" in new SetUp {
         when(subscriptionSummaryConnector.getSubscriptionSummary(alcoholDutyReference))

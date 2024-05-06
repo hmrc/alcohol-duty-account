@@ -72,11 +72,12 @@ class ObligationDataConnectorSpec extends SpecBase with ScalaFutures with Connec
   }
 
   class SetUp extends ConnectorFixture with AlcoholDutyTestData {
-    val connector           = new ObligationDataConnector(config = config, httpClient = httpClient)
-    val expectedQueryParams = Map(
+    val alcoholDutyReference: String = generateAlcoholDutyReference().sample.get
+    val connector                    = new ObligationDataConnector(config = config, httpClient = httpClient)
+    val expectedQueryParams          = Map(
       "status" -> Open.value
     )
-    val url                 =
+    val url                          =
       s"${config.obligationDataApiUrl}/enterprise/obligation-data/${config.idType}/$alcoholDutyReference/${config.regimeType}"
 
     val notFoundErrorMessage = """{

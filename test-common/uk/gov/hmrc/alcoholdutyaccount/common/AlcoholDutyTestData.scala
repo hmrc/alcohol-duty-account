@@ -54,10 +54,10 @@ trait AlcoholDutyTestData {
 
   def generateAlcoholDutyReference(): Gen[String] = for {
     idNumSection <- Gen.listOfN(10, Gen.numChar)
-  } yield s"XMADP$idNumSection"
+  } yield s"XMADP${idNumSection.mkString}"
 
   def generateProductKey(): Gen[String] = for {
-    year <- Gen.listOfN(2, Gen.numChar)
+    year  <- Gen.listOfN(2, Gen.numChar)
     month <- Gen.chooseNum(0, 11)
   } yield s"${year}A${(month + 'A').toChar}"
 

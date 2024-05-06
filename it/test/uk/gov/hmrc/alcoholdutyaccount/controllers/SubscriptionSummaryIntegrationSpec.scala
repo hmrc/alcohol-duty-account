@@ -25,6 +25,8 @@ import uk.gov.hmrc.play.bootstrap.backend.http.ErrorResponse
 class SubscriptionSummaryIntegrationSpec extends ISpecBase with ConnectorTestHelpers {
   protected val endpointName = "subscription"
 
+  val alcoholDutyReference:String = generateAlcoholDutyReference().sample.get
+
   "the subscription summary endpoint should" should {
     "respond with OK if able to fetch subscription summary data" in new SetUp {
       stubAuthorised()

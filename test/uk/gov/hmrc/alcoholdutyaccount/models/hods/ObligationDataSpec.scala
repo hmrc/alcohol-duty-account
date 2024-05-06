@@ -82,6 +82,64 @@ class ObligationDataSpec extends SpecBase {
       result shouldBe Some(expectedObligationData)
     }
 
+    "should be able to transform an object into a Json" in {
+
+      val obligationData = ObligationData(
+        obligations = Seq(
+          Obligation(
+            obligationDetails = Seq(
+              ObligationDetails(
+                status = Open,
+                inboundCorrespondenceFromDate = LocalDate.of(2024, 1, 1),
+                inboundCorrespondenceToDate = LocalDate.of(2024, 1, 1),
+                inboundCorrespondenceDateReceived = None,
+                inboundCorrespondenceDueDate = LocalDate.of(2024, 1, 1),
+                periodKey = "24XY"
+              ),
+              ObligationDetails(
+                status = Fulfilled,
+                inboundCorrespondenceFromDate = LocalDate.of(2024, 1, 1),
+                inboundCorrespondenceToDate = LocalDate.of(2024, 1, 1),
+                inboundCorrespondenceDateReceived = Some(LocalDate.of(2024, 1, 1)),
+                inboundCorrespondenceDueDate = LocalDate.of(2024, 1, 1),
+                periodKey = "24XY"
+              )
+            )
+          )
+        )
+      )
+
+      val expectedValue: String =
+        """
+          | {
+          |    "obligations": [
+          |        {
+          |            "obligationDetails": [
+          |                {
+          |                    "status": "O",
+          |                    "inboundCorrespondenceFromDate": "2024-01-01",
+          |                    "inboundCorrespondenceToDate": "2024-01-01",
+          |                    "inboundCorrespondenceDueDate": "2024-01-01",
+          |                    "periodKey": "24XY"
+          |                },
+          |                {
+          |                    "status": "F",
+          |                    "inboundCorrespondenceFromDate": "2024-01-01",
+          |                    "inboundCorrespondenceToDate": "2024-01-01",
+          |                    "inboundCorrespondenceDateReceived": "2024-01-01",
+          |                    "inboundCorrespondenceDueDate": "2024-01-01",
+          |                    "periodKey": "24XY"
+          |                }
+          |            ]
+          |        }
+          |    ]
+          |}
+          |""".stripMargin.filterNot(_.isWhitespace)
+
+      val result: String = Json.toJson(obligationData).toString()
+      result shouldBe expectedValue
+    }
+
     "should throw an Exception if the Obligation Status is not Open or Fulfilled" in {
       val json =
         """

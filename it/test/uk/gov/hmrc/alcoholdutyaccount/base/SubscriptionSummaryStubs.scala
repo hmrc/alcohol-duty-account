@@ -25,15 +25,15 @@ import uk.gov.hmrc.alcoholdutyaccount.models.hods.SubscriptionSummary
 trait SubscriptionSummaryStubs extends WireMockHelper with AlcoholDutyTestData { ISpecBase =>
   val config: AppConfig
 
-  private val url       =
+  private def url(alcoholDutyReference:String)=
     s"${config.subscriptionApiUrl}/subscription/${config.regimeType}/${config.idType}/$alcoholDutyReference/summary"
 
-  def stubGetSubscriptionSummary(subscriptionSummary: SubscriptionSummary ): Unit =
-    stubGet(url, OK, Json.toJson(subscriptionSummary).toString)
+  def stubGetSubscriptionSummary(alcoholDutyReference:String, subscriptionSummary: SubscriptionSummary ): Unit =
+    stubGet(url(alcoholDutyReference), OK, Json.toJson(subscriptionSummary).toString)
 
-  def stubSubscriptionSummaryNotFound(): Unit =
-    stubGet(url, NOT_FOUND, "No subscription summary data found")
+  def stubSubscriptionSummaryNotFound(alcoholDutyReference:String): Unit =
+    stubGet(url(alcoholDutyReference), NOT_FOUND, "No subscription summary data found")
 
-  def stubSubscriptionSummaryError(): Unit =
-    stubGet(url, INTERNAL_SERVER_ERROR, "An error occurred")
+  def stubSubscriptionSummaryError(alcoholDutyReference:String): Unit =
+    stubGet(url(alcoholDutyReference), INTERNAL_SERVER_ERROR, "An error occurred")
 }

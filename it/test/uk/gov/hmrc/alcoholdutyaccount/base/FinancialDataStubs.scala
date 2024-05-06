@@ -25,11 +25,12 @@ import uk.gov.hmrc.alcoholdutyaccount.models.hods.FinancialTransactionDocument
 trait FinancialDataStubs  extends WireMockHelper with AlcoholDutyTestData { ISpecBase =>
   val config: AppConfig
 
-  private val url = s"${config.financialDataApiUrl}/enterprise/financial-data/${config.idType}/$alcoholDutyReference/${config.regimeType}"
+  private def url(alcoholDutyReference:String):String =
+    s"${config.financialDataApiUrl}/enterprise/financial-data/${config.idType}/$alcoholDutyReference/${config.regimeType}"
 
-  def stubGetFinancialData(financialTransactionDocument: FinancialTransactionDocument): Unit =
-    stubGet(url, OK, Json.toJson(financialTransactionDocument).toString())
+  def stubGetFinancialData(alcoholDutyReference:String, financialTransactionDocument: FinancialTransactionDocument): Unit =
+    stubGet(url(alcoholDutyReference), OK, Json.toJson(financialTransactionDocument).toString())
 
-  def stubFinancialDataNotFound(): Unit =
-    stubGet(url, NOT_FOUND, "No financial data found")
+  def stubFinancialDataNotFound(alcoholDutyReference:String): Unit =
+    stubGet(url(alcoholDutyReference), NOT_FOUND, "No financial data found")
 }

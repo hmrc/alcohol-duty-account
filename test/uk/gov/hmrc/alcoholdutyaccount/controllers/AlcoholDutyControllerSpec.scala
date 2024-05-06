@@ -113,6 +113,7 @@ class AlcoholDutyControllerSpec extends AnyWordSpec with Matchers {
   }
 
   class SetUp extends AlcoholDutyTestData {
+    val alcoholDutyReference: String           = generateAlcoholDutyReference().sample.get
     val alcoholDutyService: AlcoholDutyService = mock[AlcoholDutyService]
     val cc                                     = Helpers.stubControllerComponents()
     val controller                             = new AlcoholDutyController(alcoholDutyService, cc)
