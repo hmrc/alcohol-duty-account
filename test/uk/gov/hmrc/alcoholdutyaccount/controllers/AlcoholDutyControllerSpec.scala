@@ -63,7 +63,7 @@ class AlcoholDutyControllerSpec extends AnyWordSpec with Matchers {
 
   "GET /obligationDetails" should {
     "return OK when is called with a valid alcoholDutyReference" in new SetUp {
-      alcoholDutyService.getOpenObligations(eqTo(alcoholDutyReference), eqTo(returnPeriod))(
+      alcoholDutyService.getOpenObligations(eqTo(alcoholDutyReference), eqTo(periodKey))(
         *
       ) returnsF adrObligationDetails
 

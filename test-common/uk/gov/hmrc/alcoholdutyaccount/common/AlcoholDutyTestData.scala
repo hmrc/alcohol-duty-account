@@ -17,7 +17,7 @@
 package uk.gov.hmrc.alcoholdutyaccount.common
 
 import org.scalacheck.Gen
-import uk.gov.hmrc.alcoholdutyaccount.models.{AdrObligationData, AdrSubscriptionSummary, AlcoholRegime, ApprovalStatus, ObligationStatus, ReturnPeriod}
+import uk.gov.hmrc.alcoholdutyaccount.models.{AdrObligationData, AdrSubscriptionSummary, AlcoholRegime, ApprovalStatus, ObligationStatus}
 import uk.gov.hmrc.alcoholdutyaccount.models.hods._
 
 import java.time.LocalDate
@@ -65,11 +65,6 @@ trait AlcoholDutyTestData {
   val periodKey2 = "24AF"
   val periodKey3 = "24AG"
   val periodKey4 = "24AH"
-
-  val returnPeriod  = ReturnPeriod(periodKey)
-  val returnPeriod2 = ReturnPeriod(periodKey2)
-  val returnPeriod3 = ReturnPeriod(periodKey3)
-  val returnPeriod4 = ReturnPeriod(periodKey4)
 
   val obligationDetails = ObligationDetails(
     status = Open,

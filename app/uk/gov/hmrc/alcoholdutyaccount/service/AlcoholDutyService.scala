@@ -21,7 +21,7 @@ import cats.implicits._
 import play.api.http.Status.{NOT_FOUND, NOT_IMPLEMENTED}
 import uk.gov.hmrc.alcoholdutyaccount.connectors.{FinancialDataConnector, ObligationDataConnector, SubscriptionSummaryConnector}
 import uk.gov.hmrc.alcoholdutyaccount.models.ApprovalStatus.Approved
-import uk.gov.hmrc.alcoholdutyaccount.models.{AdrObligationData, AdrSubscriptionSummary, AlcoholDutyCardData, Balance, InsolventCardData, Payments, ReturnPeriod, Returns, hods}
+import uk.gov.hmrc.alcoholdutyaccount.models._
 import uk.gov.hmrc.alcoholdutyaccount.models.hods.{FinancialTransactionDocument, ObligationData, ObligationDetails}
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.bootstrap.backend.http.ErrorResponse
@@ -50,24 +50,24 @@ class AlcoholDutyService @Inject() (
 
   def getOpenObligations(
     alcoholDutyReference: String,
-    returnPeriod: ReturnPeriod
+    periodKey: String
   )(implicit hc: HeaderCarrier): EitherT[Future, ErrorResponse, AdrObligationData] =
     obligationDataConnector
       .getOpenObligationDetails(alcoholDutyReference)
-      .map(findObligationDetailsForPeriod(_, returnPeriod))
+      .map(findObligationDetailsForPeriod(_, periodKey))
       .transform {
         case l @ Left(_)                    => l.asInstanceOf[Either[ErrorResponse, AdrObligationData]]
         case Right(None)                    =>
-          Left(ErrorResponse(NOT_FOUND, s"Obligation details not found for period key ${returnPeriod.periodKey}"))
+          Left(ErrorResponse(NOT_FOUND, s"Obligation details not found for period key $periodKey"))
         case Right(Some(obligationDetails)) =>
           Right[ErrorResponse, AdrObligationData](AdrObligationData(obligationDetails))
       }
 
   private def findObligationDetailsForPeriod(
     obligationData: ObligationData,
-    returnPeriod: ReturnPeriod
+    periodKey: String
   ): Option[ObligationDetails] =
-    obligationData.obligations.flatMap(_.obligationDetails).find(_.periodKey == returnPeriod.periodKey)
+    obligationData.obligations.flatMap(_.obligationDetails).find(_.periodKey == periodKey)
 
   def getAlcoholDutyCardData(
     alcoholDutyReference: String

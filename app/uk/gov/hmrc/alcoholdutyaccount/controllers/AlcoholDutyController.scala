@@ -19,13 +19,13 @@ package uk.gov.hmrc.alcoholdutyaccount.controllers
 import cats.implicits._
 import play.api.libs.json.Json
 import play.api.mvc.{Action, AnyContent, ControllerComponents}
-import uk.gov.hmrc.alcoholdutyaccount.models.ReturnPeriod
 import uk.gov.hmrc.alcoholdutyaccount.service.AlcoholDutyService
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 import uk.gov.hmrc.play.bootstrap.backend.http.ErrorResponse
 
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
+import scala.util.matching.Regex
 
 @Singleton()
 class AlcoholDutyController @Inject() (
@@ -34,6 +34,8 @@ class AlcoholDutyController @Inject() (
 )(implicit ec: ExecutionContext)
     extends BackendController(cc)
     with BaseController {
+
+  val returnPeriodPattern: Regex = """^(\d{2}A[A-L])$""".r
 
   def subscriptionSummary(alcoholDutyReference: String): Action[AnyContent] = Action.async { implicit request =>
     alcoholDutyService
@@ -46,16 +48,17 @@ class AlcoholDutyController @Inject() (
 
   def openObligationDetails(alcoholDutyReference: String, periodKey: String): Action[AnyContent] = Action.async {
     implicit request =>
-      ReturnPeriod.fromPeriodKey(periodKey) match {
-        case None               => Future.successful(BadRequest(Json.toJson(ErrorResponse(BAD_REQUEST, "Invalid Period Key"))))
-        case Some(returnPeriod) =>
+      periodKey match {
+        case returnPeriodPattern(_) =>
           alcoholDutyService
-            .getOpenObligations(alcoholDutyReference, returnPeriod)
+            .getOpenObligations(alcoholDutyReference, periodKey)
             .fold(
               err => error(err),
               obligationDetails => Ok(Json.toJson(obligationDetails))
             )
+        case _                      => Future.successful(BadRequest(Json.toJson(ErrorResponse(BAD_REQUEST, "Invalid Period Key"))))
       }
+
   }
 
   def btaTileData(alcoholDutyReference: String): Action[AnyContent] = Action.async { implicit request =>
