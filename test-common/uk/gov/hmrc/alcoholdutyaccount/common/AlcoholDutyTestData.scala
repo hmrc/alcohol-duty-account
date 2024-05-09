@@ -160,6 +160,16 @@ trait AlcoholDutyTestData {
     )
   )
 
-  val adrObligationDetails          = new AdrObligationData(ObligationStatus.Open)
-  val adrObligationDetailsFulfilled = new AdrObligationData(ObligationStatus.Fulfilled)
+  val adrObligationDetails          = new AdrObligationData(
+    status = ObligationStatus.Open,
+    fromDate = LocalDate.of(2024, 1, 1),
+    toDate = LocalDate.of(2024, 1, 1),
+    dueDate = LocalDate.of(2024, 1, 1)
+  )
+  val adrObligationDetailsFulfilled = new AdrObligationData(
+    ObligationStatus.Fulfilled,
+    fromDate = LocalDate.of(2024, 1, 1),
+    toDate = LocalDate.of(2024, 1, 1),
+    dueDate = LocalDate.of(2024, 1, 1)
+  )
 }

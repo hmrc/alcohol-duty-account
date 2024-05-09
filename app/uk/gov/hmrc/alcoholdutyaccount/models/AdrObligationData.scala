@@ -20,6 +20,8 @@ import enumeratum.{Enum, EnumEntry, PlayJsonEnum}
 import play.api.libs.json.{Format, Json}
 import uk.gov.hmrc.alcoholdutyaccount.models.hods.ObligationDetails
 
+import java.time.LocalDate
+
 sealed trait ObligationStatus extends EnumEntry
 object ObligationStatus extends Enum[ObligationStatus] with PlayJsonEnum[ObligationStatus] {
   val values = findValues
@@ -28,13 +30,27 @@ object ObligationStatus extends Enum[ObligationStatus] with PlayJsonEnum[Obligat
   case object Fulfilled extends ObligationStatus
 }
 
-case class AdrObligationData(status: ObligationStatus)
+case class AdrObligationData(
+  status: ObligationStatus,
+  fromDate: LocalDate,
+  toDate: LocalDate,
+  dueDate: LocalDate
+)
 
 object AdrObligationData {
 
-  def apply(obligationData: ObligationDetails): AdrObligationData = obligationData.status match {
-    case hods.Open      => AdrObligationData(ObligationStatus.Open)
-    case hods.Fulfilled => AdrObligationData(ObligationStatus.Fulfilled)
+  def apply(obligationData: ObligationDetails): AdrObligationData = {
+    val status = obligationData.status match {
+      case hods.Open      => ObligationStatus.Open
+      case hods.Fulfilled => ObligationStatus.Fulfilled
+    }
+
+    AdrObligationData(
+      status = status,
+      fromDate = obligationData.inboundCorrespondenceFromDate,
+      toDate = obligationData.inboundCorrespondenceToDate,
+      dueDate = obligationData.inboundCorrespondenceDueDate
+    )
   }
 
   implicit val format: Format[AdrObligationData] = Json.format[AdrObligationData]
