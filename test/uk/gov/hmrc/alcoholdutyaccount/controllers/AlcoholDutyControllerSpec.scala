@@ -17,9 +17,8 @@
 package uk.gov.hmrc.alcoholdutyaccount.controllers
 
 import cats.data.EitherT
-import org.mockito.ArgumentMatchersSugar.*
-import org.mockito.IdiomaticMockito.StubbingOps
-import org.mockito.MockitoSugar.mock
+import org.mockito.ArgumentMatchersSugar.{*, eqTo}
+import org.mockito.MockitoSugar.{mock, never, times, verify, when}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
@@ -27,51 +26,108 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import play.api.test.{FakeRequest, Helpers}
 import org.mockito.cats.IdiomaticMockitoCats.StubbingOpsCats
 import org.scalatest.matchers.must.Matchers.convertToAnyMustWrapper
-import play.api.http.Status.{BAD_REQUEST, OK}
+import play.api.http.Status.{BAD_REQUEST, INTERNAL_SERVER_ERROR, OK}
 import play.api.libs.json.Json
 import play.api.mvc.Result
 import play.api.test.Helpers.{contentAsJson, defaultAwaitTimeout, status}
+import uk.gov.hmrc.alcoholdutyaccount.common.AlcoholDutyTestData
 import uk.gov.hmrc.alcoholdutyaccount.models.AlcoholDutyCardData
+import uk.gov.hmrc.alcoholdutyaccount.models.ApprovalStatus.Approved
 import uk.gov.hmrc.alcoholdutyaccount.models._
 import uk.gov.hmrc.alcoholdutyaccount.service.AlcoholDutyService
+import uk.gov.hmrc.play.bootstrap.backend.http.ErrorResponse
 
 import scala.concurrent.Future
 
 class AlcoholDutyControllerSpec extends AnyWordSpec with Matchers {
 
-  val alcoholDutyService: AlcoholDutyService = mock[AlcoholDutyService]
-  val cc                                     = Helpers.stubControllerComponents()
-  val controller                             = new AlcoholDutyController(alcoholDutyService, cc)
+  "GET /subscriptionSummary" should {
+    "return OK when is called with a valid alcoholDutyReference" in new SetUp {
+      alcoholDutyService.getSubscriptionSummary(eqTo(alcoholDutyReference))(*) returnsF approvedAdrSubscriptionSummary
+
+      val result: Future[Result] = controller.subscriptionSummary(alcoholDutyReference)(FakeRequest())
+      status(result) mustBe OK
+      contentAsJson(result) mustBe Json.toJson(approvedAdrSubscriptionSummary)
+    }
+
+    "return any error returned from the service" in new SetUp {
+      when(alcoholDutyService.getSubscriptionSummary(*)(*))
+        .thenReturn(EitherT.fromEither(Left(ErrorResponse(INTERNAL_SERVER_ERROR, "An error occurred"))))
+
+      val result: Future[Result] = controller.subscriptionSummary(alcoholDutyReference)(FakeRequest())
+      status(result) mustBe INTERNAL_SERVER_ERROR
+
+      verify(alcoholDutyService, times(1)).getSubscriptionSummary(*)(*)
+    }
+  }
+
+  "GET /obligationDetails" should {
+    "return OK when is called with a valid alcoholDutyReference" in new SetUp {
+      alcoholDutyService.getOpenObligations(eqTo(alcoholDutyReference), eqTo(periodKey))(
+        *
+      ) returnsF adrObligationDetails
+
+      val result: Future[Result] = controller.openObligationDetails(alcoholDutyReference, periodKey)(FakeRequest())
+      status(result) mustBe OK
+      contentAsJson(result) mustBe Json.toJson(adrObligationDetails)
+    }
+
+    "return BAD_REQUEST when periodKey is invalid" in new SetUp {
+      alcoholDutyService.getOpenObligations(*, *)(*) returnsF adrObligationDetails
+
+      val result: Future[Result] = controller.openObligationDetails(alcoholDutyReference, badPeriodKey)(FakeRequest())
+      status(result) mustBe BAD_REQUEST
+
+      verify(alcoholDutyService, never).getOpenObligations(*, *)(*)
+    }
+
+    "return any error returned from the service" in new SetUp {
+      when(alcoholDutyService.getOpenObligations(*, *)(*))
+        .thenReturn(EitherT.fromEither(Left(ErrorResponse(INTERNAL_SERVER_ERROR, "An error occurred"))))
+
+      val result: Future[Result] = controller.openObligationDetails(alcoholDutyReference, periodKey)(FakeRequest())
+      status(result) mustBe INTERNAL_SERVER_ERROR
+
+      verify(alcoholDutyService, times(1)).getOpenObligations(*, *)(*)
+    }
+  }
 
   "GET /bta-tile-data" should {
-    "return 200 when is called with a valid alcoholDutyReference" in {
-      val alcoholDutyReference = "testAlcoholDutyReference"
-      val expectedData         = AlcoholDutyCardData(
-        alcoholDutyReference = "testAlcoholDutyReference",
-        approvalStatus = Approved,
-        hasReturnsError = false,
-        hasPaymentError = false,
-        returns = Returns(dueReturnExists = Some(true), numberOfOverdueReturns = Some(0)),
-        payments =
-          Payments(balance = Some(Balance(isMultiplePaymentDue = true, totalPaymentAmount = 2, chargeReference = None)))
-      )
-
-      alcoholDutyService.getAlcoholDutyCardData(*)(*) returnsF expectedData
+    "return 200 when is called with a valid alcoholDutyReference" in new SetUp {
+      alcoholDutyService.getAlcoholDutyCardData(*)(*) returnsF cardData
 
       val result: Future[Result] = controller.btaTileData(alcoholDutyReference)(FakeRequest())
       status(result) mustBe OK
-      contentAsJson(result) mustBe Json.toJson(expectedData)
+      contentAsJson(result) mustBe Json.toJson(cardData)
     }
 
-    "return 400 when is called with an invalid alcoholDutyReference" in {
-      val alcoholDutyReference = "testAlcoholDutyReference"
-      val expectedError        = ErrorResponse(BAD_REQUEST, "Invalid alcohol duty reference")
+    "return 400 when is called with an invalid alcoholDutyReference" in new SetUp {
+      val expectedError = ErrorResponse(BAD_REQUEST, "Invalid alcohol duty reference")
 
-      alcoholDutyService.getAlcoholDutyCardData(*)(*) returns EitherT.leftT(expectedError)
+      when(alcoholDutyService.getAlcoholDutyCardData(*)(*)).thenReturn(EitherT.fromEither(Left(expectedError)))
 
       val result: Future[Result] = controller.btaTileData(alcoholDutyReference)(FakeRequest())
       status(result) mustBe BAD_REQUEST
       contentAsJson(result) mustBe Json.toJson(expectedError)
     }
+  }
+
+  class SetUp extends AlcoholDutyTestData {
+    val alcoholDutyReference: String           = generateAlcoholDutyReference().sample.get
+    val alcoholDutyService: AlcoholDutyService = mock[AlcoholDutyService]
+    val cc                                     = Helpers.stubControllerComponents()
+    val controller                             = new AlcoholDutyController(alcoholDutyService, cc)
+
+    val badPeriodKey = "blah"
+
+    val cardData = AlcoholDutyCardData(
+      alcoholDutyReference = "testAlcoholDutyReference",
+      approvalStatus = Approved,
+      hasReturnsError = false,
+      hasPaymentError = false,
+      returns = Returns(dueReturnExists = Some(true), numberOfOverdueReturns = Some(0)),
+      payments =
+        Payments(balance = Some(Balance(isMultiplePaymentDue = true, totalPaymentAmount = 2, chargeReference = None)))
+    )
   }
 }

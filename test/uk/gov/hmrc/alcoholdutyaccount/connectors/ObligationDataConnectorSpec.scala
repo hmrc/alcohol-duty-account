@@ -16,51 +16,90 @@
 
 package uk.gov.hmrc.alcoholdutyaccount.connectors
 
-import org.mockito.ArgumentMatchersSugar.*
-import org.mockito.MockitoSugar.mock
-import org.mockito.cats.IdiomaticMockitoCats.StubbingOpsCats
-import org.scalatest.matchers.should.Matchers.convertToAnyShouldWrapper
-import play.api.http.Status.{NOT_FOUND, OK}
-import uk.gov.hmrc.alcoholdutyaccount.base.SpecBase
-import uk.gov.hmrc.alcoholdutyaccount.config.AppConfig
-import uk.gov.hmrc.alcoholdutyaccount.models.hods.ObligationData
-import uk.gov.hmrc.http.{HeaderCarrier, HttpClient, HttpResponse, UpstreamErrorResponse}
+import org.scalatest.concurrent.ScalaFutures
+import play.api.http.Status.{BAD_REQUEST, INTERNAL_SERVER_ERROR, NOT_FOUND, OK}
+import play.api.libs.json.Json
+import uk.gov.hmrc.alcoholdutyaccount.base.{ConnectorTestHelpers, SpecBase}
+import uk.gov.hmrc.alcoholdutyaccount.common.AlcoholDutyTestData
+import uk.gov.hmrc.alcoholdutyaccount.models.hods.Open
+import uk.gov.hmrc.play.bootstrap.backend.http.ErrorResponse
 
-import scala.concurrent.ExecutionContext
+import scala.concurrent.ExecutionContext.Implicits.global
 
-class ObligationDataConnectorSpec extends SpecBase {
-
-  implicit val ec: ExecutionContext = ExecutionContext.global
-  implicit val hc: HeaderCarrier    = HeaderCarrier()
-
-  val mockConfig: AppConfig  = mock[AppConfig]
-  val httpClient: HttpClient = mock[HttpClient]
-  val connector              = new ObligationDataConnector(config = mockConfig, httpClient = httpClient)
-
-  val obligationData = ObligationData(
-    obligations = Seq.empty
-  )
+class ObligationDataConnectorSpec extends SpecBase with ScalaFutures with ConnectorTestHelpers {
+  protected val endpointName = "obligation"
 
   "ObligationDataConnector" - {
-    "successfully retrieves an obligation data object" in {
-      httpClient.GET[Either[UpstreamErrorResponse, HttpResponse]](*, *, *)(*, *, *) returnsF Right(
-        HttpResponse(OK, """{"obligations":[]}""")
-      )
-
-      whenReady(connector.getObligationData("ID001").value) { result =>
-        result shouldBe Some(obligationData)
+    "successfully get open obligation data" in new SetUp {
+      stubGetWithParameters(url, expectedQueryParams, OK, Json.toJson(obligationDataSingleOpen).toString)
+      whenReady(connector.getOpenObligationDetails(alcoholDutyReference).value) { result =>
+        result mustBe Right(obligationDataSingleOpen)
+        verifyGetWithParameters(url, expectedQueryParams)
       }
     }
 
-    "return None if the response has a status different from 200" in {
-      httpClient.GET[Either[UpstreamErrorResponse, HttpResponse]](*, *, *)(*, *, *) returnsF Right(
-        HttpResponse(NOT_FOUND, "{}")
-      )
+    "successfully get fulfilled obligation data" in new SetUp {
+      stubGetWithParameters(url, expectedQueryParams, OK, Json.toJson(obligationDataSingleFulfilled).toString)
+      whenReady(connector.getOpenObligationDetails(alcoholDutyReference).value) { result =>
+        result mustBe Right(obligationDataSingleFulfilled)
+        verifyGetWithParameters(url, expectedQueryParams)
+      }
+    }
 
-      whenReady(connector.getObligationData("ID001").value) { result =>
-        result shouldBe None
+    "return an INTERNAL_SERVER_ERROR if the data retrieved cannot be parsed" in new SetUp {
+      stubGetWithParameters(url, expectedQueryParams, OK, "blah")
+      whenReady(connector.getOpenObligationDetails(alcoholDutyReference).value) { result =>
+        result mustBe Left(ErrorResponse(INTERNAL_SERVER_ERROR, "Unable to parse obligation data"))
+        verifyGetWithParameters(url, expectedQueryParams)
+      }
+    }
+
+    "return not found if obligation data object cannot be found" in new SetUp {
+      stubGetWithParameters(url, expectedQueryParams, NOT_FOUND, notFoundErrorMessage)
+      whenReady(connector.getOpenObligationDetails(alcoholDutyReference).value) { result =>
+        result mustBe Left(ErrorResponse(NOT_FOUND, "Obligation data not found"))
+        verifyGetWithParameters(url, expectedQueryParams)
+      }
+    }
+
+    "return an INTERNAL_SERVER_ERROR error if an error other than NOT_FOUND when fetching obligation data" in new SetUp {
+      stubGetWithParameters(url, expectedQueryParams, BAD_REQUEST, otherErrorMessage)
+      whenReady(connector.getOpenObligationDetails(alcoholDutyReference).value) { result =>
+        result mustBe Left(ErrorResponse(INTERNAL_SERVER_ERROR, "An error occurred"))
+        verifyGetWithParameters(url, expectedQueryParams)
       }
     }
   }
 
+  class SetUp extends ConnectorFixture with AlcoholDutyTestData {
+    val alcoholDutyReference: String = generateAlcoholDutyReference().sample.get
+    val connector                    = new ObligationDataConnector(config = config, httpClient = httpClient)
+    val expectedQueryParams          = Map(
+      "status" -> Open.value
+    )
+    val url                          =
+      s"${config.obligationDataApiUrl}/enterprise/obligation-data/${config.idType}/$alcoholDutyReference/${config.regimeType}"
+
+    val notFoundErrorMessage = """{
+                                 |    "code": "NOT_FOUND",
+                                 |    "reason": "The remote endpoint has indicated that no associated data found."
+                                 |}
+                                 |""".stripMargin
+
+    val otherErrorMessage =
+      """
+        |{
+        |    "failures": [
+        |        {
+        |            "code": "INVALID_IDTYPE",
+        |            "reason": "Submission has not passed validation. Invalid parameter idType"
+        |        },
+        |        {
+        |            "code": "INVALID_IDNUMBER",
+        |            "reason": "Submission has not passed validation. Invalid parameter idNumber"
+        |        }
+        |    ]
+        |}
+        |""".stripMargin
+  }
 }

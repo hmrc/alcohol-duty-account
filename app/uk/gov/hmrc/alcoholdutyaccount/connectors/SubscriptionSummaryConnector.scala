@@ -16,29 +16,62 @@
 
 package uk.gov.hmrc.alcoholdutyaccount.connectors
 
-import cats.data.OptionT
-import play.api.http.Status.OK
+import cats.data.EitherT
+import play.api.Logging
+import play.api.http.Status.{INTERNAL_SERVER_ERROR, NOT_FOUND}
 import uk.gov.hmrc.alcoholdutyaccount.config.AppConfig
 import uk.gov.hmrc.alcoholdutyaccount.models.hods.SubscriptionSummary
 import uk.gov.hmrc.http.{HttpClient, _}
+import uk.gov.hmrc.play.bootstrap.backend.http.ErrorResponse
 
 import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
+import scala.util.Try
+
 class SubscriptionSummaryConnector @Inject() (
   config: AppConfig,
   implicit val httpClient: HttpClient
 )(implicit ec: ExecutionContext)
-    extends HttpReadsInstances {
+    extends HttpReadsInstances
+    with Logging {
+
   def getSubscriptionSummary(
     alcoholDutyReference: String
-  )(implicit hc: HeaderCarrier): OptionT[Future, SubscriptionSummary] =
-    OptionT {
+  )(implicit hc: HeaderCarrier): EitherT[Future, ErrorResponse, SubscriptionSummary] =
+    EitherT {
 
-      val url = s"${config.subscriptionApiUrl}/subscription/AD/ZAD/$alcoholDutyReference/summary"
+      val url =
+        s"${config.subscriptionApiUrl}/subscription/${config.regimeType}/${config.idType}/$alcoholDutyReference/summary"
+      logger.info(s"Fetching subscription summary for appaId $alcoholDutyReference")
 
-      httpClient.GET[Either[UpstreamErrorResponse, HttpResponse]](url = url) map {
-        case Right(response) if response.status == OK => response.json.asOpt[SubscriptionSummary]
-        case _                                        => None
-      }
+      httpClient
+        .GET[Either[UpstreamErrorResponse, HttpResponse]](url = url)
+        .map {
+          case Right(response) =>
+            Try {
+              response.json
+                .asOpt[SubscriptionSummary]
+            }.toOption.flatten
+              .fold[Either[ErrorResponse, SubscriptionSummary]] {
+                logger.warn(s"Unable to parse subscription summary for appaId $alcoholDutyReference")
+                Left(ErrorResponse(INTERNAL_SERVER_ERROR, "Unable to parse subscription summary"))
+              } {
+                logger.info(s"Retrieved subscription summary for appaId $alcoholDutyReference")
+                Right(_)
+              }
+          case Left(error)     => Left(processError(error, alcoholDutyReference))
+        }
+    }
+
+  private def processError(error: UpstreamErrorResponse, alcoholDutyReference: String): ErrorResponse =
+    error.statusCode match {
+      case NOT_FOUND =>
+        logger.info(s"No subscription summary found for appaId $alcoholDutyReference")
+        ErrorResponse(NOT_FOUND, "Subscription summary not found")
+      case _         =>
+        logger.warn(
+          s"An error was returned while trying to fetch subscription summary appaId $alcoholDutyReference: ${error.message}"
+        )
+        ErrorResponse(INTERNAL_SERVER_ERROR, "An error occurred")
     }
 }

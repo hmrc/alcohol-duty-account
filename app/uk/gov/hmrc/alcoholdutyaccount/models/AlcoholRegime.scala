@@ -16,8 +16,16 @@
 
 package uk.gov.hmrc.alcoholdutyaccount.models
 
-import play.api.libs.json.{Json, OFormat}
-case class ErrorResponse(status: Int, message: String)
-object ErrorResponse {
-  implicit val format: OFormat[ErrorResponse] = Json.format[ErrorResponse]
+import enumeratum.{Enum, EnumEntry, PlayJsonEnum}
+
+sealed trait AlcoholRegime extends EnumEntry
+
+object AlcoholRegime extends Enum[AlcoholRegime] with PlayJsonEnum[AlcoholRegime] {
+  val values = findValues
+
+  case object Beer extends AlcoholRegime
+  case object Cider extends AlcoholRegime
+  case object Wine extends AlcoholRegime
+  case object Spirits extends AlcoholRegime
+  case object OtherFermentedProduct extends AlcoholRegime
 }

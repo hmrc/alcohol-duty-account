@@ -17,26 +17,48 @@
 package uk.gov.hmrc.alcoholdutyaccount.connectors
 
 import cats.data.OptionT
-import play.api.http.Status.OK
+import play.api.{Logger, Logging}
 import uk.gov.hmrc.alcoholdutyaccount.config.AppConfig
 import uk.gov.hmrc.alcoholdutyaccount.models.hods.FinancialTransactionDocument
 import uk.gov.hmrc.http.{HeaderCarrier, HttpClient, HttpReadsInstances, HttpResponse, UpstreamErrorResponse}
 
 import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
+import scala.util.Try
 
 class FinancialDataConnector @Inject() (config: AppConfig, implicit val httpClient: HttpClient)(implicit
   ec: ExecutionContext
-) extends HttpReadsInstances {
+) extends HttpReadsInstances
+    with Logging {
+  override protected val logger: Logger = Logger(this.getClass)
 
   def getFinancialData(
     alcoholDutyReference: String
   )(implicit hc: HeaderCarrier): OptionT[Future, FinancialTransactionDocument] =
     OptionT {
-      val url = s"${config.financialDataApiUrl}/enterprise/financial-data/ZAD/$alcoholDutyReference/AD"
+      val url =
+        s"${config.financialDataApiUrl}/enterprise/financial-data/${config.idType}/$alcoholDutyReference/${config.regimeType}"
+
+      logger.info(s"Fetching financial transaction document for appaId $alcoholDutyReference")
+
       httpClient.GET[Either[UpstreamErrorResponse, HttpResponse]](url = url).map {
-        case Right(response) if response.status == OK => response.json.asOpt[FinancialTransactionDocument]
-        case _                                        => None
+        case Right(response) =>
+          Try {
+            response.json
+              .asOpt[FinancialTransactionDocument]
+          }.toOption.flatten
+            .fold[Option[FinancialTransactionDocument]] {
+              logger.warn(s"Unable to parse financial transaction document for appaId $alcoholDutyReference")
+              None
+            } {
+              logger.info(s"Retrieved financial transaction document for appaId $alcoholDutyReference")
+              Some(_)
+            }
+        case Left(error)     =>
+          logger.warn(
+            s"An error was returned while trying to fetch financial transaction document appaId $alcoholDutyReference: ${error.message}"
+          )
+          None
       }
     }
 }

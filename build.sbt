@@ -22,6 +22,7 @@ lazy val testSettings: Seq[Def.Setting[_]] = Seq(
     baseDirectory.value / "test",
     baseDirectory.value / "test-common"
   ),
+  parallelExecution := false,
   fork := true,
   scalafmtOnCompile := true
 )

@@ -16,15 +16,13 @@
 
 package uk.gov.hmrc.alcoholdutyaccount.common
 
+import org.scalacheck.Gen
+import uk.gov.hmrc.alcoholdutyaccount.models.{AdrObligationData, AdrSubscriptionSummary, AlcoholRegime, ApprovalStatus, ObligationStatus}
 import uk.gov.hmrc.alcoholdutyaccount.models.hods._
 
 import java.time.LocalDate
 
 trait AlcoholDutyTestData {
-
-  val testInternalId: String = "internalId"
-
-  val alcoholDutyReference: String = "XAD1234567890"
 
   val approvedSubscriptionSummary = SubscriptionSummary(
     typeOfAlcoholApprovedForList = Set(Beer, CiderOrPerry, WineAndOtherFermentedProduct, Spirits),
@@ -54,30 +52,69 @@ trait AlcoholDutyTestData {
     insolvencyFlag = false
   )
 
-  val obligationData = ObligationData(
+  def generateAlcoholDutyReference(): Gen[String] = for {
+    idNumSection <- Gen.listOfN(10, Gen.numChar)
+  } yield s"XMADP${idNumSection.mkString}"
+
+  def generateProductKey(): Gen[String] = for {
+    year  <- Gen.listOfN(2, Gen.numChar)
+    month <- Gen.chooseNum(0, 11)
+  } yield s"${year}A${(month + 'A').toChar}"
+
+  val periodKey  = "24AE"
+  val periodKey2 = "24AF"
+  val periodKey3 = "24AG"
+  val periodKey4 = "24AH"
+
+  val obligationDetails = ObligationDetails(
+    status = Open,
+    inboundCorrespondenceFromDate = LocalDate.of(2024, 1, 1),
+    inboundCorrespondenceToDate = LocalDate.of(2024, 1, 1),
+    inboundCorrespondenceDateReceived = None,
+    inboundCorrespondenceDueDate = LocalDate.of(2024, 1, 1),
+    periodKey = periodKey
+  )
+
+  val obligationDetails2 = obligationDetails.copy(periodKey = periodKey2)
+  val obligationDetails3 = obligationDetails.copy(periodKey = periodKey3)
+
+  val obligationDataSingleOpen = ObligationData(
     obligations = Seq(
       Obligation(
-        obligationDetails = Seq(
-          ObligationDetails(
-            status = Open,
-            inboundCorrespondenceFromDate = LocalDate.of(2024, 1, 1),
-            inboundCorrespondenceToDate = LocalDate.of(2024, 1, 1),
-            inboundCorrespondenceDateReceived = None,
-            inboundCorrespondenceDueDate = LocalDate.of(2024, 1, 1),
-            periodKey = "24XY"
-          ),
-          ObligationDetails(
-            status = Fulfilled,
-            inboundCorrespondenceFromDate = LocalDate.of(2024, 1, 1),
-            inboundCorrespondenceToDate = LocalDate.of(2024, 1, 1),
-            inboundCorrespondenceDateReceived = Some(LocalDate.of(2024, 1, 1)),
-            inboundCorrespondenceDueDate = LocalDate.of(2024, 1, 1),
-            periodKey = "24XY"
-          )
-        )
+        obligationDetails = Seq(obligationDetails)
       )
     )
   )
+
+  val obligationDataMultipleOpen = ObligationData(obligations =
+    Seq(
+      Obligation(
+        obligationDetails = Seq(obligationDetails, obligationDetails2)
+      ),
+      Obligation(
+        obligationDetails = Seq(obligationDetails3)
+      )
+    )
+  )
+
+  val fulfilledObligationDetails = ObligationDetails(
+    status = Fulfilled,
+    inboundCorrespondenceFromDate = LocalDate.of(2024, 1, 1),
+    inboundCorrespondenceToDate = LocalDate.of(2024, 1, 1),
+    inboundCorrespondenceDateReceived = None,
+    inboundCorrespondenceDueDate = LocalDate.of(2024, 1, 1),
+    periodKey = periodKey
+  )
+
+  val obligationDataSingleFulfilled = ObligationData(
+    obligations = Seq(
+      Obligation(
+        obligationDetails = Seq(fulfilledObligationDetails)
+      )
+    )
+  )
+
+  val emptyFinancialDocument = FinancialTransactionDocument(financialTransactions = Seq.empty)
 
   val financialDocument = FinancialTransactionDocument(
     financialTransactions = Seq(
@@ -112,4 +149,27 @@ trait AlcoholDutyTestData {
     )
   )
 
+  val approvedAdrSubscriptionSummary = new AdrSubscriptionSummary(
+    approvalStatus = ApprovalStatus.Approved,
+    regimes = Set(
+      AlcoholRegime.Beer,
+      AlcoholRegime.Wine,
+      AlcoholRegime.Cider,
+      AlcoholRegime.Spirits,
+      AlcoholRegime.OtherFermentedProduct
+    )
+  )
+
+  val adrObligationDetails          = new AdrObligationData(
+    status = ObligationStatus.Open,
+    fromDate = LocalDate.of(2024, 1, 1),
+    toDate = LocalDate.of(2024, 1, 1),
+    dueDate = LocalDate.of(2024, 1, 1)
+  )
+  val adrObligationDetailsFulfilled = new AdrObligationData(
+    ObligationStatus.Fulfilled,
+    fromDate = LocalDate.of(2024, 1, 1),
+    toDate = LocalDate.of(2024, 1, 1),
+    dueDate = LocalDate.of(2024, 1, 1)
+  )
 }

@@ -1,3 +1,5 @@
 # microservice specific routes
 
-GET        /bta-tile-data/:alcoholDutyReference     uk.gov.hmrc.alcoholdutyaccount.controllers.AlcoholDutyController.btaTileData(alcoholDutyReference)
+GET        /subscriptionSummary/:alcoholDutyReference                  uk.gov.hmrc.alcoholdutyaccount.controllers.AlcoholDutyController.subscriptionSummary(alcoholDutyReference)
+GET        /openObligationDetails/:alcoholDutyReference/:periodKey     uk.gov.hmrc.alcoholdutyaccount.controllers.AlcoholDutyController.openObligationDetails(alcoholDutyReference, periodKey)
+GET        /bta-tile-data/:alcoholDutyReference                        uk.gov.hmrc.alcoholdutyaccount.controllers.AlcoholDutyController.btaTileData(alcoholDutyReference)
