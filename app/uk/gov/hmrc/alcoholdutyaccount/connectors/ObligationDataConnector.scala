@@ -20,7 +20,7 @@ import cats.data.EitherT
 import play.api.{Logger, Logging}
 import play.api.http.Status.{INTERNAL_SERVER_ERROR, NOT_FOUND}
 import uk.gov.hmrc.alcoholdutyaccount.config.AppConfig
-import uk.gov.hmrc.alcoholdutyaccount.models.hods.{ObligationData, Open}
+import uk.gov.hmrc.alcoholdutyaccount.models.hods.{ObligationData, ObligationStatus}
 import uk.gov.hmrc.http.{HttpClient, _}
 import uk.gov.hmrc.play.bootstrap.backend.http.ErrorResponse
 
@@ -36,8 +36,9 @@ class ObligationDataConnector @Inject() (
     with Logging {
   override protected val logger: Logger = Logger(this.getClass)
 
-  def getOpenObligationDetails(
-    alcoholDutyReference: String
+  def getObligationDetails(
+    alcoholDutyReference: String,
+    obligationStatusFilter: Option[ObligationStatus]
   )(implicit hc: HeaderCarrier): EitherT[Future, ErrorResponse, ObligationData] =
     EitherT {
 
@@ -45,10 +46,11 @@ class ObligationDataConnector @Inject() (
         s"${config.obligationDataApiUrl}/enterprise/obligation-data/${config.idType}/$alcoholDutyReference/${config.regimeType}"
       logger.info(s"Fetching all open obligation data for appaId $alcoholDutyReference")
 
-      val obligationStatusOpenFilter = "status" -> Open.value
-
       httpClient
-        .GET[Either[UpstreamErrorResponse, HttpResponse]](url = url, queryParams = Seq(obligationStatusOpenFilter))
+        .GET[Either[UpstreamErrorResponse, HttpResponse]](
+          url = url,
+          queryParams = getQueryParam(obligationStatusFilter)
+        )
         .map {
           case Right(response) =>
             Try {
@@ -64,6 +66,12 @@ class ObligationDataConnector @Inject() (
               }
           case Left(error)     => Left(processError(error, alcoholDutyReference))
         }
+    }
+
+  private def getQueryParam(obligationStatusFilter: Option[ObligationStatus]): Seq[(String, String)] =
+    obligationStatusFilter match {
+      case Some(obligationStatus) => Seq("status" -> obligationStatus.value)
+      case _                      => Seq.empty
     }
 
   private def processError(error: UpstreamErrorResponse, alcoholDutyReference: String): ErrorResponse =

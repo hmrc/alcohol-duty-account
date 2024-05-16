@@ -22,6 +22,7 @@ import play.api.mvc.{Action, AnyContent, ControllerComponents}
 import uk.gov.hmrc.alcoholdutyaccount.service.AlcoholDutyService
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 import uk.gov.hmrc.play.bootstrap.backend.http.ErrorResponse
+import uk.gov.hmrc.alcoholdutyaccount.models.hods.Open
 
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
@@ -51,7 +52,7 @@ class AlcoholDutyController @Inject() (
       periodKey match {
         case returnPeriodPattern(_) =>
           alcoholDutyService
-            .getOpenObligations(alcoholDutyReference, periodKey)
+            .getOpenObligations(alcoholDutyReference, periodKey, Some(Open))
             .fold(
               err => error(err),
               obligationDetails => Ok(Json.toJson(obligationDetails))
@@ -67,6 +68,15 @@ class AlcoholDutyController @Inject() (
       .fold(
         error,
         alcoholDutyCardData => Ok(Json.toJson(alcoholDutyCardData))
+      )
+  }
+
+  def obligationDetails(alcoholDutyReference: String): Action[AnyContent] = Action.async { implicit request =>
+    alcoholDutyService
+      .getObligations(alcoholDutyReference, None)
+      .fold(
+        err => error(err),
+        obligationDetails => Ok(Json.toJson(obligationDetails))
       )
   }
 }

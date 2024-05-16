@@ -66,6 +66,8 @@ trait AlcoholDutyTestData {
   val periodKey3 = "24AG"
   val periodKey4 = "24AH"
 
+  val obligationFilter = Open
+
   val obligationDetails = ObligationDetails(
     status = Open,
     inboundCorrespondenceFromDate = LocalDate.of(2024, 1, 1),
