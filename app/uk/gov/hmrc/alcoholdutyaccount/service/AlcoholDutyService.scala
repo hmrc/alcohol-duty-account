@@ -20,9 +20,11 @@ import cats.data.EitherT
 import cats.implicits._
 import play.api.http.Status.{NOT_FOUND, NOT_IMPLEMENTED}
 import uk.gov.hmrc.alcoholdutyaccount.connectors.{FinancialDataConnector, ObligationDataConnector, SubscriptionSummaryConnector}
-import uk.gov.hmrc.alcoholdutyaccount.models.{AlcoholDutyCardData, Approved, Balance, ErrorResponse, InsolventCardData, Payments, Returns, hods}
-import uk.gov.hmrc.alcoholdutyaccount.models.hods.{FinancialTransactionDocument, ObligationDetails, Open}
+import uk.gov.hmrc.alcoholdutyaccount.models.ApprovalStatus.Approved
+import uk.gov.hmrc.alcoholdutyaccount.models._
+import uk.gov.hmrc.alcoholdutyaccount.models.hods.{FinancialTransactionDocument, ObligationData, ObligationDetails}
 import uk.gov.hmrc.http.HeaderCarrier
+import uk.gov.hmrc.play.bootstrap.backend.http.ErrorResponse
 
 import java.time.LocalDate
 import javax.inject.{Inject, Singleton}
@@ -35,25 +37,54 @@ class AlcoholDutyService @Inject() (
   financialDataConnector: FinancialDataConnector
 )(implicit ec: ExecutionContext) {
 
+  def getSubscriptionSummary(
+    alcoholDutyReference: String
+  )(implicit hc: HeaderCarrier): EitherT[Future, ErrorResponse, AdrSubscriptionSummary] = EitherT {
+    subscriptionSummaryConnector
+      .getSubscriptionSummary(alcoholDutyReference)
+      .foldF(
+        errorResponse => Future.successful(Left(errorResponse)),
+        subscriptionSummary => Future.successful(Right(AdrSubscriptionSummary(subscriptionSummary)))
+      )
+  }
+
+  def getOpenObligations(
+    alcoholDutyReference: String,
+    periodKey: String
+  )(implicit hc: HeaderCarrier): EitherT[Future, ErrorResponse, AdrObligationData] =
+    obligationDataConnector
+      .getOpenObligationDetails(alcoholDutyReference)
+      .map(findObligationDetailsForPeriod(_, periodKey))
+      .transform {
+        case l @ Left(_)                    => l.asInstanceOf[Either[ErrorResponse, AdrObligationData]]
+        case Right(None)                    =>
+          Left(ErrorResponse(NOT_FOUND, s"Obligation details not found for period key $periodKey"))
+        case Right(Some(obligationDetails)) =>
+          Right[ErrorResponse, AdrObligationData](AdrObligationData(obligationDetails))
+      }
+
+  private def findObligationDetailsForPeriod(
+    obligationData: ObligationData,
+    periodKey: String
+  ): Option[ObligationDetails] =
+    obligationData.obligations.flatMap(_.obligationDetails).find(_.periodKey == periodKey)
+
   def getAlcoholDutyCardData(
     alcoholDutyReference: String
-  )(implicit hc: HeaderCarrier): EitherT[Future, ErrorResponse, AlcoholDutyCardData] = EitherT {
-    subscriptionSummaryConnector.getSubscriptionSummary(alcoholDutyReference).value.flatMap {
-      case Some(subscriptionSummary) if subscriptionSummary.insolvencyFlag                  =>
+  )(implicit hc: HeaderCarrier): EitherT[Future, ErrorResponse, AlcoholDutyCardData] =
+    subscriptionSummaryConnector.getSubscriptionSummary(alcoholDutyReference).flatMapF {
+      case subscriptionSummary if subscriptionSummary.insolvencyFlag                  =>
         Future.successful(Right(InsolventCardData(alcoholDutyReference)))
-      case Some(subscriptionSummary) if subscriptionSummary.approvalStatus == hods.Approved =>
+      case subscriptionSummary if subscriptionSummary.approvalStatus == hods.Approved =>
         getObligationAndFinancialInfo(alcoholDutyReference)
-      case Some(_)                                                                          =>
+      case _                                                                          =>
         Future.successful(Left(ErrorResponse(NOT_IMPLEMENTED, "Approval Status not yet supported")))
-      case None                                                                             =>
-        Future.successful(Left(ErrorResponse(NOT_FOUND, "Subscription Summary not found")))
     }
-  }
 
   private def getObligationAndFinancialInfo(alcoholDutyReference: String)(implicit
     hc: HeaderCarrier
   ): Future[Either[ErrorResponse, AlcoholDutyCardData]] = for {
-    obData <- getObligationData(alcoholDutyReference)
+    obData <- getReturnDetails(alcoholDutyReference)
     fData  <- getPaymentInformation(alcoholDutyReference)
   } yield AlcoholDutyCardData(
     alcoholDutyReference = alcoholDutyReference,
@@ -64,11 +95,12 @@ class AlcoholDutyService @Inject() (
     payments = fData.getOrElse(Payments())
   ).asRight
 
-  private[service] def getObligationData(
+  private[service] def getReturnDetails(
     alcoholDutyReference: String
   )(implicit hc: HeaderCarrier): Future[Option[Returns]] =
     obligationDataConnector
-      .getObligationData(alcoholDutyReference)
+      .getOpenObligationDetails(alcoholDutyReference)
+      .toOption
       .fold {
         None: Option[Returns]
       } { obligationData =>
@@ -79,12 +111,12 @@ class AlcoholDutyService @Inject() (
     if (obligationDetails.isEmpty) {
       Returns()
     } else {
+      val now = LocalDate.now()
+
       val dueReturnExists        =
-        obligationDetails.exists { o =>
-          o.status == Open && o.inboundCorrespondenceDueDate.isAfter(LocalDate.now().minusDays(1))
-        }
+        obligationDetails.exists(_.inboundCorrespondenceDueDate.isAfter(now.minusDays(1)))
       val numberOfOverdueReturns =
-        obligationDetails.count(o => o.status == Open && o.inboundCorrespondenceDueDate.isBefore(LocalDate.now()))
+        obligationDetails.count(_.inboundCorrespondenceDueDate.isBefore(now))
       Returns(Some(dueReturnExists), Some(numberOfOverdueReturns))
     }
 
@@ -94,7 +126,7 @@ class AlcoholDutyService @Inject() (
     financialDataConnector
       .getFinancialData(alcoholDutyReference)
       .fold {
-        None: Option[Payments]
+        Option.empty[Payments]
       } { financialData =>
         Some(extractPayments(financialData))
       }

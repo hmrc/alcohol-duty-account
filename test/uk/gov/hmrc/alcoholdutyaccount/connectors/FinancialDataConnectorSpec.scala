@@ -16,88 +16,55 @@
 
 package uk.gov.hmrc.alcoholdutyaccount.connectors
 
-import org.mockito.ArgumentMatchersSugar.*
-import org.mockito.MockitoSugar.mock
-import org.mockito.cats.IdiomaticMockitoCats.StubbingOpsCats
-import org.scalatest.matchers.should.Matchers.convertToAnyShouldWrapper
-import play.api.http.Status.{NOT_FOUND, OK}
-import uk.gov.hmrc.alcoholdutyaccount.base.SpecBase
-import uk.gov.hmrc.alcoholdutyaccount.config.AppConfig
-import uk.gov.hmrc.alcoholdutyaccount.models.hods.{FinancialTransaction, FinancialTransactionDocument, FinancialTransactionItem}
-import uk.gov.hmrc.http.{HeaderCarrier, HttpClient, HttpResponse, UpstreamErrorResponse}
+import org.scalatest.concurrent.ScalaFutures
+import play.api.http.Status.{BAD_REQUEST, NOT_FOUND, OK}
+import play.api.libs.json.Json
+import uk.gov.hmrc.alcoholdutyaccount.base.{ConnectorTestHelpers, SpecBase}
+import uk.gov.hmrc.alcoholdutyaccount.common.AlcoholDutyTestData
 
-import scala.concurrent.ExecutionContext
+import scala.concurrent.ExecutionContext.Implicits.global
 
-class FinancialDataConnectorSpec extends SpecBase {
-
-  implicit val ec: ExecutionContext = ExecutionContext.global
-  implicit val hc: HeaderCarrier    = HeaderCarrier()
-
-  val mockConfig: AppConfig  = mock[AppConfig]
-  val httpClient: HttpClient = mock[HttpClient]
-
-  val connector = new FinancialDataConnector(config = mockConfig, httpClient = httpClient)
+class FinancialDataConnectorSpec extends SpecBase with ScalaFutures with ConnectorTestHelpers {
+  protected val endpointName = "financial"
 
   "FinancialDataConnector" - {
-    "successfully retrieves financial document object" in {
-
-      val expectedFinancialData = FinancialTransactionDocument(
-        financialTransactions = Seq(
-          FinancialTransaction(
-            periodKey = "18AA",
-            chargeReference = "XM002610011594",
-            originalAmount = 100.00,
-            outstandingAmount = 50.00,
-            mainTransaction = "1234",
-            subTransaction = "5678",
-            items = Seq(
-              FinancialTransactionItem(
-                subItem = "001",
-                paymentAmount = 50.00
-              )
-            )
-          )
-        )
-      )
-
-      val json =
-        """
-              |{
-              |  "financialTransactions": [{
-              |    "periodKey": "18AA",
-              |    "chargeReference": "XM002610011594",
-              |    "originalAmount": 100.00,
-              |    "outstandingAmount": 50.00,
-              |    "mainTransaction": "1234",
-              |    "subTransaction": "5678",
-              |    "items": [{
-              |      "subItem": "001",
-              |      "amount": 100.00,
-              |      "paymentAmount": 50.00
-              |      }]
-              |    }]
-              |}
-              |""".stripMargin
-
-      httpClient.GET[Either[UpstreamErrorResponse, HttpResponse]](*, *, *)(*, *, *) returnsF Right(
-        HttpResponse(OK, json)
-      )
-
-      whenReady(connector.getFinancialData("ID001").value) { result =>
-        result shouldBe Some(expectedFinancialData)
+    "successfully get the financial transaction document" in new SetUp {
+      stubGet(url, OK, Json.toJson(financialDocument).toString)
+      whenReady(connector.getFinancialData(alcoholDutyReference).value) { result =>
+        result mustBe Some(financialDocument)
+        verifyGet(url)
       }
-
     }
 
-    "return None if the response has a status different from 200" in {
-      httpClient.GET[Either[UpstreamErrorResponse, HttpResponse]](*, *, *)(*, *, *) returnsF Right(
-        HttpResponse(NOT_FOUND, "{}")
-      )
+    "return None if the data retrieved cannot be parsed" in new SetUp {
+      stubGet(url, OK, "blah")
+      whenReady(connector.getFinancialData(alcoholDutyReference).value) { result =>
+        result mustBe None
+        verifyGet(url)
+      }
+    }
 
-      whenReady(connector.getFinancialData("ID001").value) { result =>
-        result shouldBe None
+    "return None if the financial transaction document cannot be found" in new SetUp {
+      stubGet(url, NOT_FOUND, "")
+      whenReady(connector.getFinancialData(alcoholDutyReference).value) { result =>
+        result mustBe None
+        verifyGet(url)
+      }
+    }
+
+    "return None if an error other than NOT_FOUND when fetching the financial transaction document" in new SetUp {
+      stubGet(url, BAD_REQUEST, "")
+      whenReady(connector.getFinancialData(alcoholDutyReference).value) { result =>
+        result mustBe None
+        verifyGet(url)
       }
     }
   }
 
+  class SetUp extends ConnectorFixture with AlcoholDutyTestData {
+    val alcoholDutyReference: String = generateAlcoholDutyReference().sample.get
+    val connector                    = new FinancialDataConnector(config = config, httpClient = httpClient)
+    val url                          =
+      s"${config.financialDataApiUrl}/enterprise/financial-data/${config.idType}/$alcoholDutyReference/${config.regimeType}"
+  }
 }

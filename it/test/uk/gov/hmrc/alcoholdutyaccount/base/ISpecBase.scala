@@ -29,8 +29,10 @@ import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.mvc.{Result, Results}
 import play.api.test._
 import play.api.{Application, Mode}
-import uk.gov.hmrc.alcoholdutyaccount.base.WireMockHelper.setWireMockPort
 import uk.gov.hmrc.alcoholdutyaccount.common.AlcoholDutyTestData
+import uk.gov.hmrc.alcoholdutyaccount.config.AppConfig
+import uk.gov.hmrc.http.test.WireMockSupport
+import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 
 import scala.concurrent.ExecutionContext.global
 import scala.concurrent.{ExecutionContext, Future}
@@ -38,8 +40,6 @@ import scala.concurrent.{ExecutionContext, Future}
 abstract class ISpecBase
     extends AnyWordSpec
     with GuiceOneAppPerSuite
-    with BeforeAndAfterEach
-    with BeforeAndAfterAll
     with Matchers
     with Inspectors
     with ScalaFutures
@@ -57,8 +57,8 @@ abstract class ISpecBase
     with HttpProtocol
     with HttpVerbs
     with ResultExtractors
-    with WireMockHelper
-    with WireMockStubs
+    with WireMockSupport
+    with AuthStubs
     with IntegrationPatience
     with AlcoholDutyTestData {
 
@@ -68,17 +68,10 @@ abstract class ISpecBase
   implicit lazy val materializer: Materializer = Materializer(system)
   implicit def ec: ExecutionContext            = global
 
-  val internalId: String = "test-id"
-
   val additionalAppConfig: Map[String, Any] = Map(
     "metrics.enabled"  -> false,
     "auditing.enabled" -> false
-  ) ++ setWireMockPort(
-    "auth",
-    "subscription",
-    "obligation",
-    "financial"
-  )
+  ) ++ getWireMockAppConfig(Seq("auth", "subscription", "obligation", "financial"))
 
   override def fakeApplication(): Application =
     GuiceApplicationBuilder()
@@ -87,26 +80,13 @@ abstract class ISpecBase
       .in(Mode.Test)
       .build()
 
+  lazy val config = new AppConfig(app.configuration, new ServicesConfig(app.configuration))
+
   /*
   This is to initialise the app before running any tests, as it is lazy by default in org.scalatestplus.play.BaseOneAppPerSuite.
   It enables us to include behaviour tests that call routes within the `should` part of a test but before `in`.
    */
   locally { val _ = app }
-
-  override def beforeAll(): Unit = {
-    startWireMock()
-    super.beforeAll()
-  }
-
-  override def afterAll(): Unit = {
-    stopWireMock()
-    super.afterAll()
-  }
-
-  override protected def afterEach(): Unit = {
-    resetWireMock()
-    super.afterEach()
-  }
 
   def callRoute[A](fakeRequest: FakeRequest[A], requiresAuth: Boolean = true)(implicit
     app: Application,

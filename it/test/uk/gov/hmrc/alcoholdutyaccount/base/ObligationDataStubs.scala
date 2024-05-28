@@ -16,37 +16,42 @@
 
 package uk.gov.hmrc.alcoholdutyaccount.base
 
-import com.github.tomakehurst.wiremock.client.WireMock._
-import com.github.tomakehurst.wiremock.stubbing.StubMapping
-import play.api.http.Status.{NOT_FOUND, OK}
+import play.api.http.Status.{INTERNAL_SERVER_ERROR, NOT_FOUND, OK}
 import play.api.libs.json.Json
-import uk.gov.hmrc.alcoholdutyaccount.base.WireMockHelper.stub
-import uk.gov.hmrc.alcoholdutyaccount.models.hods.ObligationData
+import uk.gov.hmrc.alcoholdutyaccount.common.{AlcoholDutyTestData, WireMockHelper}
+import uk.gov.hmrc.alcoholdutyaccount.config.AppConfig
+import uk.gov.hmrc.alcoholdutyaccount.models.hods.{ObligationData, Open}
 
-trait ObligationDataStubs { self: WireMockStubs =>
+trait ObligationDataStubs extends WireMockHelper with AlcoholDutyTestData { ISpecBase =>
+  val config: AppConfig
 
-  def stubGetObligations(obligationData: ObligationData): StubMapping =
-    stub(
-      get(
-        urlEqualTo(
-          s"/enterprise/obligation-data/ZAD/$alcoholDutyReference/AD"
-        )
-      ),
-      aResponse()
-        .withStatus(OK)
-        .withBody(Json.toJson(obligationData).toString())
-    )
+  private def url(alcoholDutyReference:String):String =
+    s"${config.obligationDataApiUrl}/enterprise/obligation-data/${config.idType}/$alcoholDutyReference/${config.regimeType}"
 
-  def stubObligationsNotFound(): StubMapping =
-    stub(
-      get(
-        urlEqualTo(
-          s"/enterprise/obligation-data/ZAD/$alcoholDutyReference/AD"
-        )
-      ),
-      aResponse()
-        .withStatus(NOT_FOUND)
-        .withBody("No obligation data found")
-    )
+  val queryParams = Map(
+    "status" -> Open.value
+  )
 
+  val notFoundErrorMessage = """{
+                               |    "code": "NOT_FOUND",
+                               |    "reason": "The remote endpoint has indicated that no associated data found."
+                               |}
+                               |""".stripMargin
+
+    val otherErrorMessage =
+      """
+        |{
+        |    "code": "SERVICE_ERROR",
+        |    "reason": "An error occurred"
+        |}
+        |""".stripMargin
+
+  def stubGetObligations(alcoholDutyReference:String, obligationData: ObligationData): Unit =
+    stubGetWithParameters(url(alcoholDutyReference), queryParams, OK, Json.toJson(obligationData).toString())
+
+  def stubObligationsNotFound(alcoholDutyReference:String): Unit =
+    stubGetWithParameters(url(alcoholDutyReference), queryParams, NOT_FOUND, notFoundErrorMessage)
+
+  def stubObligationsError(alcoholDutyReference:String): Unit =
+    stubGetWithParameters(url(alcoholDutyReference), queryParams, INTERNAL_SERVER_ERROR, "No obligation data found")
 }

@@ -14,8 +14,17 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.alcoholdutyaccount.base
+package uk.gov.hmrc.alcoholdutyaccount.models
 
-import uk.gov.hmrc.alcoholdutyaccount.common.AlcoholDutyTestData
+import enumeratum.{Enum, EnumEntry, PlayJsonEnum}
 
-trait WireMockStubs extends AlcoholDutyTestData with AuthStubs with SubscriptionSummaryStubs with ObligationDataStubs  with FinancialDataStubs
+sealed trait ApprovalStatus extends EnumEntry
+object ApprovalStatus extends Enum[ApprovalStatus] with PlayJsonEnum[ApprovalStatus] {
+  val values = findValues
+
+  case object Approved extends ApprovalStatus
+  case object SmallCiderProducer extends ApprovalStatus
+  case object Insolvent extends ApprovalStatus
+  case object DeRegistered extends ApprovalStatus
+  case object Revoked extends ApprovalStatus
+}

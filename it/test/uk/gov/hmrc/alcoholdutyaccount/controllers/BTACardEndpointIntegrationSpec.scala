@@ -18,18 +18,21 @@ package uk.gov.hmrc.alcoholdutyaccount.controllers
 
 import play.api.libs.json.Json
 import play.api.test.FakeRequest
-import uk.gov.hmrc.alcoholdutyaccount.base.ISpecBase
-import uk.gov.hmrc.alcoholdutyaccount.models.{AlcoholDutyCardData, Approved, Balance, InsolventCardData, Payments, Returns}
+import uk.gov.hmrc.alcoholdutyaccount.base.{FinancialDataStubs, ISpecBase, ObligationDataStubs, SubscriptionSummaryStubs}
+import uk.gov.hmrc.alcoholdutyaccount.models.ApprovalStatus.Approved
+import uk.gov.hmrc.alcoholdutyaccount.models.{AlcoholDutyCardData, Balance, InsolventCardData, Payments, Returns}
 
-class BTACardEndpointIntegrationSpec
-  extends ISpecBase {
+class BTACardEndpointIntegrationSpec extends ISpecBase with FinancialDataStubs with ObligationDataStubs with SubscriptionSummaryStubs {
 
   "the service BTA Card endpoint should" should {
+
+    val alcoholDutyReference:String = generateAlcoholDutyReference().sample.get
+
     "respond with 200 status" in {
       stubAuthorised()
-      stubGetSubscriptionSummary(approvedSubscriptionSummary)
-      stubGetObligations(obligationData)
-      stubGetFinancialData(financialDocument)
+      stubGetSubscriptionSummary(alcoholDutyReference, approvedSubscriptionSummary)
+      stubGetObligations(alcoholDutyReference, obligationDataSingleOpen)
+      stubGetFinancialData(alcoholDutyReference, financialDocument)
 
       val expectedBTATileData = AlcoholDutyCardData(
         alcoholDutyReference = alcoholDutyReference,
@@ -63,9 +66,9 @@ class BTACardEndpointIntegrationSpec
 
     "respond with 200 status for insolvent subscription" in {
       stubAuthorised()
-      stubGetSubscriptionSummary(insolventSubscriptionSummary)
-      stubGetObligations(obligationData)
-      stubGetFinancialData(financialDocument)
+      stubGetSubscriptionSummary(alcoholDutyReference, insolventSubscriptionSummary)
+      stubGetObligations(alcoholDutyReference, obligationDataSingleOpen)
+      stubGetFinancialData(alcoholDutyReference, financialDocument)
 
       val expectedBTACardData = InsolventCardData(alcoholDutyReference)
 
@@ -80,9 +83,9 @@ class BTACardEndpointIntegrationSpec
 
     "respond with NOT_IMPLEMENTED status for subscription status de-registered" in {
       stubAuthorised()
-      stubGetSubscriptionSummary(deregisteredSubscriptionSummary)
-      stubGetObligations(obligationData)
-      stubGetFinancialData(financialDocument)
+      stubGetSubscriptionSummary(alcoholDutyReference, deregisteredSubscriptionSummary)
+      stubGetObligations(alcoholDutyReference, obligationDataSingleOpen)
+      stubGetFinancialData(alcoholDutyReference, financialDocument)
 
       val response = callRoute(
         FakeRequest("GET", routes.AlcoholDutyController.btaTileData(alcoholDutyReference).url)
@@ -94,9 +97,9 @@ class BTACardEndpointIntegrationSpec
 
     "respond with NOT_IMPLEMENTED status for subscription status revoked" in {
       stubAuthorised()
-      stubGetSubscriptionSummary(revokedSubscriptionSummary)
-      stubGetObligations(obligationData)
-      stubGetFinancialData(financialDocument)
+      stubGetSubscriptionSummary(alcoholDutyReference, revokedSubscriptionSummary)
+      stubGetObligations(alcoholDutyReference, obligationDataSingleOpen)
+      stubGetFinancialData(alcoholDutyReference, financialDocument)
 
       val response = callRoute(
         FakeRequest("GET", routes.AlcoholDutyController.btaTileData(alcoholDutyReference).url)
@@ -108,9 +111,9 @@ class BTACardEndpointIntegrationSpec
 
     "respond with NOT_FOUND status for errors in the subscription api call" in {
       stubAuthorised()
-      stubSubscriptionSummaryNotFound()
-      stubGetObligations(obligationData)
-      stubGetFinancialData(financialDocument)
+      stubSubscriptionSummaryNotFound(alcoholDutyReference)
+      stubGetObligations(alcoholDutyReference, obligationDataSingleOpen)
+      stubGetFinancialData(alcoholDutyReference, financialDocument)
 
       val response = callRoute(
         FakeRequest("GET", routes.AlcoholDutyController.btaTileData(alcoholDutyReference).url)
@@ -122,9 +125,9 @@ class BTACardEndpointIntegrationSpec
 
     "respond with 200 status for errors in the obligation api call" in {
       stubAuthorised()
-      stubGetSubscriptionSummary(approvedSubscriptionSummary)
-      stubObligationsNotFound()
-      stubGetFinancialData(financialDocument)
+      stubGetSubscriptionSummary(alcoholDutyReference, approvedSubscriptionSummary)
+      stubObligationsNotFound(alcoholDutyReference)
+      stubGetFinancialData(alcoholDutyReference, financialDocument)
 
       val expectedBTATileData = AlcoholDutyCardData(
         alcoholDutyReference = alcoholDutyReference,
@@ -154,9 +157,9 @@ class BTACardEndpointIntegrationSpec
 
     "respond with 200 status for errors in the financial api call" in {
       stubAuthorised()
-      stubGetSubscriptionSummary(approvedSubscriptionSummary)
-      stubGetObligations(obligationData)
-      stubFinancialDataNotFound()
+      stubGetSubscriptionSummary(alcoholDutyReference, approvedSubscriptionSummary)
+      stubGetObligations(alcoholDutyReference, obligationDataSingleOpen)
+      stubFinancialDataNotFound(alcoholDutyReference)
 
       val expectedBTATileData = AlcoholDutyCardData(
         alcoholDutyReference = alcoholDutyReference,

@@ -16,36 +16,24 @@
 
 package uk.gov.hmrc.alcoholdutyaccount.base
 
-import com.github.tomakehurst.wiremock.client.WireMock.{aResponse, get, urlEqualTo}
-import com.github.tomakehurst.wiremock.stubbing.StubMapping
-import play.api.http.Status.{NOT_FOUND, OK}
+import play.api.http.Status.{INTERNAL_SERVER_ERROR, NOT_FOUND, OK}
 import play.api.libs.json.Json
-import uk.gov.hmrc.alcoholdutyaccount.base.WireMockHelper.stub
+import uk.gov.hmrc.alcoholdutyaccount.common.{AlcoholDutyTestData, WireMockHelper}
+import uk.gov.hmrc.alcoholdutyaccount.config.AppConfig
 import uk.gov.hmrc.alcoholdutyaccount.models.hods.SubscriptionSummary
 
-trait SubscriptionSummaryStubs { self: WireMockStubs =>
+trait SubscriptionSummaryStubs extends WireMockHelper with AlcoholDutyTestData { ISpecBase =>
+  val config: AppConfig
 
-  def stubGetSubscriptionSummary(subscriptionSummary: SubscriptionSummary ): StubMapping =
-    stub(
-      get(
-        urlEqualTo(
-          s"/subscription/AD/ZAD/$alcoholDutyReference/summary"
-        )
-      ),
-      aResponse()
-        .withStatus(OK)
-        .withBody(Json.toJson(subscriptionSummary).toString())
-    )
+  private def url(alcoholDutyReference:String)=
+    s"${config.subscriptionApiUrl}/subscription/${config.regimeType}/${config.idType}/$alcoholDutyReference/summary"
 
-  def stubSubscriptionSummaryNotFound(): StubMapping =
-    stub(
-      get(
-        urlEqualTo(
-          s"/subscription/AD/ZAD/$alcoholDutyReference/summary"
-        )
-      ),
-      aResponse()
-        .withStatus(NOT_FOUND)
-        .withBody("No obligation data found")
-    )
+  def stubGetSubscriptionSummary(alcoholDutyReference:String, subscriptionSummary: SubscriptionSummary ): Unit =
+    stubGet(url(alcoholDutyReference), OK, Json.toJson(subscriptionSummary).toString)
+
+  def stubSubscriptionSummaryNotFound(alcoholDutyReference:String): Unit =
+    stubGet(url(alcoholDutyReference), NOT_FOUND, "No subscription summary data found")
+
+  def stubSubscriptionSummaryError(alcoholDutyReference:String): Unit =
+    stubGet(url(alcoholDutyReference), INTERNAL_SERVER_ERROR, "An error occurred")
 }

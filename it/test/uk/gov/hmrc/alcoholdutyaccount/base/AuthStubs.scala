@@ -16,27 +16,28 @@
 
 package uk.gov.hmrc.alcoholdutyaccount.base
 
-import com.github.tomakehurst.wiremock.client.WireMock.{aResponse, post, urlEqualTo}
-import com.github.tomakehurst.wiremock.stubbing.StubMapping
 import play.api.http.Status.OK
-import uk.gov.hmrc.alcoholdutyaccount.base.WireMockHelper.stub
+import uk.gov.hmrc.alcoholdutyaccount.common.WireMockHelper
 
-trait AuthStubs { self: WireMockStubs =>
-  def stubAuthorised(): StubMapping =
-    stub(
-      post(urlEqualTo("/auth/authorise")),
-      aResponse()
-        .withStatus(OK)
-        .withBody(s"""
-                     |{
-                     |  "internalId": "$testInternalId",
-                     |  "loginTimes": {
-                     |     "currentLogin": "2016-11-27T09:00:00.000Z",
-                     |     "previousLogin": "2016-11-01T12:00:00.000Z"
-                     |  },
-                     |  "agentInformation": {},
-                     |  "confidenceLevel": 50
-                     |}
-         """.stripMargin)
-    )
+trait AuthStubs extends WireMockHelper {
+  val authUrl            = "/auth/authorise"
+  val testAuthInternalId = "internalId"
+
+  val authOKResponse =
+    s"""|{
+        |  "internalId": "$testAuthInternalId",
+        |  "loginTimes": {
+        |     "currentLogin": "2016-11-27T09:00:00.000Z",
+        |     "previousLogin": "2016-11-01T12:00:00.000Z"
+        |  },
+        |  "agentInformation": {},
+        |  "confidenceLevel": 50
+        |}
+         """.stripMargin
+
+  def stubAuthorised(): Unit =
+    stubPost(authUrl, OK, authOKResponse)
+
+  def verifyAuthorised(): Unit =
+    verifyPost(authUrl)
 }
