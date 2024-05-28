@@ -18,18 +18,12 @@ package uk.gov.hmrc.alcoholdutyaccount.controllers
 
 import cats.data.EitherT
 import org.mockito.ArgumentMatchersSugar.{*, eqTo}
-import org.mockito.MockitoSugar.{mock, never, times, verify, when}
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpec
 
-import scala.concurrent.ExecutionContext.Implicits.global
 import play.api.test.{FakeRequest, Helpers}
 import org.mockito.cats.IdiomaticMockitoCats.StubbingOpsCats
-import org.scalatest.matchers.must.Matchers.convertToAnyMustWrapper
-import play.api.http.Status.{BAD_REQUEST, INTERNAL_SERVER_ERROR, OK}
 import play.api.libs.json.Json
 import play.api.mvc.Result
-import play.api.test.Helpers.{contentAsJson, defaultAwaitTimeout, status}
+import uk.gov.hmrc.alcoholdutyaccount.base.SpecBase
 import uk.gov.hmrc.alcoholdutyaccount.common.AlcoholDutyTestData
 import uk.gov.hmrc.alcoholdutyaccount.models.AlcoholDutyCardData
 import uk.gov.hmrc.alcoholdutyaccount.models.ApprovalStatus.Approved
@@ -39,9 +33,9 @@ import uk.gov.hmrc.play.bootstrap.backend.http.ErrorResponse
 
 import scala.concurrent.Future
 
-class AlcoholDutyControllerSpec extends AnyWordSpec with Matchers {
+class AlcoholDutyControllerSpec extends SpecBase {
 
-  "GET /subscriptionSummary" should {
+  "GET /subscriptionSummary" - {
     "return OK when is called with a valid alcoholDutyReference" in new SetUp {
       alcoholDutyService.getSubscriptionSummary(eqTo(alcoholDutyReference))(*) returnsF approvedAdrSubscriptionSummary
 
@@ -61,7 +55,7 @@ class AlcoholDutyControllerSpec extends AnyWordSpec with Matchers {
     }
   }
 
-  "GET /obligationDetails" should {
+  "GET /obligationDetails" - {
     "return OK when is called with a valid alcoholDutyReference" in new SetUp {
       alcoholDutyService.getOpenObligations(eqTo(alcoholDutyReference), eqTo(periodKey))(
         *
@@ -92,7 +86,7 @@ class AlcoholDutyControllerSpec extends AnyWordSpec with Matchers {
     }
   }
 
-  "GET /bta-tile-data" should {
+  "GET /bta-tile-data" - {
     "return 200 when is called with a valid alcoholDutyReference" in new SetUp {
       alcoholDutyService.getAlcoholDutyCardData(*)(*) returnsF cardData
 
@@ -116,7 +110,7 @@ class AlcoholDutyControllerSpec extends AnyWordSpec with Matchers {
     val alcoholDutyReference: String           = generateAlcoholDutyReference().sample.get
     val alcoholDutyService: AlcoholDutyService = mock[AlcoholDutyService]
     val cc                                     = Helpers.stubControllerComponents()
-    val controller                             = new AlcoholDutyController(alcoholDutyService, cc)
+    val controller                             = new AlcoholDutyController(fakeAuthorisedAction, alcoholDutyService, cc)
 
     val badPeriodKey = "blah"
 

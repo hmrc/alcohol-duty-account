@@ -17,11 +17,9 @@
 package uk.gov.hmrc.alcoholdutyaccount.service
 
 import cats.data.{EitherT, OptionT}
-import org.mockito.MockitoSugar.{mock, when}
 import org.mockito.ArgumentMatchersSugar.*
 import org.mockito.IdiomaticMockito.StubbingOps
 import org.mockito.cats.IdiomaticMockitoCats.StubbingOpsCats
-import play.api.http.Status.{INTERNAL_SERVER_ERROR, NOT_FOUND, NOT_IMPLEMENTED}
 import uk.gov.hmrc.alcoholdutyaccount.base.SpecBase
 import uk.gov.hmrc.alcoholdutyaccount.common.AlcoholDutyTestData
 import uk.gov.hmrc.alcoholdutyaccount.connectors.{FinancialDataConnector, ObligationDataConnector, SubscriptionSummaryConnector}
