@@ -45,7 +45,6 @@ class AuthorisedActionSpec extends SpecBase {
   "invokeBlock" - {
 
     "execute the block and return OK if authorised" in {
-      when(appConfig.enrolmentServiceName).thenReturn(enrolment)
       when(
         mockAuthConnector.authorise[Unit](
           eqTo(
@@ -81,7 +80,6 @@ class AuthorisedActionSpec extends SpecBase {
       InvalidBearerToken(),
       SessionRecordNotFound()
     ).foreach { exception =>
-      when(appConfig.enrolmentServiceName).thenReturn(enrolment)
       when(mockAuthConnector.authorise[Unit](any(), any())(any(), any())).thenReturn(Future.failed(exception))
 
       val result: Future[Result] = authorisedAction.invokeBlock(fakeRequest, testAction)
@@ -93,7 +91,6 @@ class AuthorisedActionSpec extends SpecBase {
   "return the exception if there is any other exception" in {
     val msg = "Test Exception"
 
-    when(appConfig.enrolmentServiceName).thenReturn(enrolment)
     when(mockAuthConnector.authorise[Unit](any(), any())(any(), any()))
       .thenReturn(Future.failed(new RuntimeException("Test Exception")))
 
