@@ -21,6 +21,7 @@ import org.mockito.ArgumentMatchersSugar.eqTo
 import play.api.mvc.{BodyParsers, Request, Result}
 import play.api.test.Helpers._
 import uk.gov.hmrc.alcoholdutyaccount.base.SpecBase
+import uk.gov.hmrc.alcoholdutyaccount.config.AppConfig
 import uk.gov.hmrc.auth.core.AffinityGroup.Organisation
 import uk.gov.hmrc.auth.core.AuthProvider.GovernmentGateway
 import uk.gov.hmrc.auth.core.CredentialStrength.strong
@@ -29,25 +30,28 @@ import uk.gov.hmrc.auth.core._
 import scala.concurrent.Future
 
 class AuthorisedActionSpec extends SpecBase {
+  val enrolment   = "HMRC-AD-ORG"
+  val testContent = "Test"
 
   val defaultBodyParser: BodyParsers.Default = app.injector.instanceOf[BodyParsers.Default]
   val mockAuthConnector: AuthConnector       = mock[AuthConnector]
 
   val authorisedAction =
-    new BaseAuthorisedAction(mockAuthConnector, defaultBodyParser)
+    new BaseAuthorisedAction(mockAuthConnector, appConfig, defaultBodyParser)
 
   val testAction: Request[_] => Future[Result] = { _ =>
-    Future(Ok("Test"))
+    Future(Ok(testContent))
   }
 
   "invokeBlock" - {
 
     "execute the block and return OK if authorised" in {
+      when(appConfig.enrolmentServiceName).thenReturn(enrolment)
       when(
         mockAuthConnector.authorise[Unit](
           eqTo(
             AuthProviders(GovernmentGateway)
-              and Enrolment("HMRC-AD-ORG")
+              and Enrolment(enrolment)
               and CredentialStrength(strong)
               and Organisation
               and ConfidenceLevel.L50
@@ -60,7 +64,7 @@ class AuthorisedActionSpec extends SpecBase {
       val result: Future[Result] = authorisedAction.invokeBlock(fakeRequest, testAction)
 
       status(result) mustBe OK
-      contentAsString(result) mustBe "Test"
+      contentAsString(result) mustBe testContent
     }
   }
 
@@ -78,6 +82,7 @@ class AuthorisedActionSpec extends SpecBase {
       InvalidBearerToken(),
       SessionRecordNotFound()
     ).foreach { exception =>
+      when(appConfig.enrolmentServiceName).thenReturn(enrolment)
       when(mockAuthConnector.authorise[Unit](any(), any())(any(), any())).thenReturn(Future.failed(exception))
 
       val result: Future[Result] = authorisedAction.invokeBlock(fakeRequest, testAction)
@@ -87,7 +92,9 @@ class AuthorisedActionSpec extends SpecBase {
   }
 
   "return the exception if there is any other exception" in {
+    val msg = "Test Exception"
 
+    when(appConfig.enrolmentServiceName).thenReturn(enrolment)
     when(mockAuthConnector.authorise[Unit](any(), any())(any(), any()))
       .thenReturn(Future.failed(new RuntimeException("Test Exception")))
 
@@ -95,6 +102,6 @@ class AuthorisedActionSpec extends SpecBase {
       await(authorisedAction.invokeBlock(fakeRequest, testAction))
     }
 
-    result.getMessage mustBe "Test Exception"
+    result.getMessage mustBe msg
   }
 }

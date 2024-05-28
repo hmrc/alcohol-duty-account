@@ -21,6 +21,7 @@ import play.api.http.Status.UNAUTHORIZED
 import play.api.libs.json.Json
 import play.api.mvc.Results.Unauthorized
 import play.api.mvc._
+import uk.gov.hmrc.alcoholdutyaccount.config.AppConfig
 import uk.gov.hmrc.auth.core.AffinityGroup.Organisation
 import uk.gov.hmrc.auth.core.AuthProvider.GovernmentGateway
 import uk.gov.hmrc.auth.core.CredentialStrength.strong
@@ -38,20 +39,19 @@ trait AuthorisedAction
 
 class BaseAuthorisedAction @Inject() (
   override val authConnector: AuthConnector,
+  config: AppConfig,
   val parser: BodyParsers.Default
 )(implicit val executionContext: ExecutionContext)
     extends AuthorisedAction
     with BackendHeaderCarrierProvider
     with AuthorisedFunctions {
 
-  private val alcoholDutyEnrolment = "HMRC-AD-ORG"
-
   override def invokeBlock[A](request: Request[A], block: Request[A] => Future[Result]): Future[Result] = {
     implicit val headerCarrier: HeaderCarrier = hc(request)
 
     authorised(
       AuthProviders(GovernmentGateway)
-        and Enrolment(alcoholDutyEnrolment)
+        and Enrolment(config.enrolmentServiceName)
         and CredentialStrength(strong)
         and Organisation
         and ConfidenceLevel.L50
