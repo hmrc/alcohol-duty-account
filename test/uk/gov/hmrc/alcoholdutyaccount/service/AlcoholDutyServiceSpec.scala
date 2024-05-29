@@ -414,7 +414,22 @@ class AlcoholDutyServiceSpec extends SpecBase with AlcoholDutyTestData {
         )
         subscriptionSummaryConnector.getSubscriptionSummary(*)(*) returnsF subscriptionSummary
 
-        val obligationDataOneDue = ObligationData(obligations = Seq.empty)
+        val obligationDataOneDue = ObligationData(obligations =
+          Seq(
+            Obligation(
+              obligationDetails = Seq(
+                ObligationDetails(
+                  status = Open,
+                  inboundCorrespondenceFromDate = periodStart,
+                  inboundCorrespondenceToDate = periodEnd,
+                  inboundCorrespondenceDateReceived = None,
+                  inboundCorrespondenceDueDate = LocalDate.now().plusDays(1),
+                  periodKey = "11AA"
+                )
+              )
+            )
+          )
+        )
         when(obligationDataConnector.getOpenObligationDetails(*)(*))
           .thenReturn(EitherT.fromEither(Right(obligationDataOneDue)))
 
@@ -428,8 +443,7 @@ class AlcoholDutyServiceSpec extends SpecBase with AlcoholDutyTestData {
               false,
               false,
               true,
-              Returns(),
-//             Returns(Some(true), Some(0), Some("11AA")),
+              Returns(Some(true), Some(0), Some("11AA")),
               Payments()
             )
           )
@@ -438,34 +452,33 @@ class AlcoholDutyServiceSpec extends SpecBase with AlcoholDutyTestData {
 
       "return data with hasReturnError and hasPaymentError set and empty Return and Payment objects " +
         "if both obligationDataConnector and financialDataConnector return errors" in new SetUp {
-        val subscriptionSummary = SubscriptionSummary(
-          typeOfAlcoholApprovedForList = Set(Beer),
-          smallCiderFlag = false,
-          approvalStatus = hods.Approved,
-          insolvencyFlag = false
-        )
-        subscriptionSummaryConnector.getSubscriptionSummary(*)(*) returnsF subscriptionSummary
-
-        when(obligationDataConnector.getOpenObligationDetails(*)(*))
-          .thenReturn(EitherT.fromEither(Left(ErrorResponse(NOT_FOUND, ""))))
-
-        financialDataConnector.getFinancialData(*)(*) returns OptionT.none[Future, FinancialTransactionDocument]
-
-        whenReady(service.getAlcoholDutyCardData(alcoholDutyReference).value) { result =>
-          result mustBe Right(
-            AlcoholDutyCardData(
-              alcoholDutyReference,
-              Some(Approved),
-              false,
-              true,
-              true,
-              Returns(),
-              //              Returns(Some(true), Some(0), Some("11AA")),
-              Payments()
-            )
+          val subscriptionSummary = SubscriptionSummary(
+            typeOfAlcoholApprovedForList = Set(Beer),
+            smallCiderFlag = false,
+            approvalStatus = hods.Approved,
+            insolvencyFlag = false
           )
+          subscriptionSummaryConnector.getSubscriptionSummary(*)(*) returnsF subscriptionSummary
+
+          when(obligationDataConnector.getOpenObligationDetails(*)(*))
+            .thenReturn(EitherT.fromEither(Left(ErrorResponse(NOT_FOUND, ""))))
+
+          financialDataConnector.getFinancialData(*)(*) returns OptionT.none[Future, FinancialTransactionDocument]
+
+          whenReady(service.getAlcoholDutyCardData(alcoholDutyReference).value) { result =>
+            result mustBe Right(
+              AlcoholDutyCardData(
+                alcoholDutyReference,
+                Some(Approved),
+                false,
+                true,
+                true,
+                Returns(),
+                Payments()
+              )
+            )
+          }
         }
-      }
 
       Seq(hods.Revoked -> Revoked, hods.DeRegistered -> DeRegistered).foreach {
         case (hodsApprovalStatus: hods.ApprovalStatus, approvalStatus: ApprovalStatus) =>
