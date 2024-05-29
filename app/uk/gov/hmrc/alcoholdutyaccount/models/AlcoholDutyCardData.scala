@@ -17,7 +17,6 @@
 package uk.gov.hmrc.alcoholdutyaccount.models
 
 import play.api.libs.json._
-import uk.gov.hmrc.alcoholdutyaccount.models.ApprovalStatus.Insolvent
 
 final case class Balance(
   totalPaymentAmount: BigDecimal,
@@ -39,16 +38,18 @@ object Payments {
 
 final case class Returns(
   dueReturnExists: Option[Boolean] = None,
-  numberOfOverdueReturns: Option[Int] = None
+  numberOfOverdueReturns: Option[Int] = None,
+  periodKey: Option[String] = None
 )
 object Returns {
   implicit val writes: Writes[Returns] = Json.writes[Returns]
 }
 
-object InsolventCardData {
-  def apply(alcoholDutyReference: String): AlcoholDutyCardData = AlcoholDutyCardData(
+object RestrictedCardData {
+  def apply(alcoholDutyReference: String, approvalStatus: ApprovalStatus): AlcoholDutyCardData = AlcoholDutyCardData(
     alcoholDutyReference = alcoholDutyReference,
-    approvalStatus = Insolvent,
+    approvalStatus = Some(approvalStatus),
+    hasSubscriptionSummaryError = false,
     hasReturnsError = false,
     hasPaymentError = false,
     returns = Returns(),
@@ -58,7 +59,8 @@ object InsolventCardData {
 
 case class AlcoholDutyCardData(
   alcoholDutyReference: String,
-  approvalStatus: ApprovalStatus,
+  approvalStatus: Option[ApprovalStatus],
+  hasSubscriptionSummaryError: Boolean,
   hasReturnsError: Boolean,
   hasPaymentError: Boolean,
   returns: Returns,

@@ -52,6 +52,13 @@ trait AlcoholDutyTestData {
     insolvencyFlag = false
   )
 
+  val smallCiderProducerSubscriptionSummary = SubscriptionSummary(
+    typeOfAlcoholApprovedForList = Set(Beer, CiderOrPerry, WineAndOtherFermentedProduct, Spirits),
+    smallCiderFlag = true,
+    approvalStatus = Approved,
+    insolvencyFlag = false
+  )
+
   def generateAlcoholDutyReference(): Gen[String] = for {
     idNumSection <- Gen.listOfN(10, Gen.numChar)
   } yield s"XMADP${idNumSection.mkString}"

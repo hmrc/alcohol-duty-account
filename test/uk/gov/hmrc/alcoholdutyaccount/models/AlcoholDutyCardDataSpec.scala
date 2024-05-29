@@ -24,43 +24,89 @@ import uk.gov.hmrc.alcoholdutyaccount.models.ApprovalStatus._
 class AlcoholDutyCardDataSpec extends SpecBase {
 
   "AlcoholDutyCardData" - {
-    "should be able to be written as Json" in {
-      val alcoholDutyCardData = AlcoholDutyCardData(
-        alcoholDutyReference = "REF01",
-        approvalStatus = Approved,
-        hasReturnsError = false,
-        hasPaymentError = false,
-        returns = Returns(
-          dueReturnExists = Some(true),
-          numberOfOverdueReturns = Some(1)
-        ),
-        payments = Payments()
-      )
-
-      val result = Json.toJson(alcoholDutyCardData)
-
-      val expectedJson =
-        """
-          |{
-          |  "alcoholDutyReference":"REF01",
-          |  "approvalStatus":"Approved",
-          |  "hasReturnsError":false,
-          |  "hasPaymentError":false,
-          |  "returns": {
-          |    "dueReturnExists":true,
-          |    "numberOfOverdueReturns":1
-          |  },
-          |  "payments": {}
-          |}""".stripMargin
-
-      result shouldBe Json.parse(expectedJson)
-    }
-
-    Seq(Revoked, DeRegistered, Insolvent, SmallCiderProducer).foreach { approvalStatus =>
-      s"should be able to be written as Json when the Return is empty and approval type is $approvalStatus" in {
+    "should be able to be written as Json" - {
+      "when all the fields are available " in {
         val alcoholDutyCardData = AlcoholDutyCardData(
           alcoholDutyReference = "REF01",
-          approvalStatus = approvalStatus,
+          approvalStatus = Some(Approved),
+          hasSubscriptionSummaryError = false,
+          hasReturnsError = false,
+          hasPaymentError = false,
+          returns = Returns(
+            dueReturnExists = Some(true),
+            numberOfOverdueReturns = Some(1)
+          ),
+          payments = Payments(
+            balance = Some(
+              Balance(
+                totalPaymentAmount = 1001.99,
+                isMultiplePaymentDue = false,
+                chargeReference = Some("CHARGE-REF")
+              )
+            )
+          )
+        )
+
+        val result = Json.toJson(alcoholDutyCardData)
+
+        val expectedJson =
+          """
+            |{
+            |  "alcoholDutyReference":"REF01",
+            |  "approvalStatus":"Approved",
+            |  "hasSubscriptionSummaryError":false,
+            |  "hasReturnsError":false,
+            |  "hasPaymentError":false,
+            |  "returns": {
+            |    "dueReturnExists":true,
+            |    "numberOfOverdueReturns":1
+            |  },
+            |  "payments": {
+            |     "balance": {
+            |        "totalPaymentAmount":1001.99,
+            |        "isMultiplePaymentDue":false,
+            |        "chargeReference":"CHARGE-REF"
+            |     }
+            |  }
+            |}""".stripMargin
+
+        result shouldBe Json.parse(expectedJson)
+      }
+
+      Seq(Revoked, DeRegistered, SmallCiderProducer).foreach { approvalStatus =>
+        s"when the Returns and Payments are empty and approval type is $approvalStatus" in {
+          val alcoholDutyCardData = AlcoholDutyCardData(
+            alcoholDutyReference = "REF01",
+            approvalStatus = Some(approvalStatus),
+            hasSubscriptionSummaryError = false,
+            hasReturnsError = false,
+            hasPaymentError = false,
+            returns = Returns(),
+            payments = Payments()
+          )
+
+          val result = Json.toJson(alcoholDutyCardData)
+
+          val expectedJson =
+            s"""
+               |{
+               |  "alcoholDutyReference":"REF01",
+               |  "approvalStatus":"$approvalStatus",
+               |  "hasSubscriptionSummaryError":false,
+               |  "hasReturnsError":false,
+               |  "hasPaymentError":false,
+               |  "returns": {},
+               |  "payments": {}
+               |}""".stripMargin
+
+          result shouldBe Json.parse(expectedJson)
+        }
+      }
+      "when only mandatory available due to subscription summary error" in {
+        val alcoholDutyCardData = AlcoholDutyCardData(
+          alcoholDutyReference = "REF01",
+          approvalStatus = None,
+          hasSubscriptionSummaryError = true,
           hasReturnsError = false,
           hasPaymentError = false,
           returns = Returns(),
@@ -70,10 +116,10 @@ class AlcoholDutyCardDataSpec extends SpecBase {
         val result = Json.toJson(alcoholDutyCardData)
 
         val expectedJson =
-          s"""
+          """
             |{
             |  "alcoholDutyReference":"REF01",
-            |  "approvalStatus":"$approvalStatus",
+            |  "hasSubscriptionSummaryError":true,
             |  "hasReturnsError":false,
             |  "hasPaymentError":false,
             |  "returns": {},
@@ -82,6 +128,7 @@ class AlcoholDutyCardDataSpec extends SpecBase {
 
         result shouldBe Json.parse(expectedJson)
       }
+
     }
   }
 }
