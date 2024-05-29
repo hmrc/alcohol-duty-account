@@ -159,7 +159,7 @@ The status prioritisation will be as below:
 
 1. DeRegistered - Revoked
 1. SmallCiderProducer
-1. Approved - Insolvent 
+1. Approved - Insolvent
 
 ### Unauthorized response
 
