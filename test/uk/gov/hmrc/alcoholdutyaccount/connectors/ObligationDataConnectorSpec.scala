@@ -45,6 +45,13 @@ class ObligationDataConnectorSpec extends SpecBase with ScalaFutures with Connec
         verifyGetWithParameters(url, expectedQueryParams)
       }
     }
+    "successfully get open and fulfilled obligation data if there is no filter" in new SetUp {
+      stubGet(url, OK, Json.toJson(obligationDataMultipleOpenAndFulfilled).toString)
+      whenReady(connector.getObligationDetails(alcoholDutyReference, None).value) { result =>
+        result mustBe Right(obligationDataMultipleOpenAndFulfilled)
+        verifyGet(url)
+      }
+    }
 
     "return an INTERNAL_SERVER_ERROR if the data retrieved cannot be parsed" in new SetUp {
       stubGetWithParameters(url, expectedQueryParams, OK, "blah")
@@ -74,9 +81,7 @@ class ObligationDataConnectorSpec extends SpecBase with ScalaFutures with Connec
   class SetUp extends ConnectorFixture with AlcoholDutyTestData {
     val alcoholDutyReference: String = generateAlcoholDutyReference().sample.get
     val connector                    = new ObligationDataConnector(config = config, httpClient = httpClient)
-    val expectedQueryParams          = Map(
-      "status" -> Open.value
-    )
+    val expectedQueryParams          = Seq("status" -> Open.value)
     val url                          =
       s"${config.obligationDataApiUrl}/enterprise/obligation-data/${config.idType}/$alcoholDutyReference/${config.regimeType}"
 

@@ -58,7 +58,7 @@ class AlcoholDutyServiceSpec extends SpecBase with AlcoholDutyTestData {
       }
     }
 
-    "getObligations should" - {
+    "getOpenObligations should" - {
       "return obligation data from the connector where one open return matches the period key" in new SetUp {
         when(obligationDataConnector.getObligationDetails(alcoholDutyReference, Some(obligationFilter)))
           .thenReturn(EitherT.fromEither(Right(obligationDataMultipleOpen)))
@@ -88,6 +88,33 @@ class AlcoholDutyServiceSpec extends SpecBase with AlcoholDutyTestData {
         when(obligationDataConnector.getObligationDetails(alcoholDutyReference, Some(obligationFilter)))
           .thenReturn(EitherT.fromEither(Left(error)))
         whenReady(service.getOpenObligations(alcoholDutyReference, periodKey, Some(obligationFilter)).value)(
+          _ mustBe Left(error)
+        )
+      }
+    }
+
+    "getObligations should" - {
+      "return obligation data from the connector where multiple open and fulfilled obligations are returned" in new SetUp {
+        when(obligationDataConnector.getObligationDetails(alcoholDutyReference, None))
+          .thenReturn(EitherT.fromEither(Right(obligationDataMultipleOpenAndFulfilled)))
+        whenReady(service.getObligations(alcoholDutyReference, None).value) {
+          _ mustBe Right(adrMultipleOpenAndFulfilledData)
+        }
+      }
+
+      "return obligation data from the connector where one fulfilled obligation is returned" in new SetUp {
+        when(obligationDataConnector.getObligationDetails(alcoholDutyReference, None))
+          .thenReturn(EitherT.fromEither(Right(obligationDataSingleFulfilled)))
+        whenReady(service.getObligations(alcoholDutyReference, None).value) {
+          _ mustBe Right(Seq(adrObligationDetailsFulfilled))
+        }
+      }
+
+      "return an error if the connector is unable to obtain obligation data" in new SetUp {
+        val error = ErrorResponse(INTERNAL_SERVER_ERROR, "An error occurred")
+        when(obligationDataConnector.getObligationDetails(alcoholDutyReference, None))
+          .thenReturn(EitherT.fromEither(Left(error)))
+        whenReady(service.getObligations(alcoholDutyReference, None).value)(
           _ mustBe Left(error)
         )
       }

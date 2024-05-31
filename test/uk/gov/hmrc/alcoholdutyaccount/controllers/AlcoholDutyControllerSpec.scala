@@ -61,7 +61,7 @@ class AlcoholDutyControllerSpec extends AnyWordSpec with Matchers {
     }
   }
 
-  "GET /obligationDetails" should {
+  "GET /openObligationDetails" should {
     "return OK when is called with a valid alcoholDutyReference" in new SetUp {
       alcoholDutyService.getOpenObligations(eqTo(alcoholDutyReference), eqTo(periodKey), eqTo(Some(obligationFilter)))(
         *
@@ -89,6 +89,27 @@ class AlcoholDutyControllerSpec extends AnyWordSpec with Matchers {
       status(result) mustBe INTERNAL_SERVER_ERROR
 
       verify(alcoholDutyService, times(1)).getOpenObligations(*, *, *)(*)
+    }
+  }
+  "GET /obligationDetails"     should {
+    "return OK when is called with a valid alcoholDutyReference" in new SetUp {
+      alcoholDutyService.getObligations(eqTo(alcoholDutyReference), None)(
+        *
+      ) returnsF adrMultipleOpenAndFulfilledData
+
+      val result: Future[Result] = controller.obligationDetails(alcoholDutyReference)(FakeRequest())
+      status(result) mustBe OK
+      contentAsJson(result) mustBe Json.toJson(adrMultipleOpenAndFulfilledData)
+    }
+
+    "return any error returned from the service" in new SetUp {
+      when(alcoholDutyService.getObligations(*, *)(*))
+        .thenReturn(EitherT.fromEither(Left(ErrorResponse(INTERNAL_SERVER_ERROR, "An error occurred"))))
+
+      val result: Future[Result] = controller.obligationDetails(alcoholDutyReference)(FakeRequest())
+      status(result) mustBe INTERNAL_SERVER_ERROR
+
+      verify(alcoholDutyService, times(1)).getObligations(*, *)(*)
     }
   }
 
