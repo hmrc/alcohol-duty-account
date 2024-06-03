@@ -116,7 +116,8 @@ class AlcoholDutyControllerSpec extends SpecBase {
 
     val cardData = AlcoholDutyCardData(
       alcoholDutyReference = "testAlcoholDutyReference",
-      approvalStatus = Approved,
+      approvalStatus = Some(Approved),
+      hasSubscriptionSummaryError = false,
       hasReturnsError = false,
       hasPaymentError = false,
       returns = Returns(dueReturnExists = Some(true), numberOfOverdueReturns = Some(0)),
