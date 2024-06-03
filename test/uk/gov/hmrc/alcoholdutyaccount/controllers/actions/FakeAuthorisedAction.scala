@@ -14,18 +14,20 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.alcoholdutyaccount.config
+package uk.gov.hmrc.alcoholdutyaccount.controllers.actions
 
-import com.google.inject.AbstractModule
-import uk.gov.hmrc.alcoholdutyaccount.controllers.actions.{AuthorisedAction, BaseAuthorisedAction}
+import play.api.mvc._
 
-import java.time.{Clock, ZoneOffset}
+import javax.inject.Inject
+import scala.concurrent.{ExecutionContext, Future}
 
-class Module extends AbstractModule {
+class FakeAuthorisedAction @Inject() (bodyParsers: PlayBodyParsers) extends AuthorisedAction {
 
-  override def configure(): Unit = {
-    bind(classOf[AppConfig]).asEagerSingleton()
-    bind(classOf[AuthorisedAction]).to(classOf[BaseAuthorisedAction]).asEagerSingleton()
-    bind(classOf[Clock]).toInstance(Clock.systemDefaultZone.withZone(ZoneOffset.UTC))
-  }
+  override def parser: BodyParser[AnyContent] = bodyParsers.defaultBodyParser
+
+  override def invokeBlock[A](request: Request[A], block: Request[A] => Future[Result]): Future[Result] =
+    block(request)
+
+  override protected def executionContext: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
+
 }

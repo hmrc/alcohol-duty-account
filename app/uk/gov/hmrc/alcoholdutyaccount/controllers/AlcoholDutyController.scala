@@ -19,6 +19,7 @@ package uk.gov.hmrc.alcoholdutyaccount.controllers
 import cats.implicits._
 import play.api.libs.json.Json
 import play.api.mvc.{Action, AnyContent, ControllerComponents}
+import uk.gov.hmrc.alcoholdutyaccount.controllers.actions.AuthorisedAction
 import uk.gov.hmrc.alcoholdutyaccount.service.AlcoholDutyService
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 import uk.gov.hmrc.play.bootstrap.backend.http.ErrorResponse
@@ -29,6 +30,7 @@ import scala.util.matching.Regex
 
 @Singleton()
 class AlcoholDutyController @Inject() (
+  authorise: AuthorisedAction,
   alcoholDutyService: AlcoholDutyService,
   cc: ControllerComponents
 )(implicit ec: ExecutionContext)
@@ -37,7 +39,7 @@ class AlcoholDutyController @Inject() (
 
   val returnPeriodPattern: Regex = """^(\d{2}A[A-L])$""".r
 
-  def subscriptionSummary(alcoholDutyReference: String): Action[AnyContent] = Action.async { implicit request =>
+  def subscriptionSummary(alcoholDutyReference: String): Action[AnyContent] = authorise.async { implicit request =>
     alcoholDutyService
       .getSubscriptionSummary(alcoholDutyReference)
       .fold(
@@ -46,7 +48,7 @@ class AlcoholDutyController @Inject() (
       )
   }
 
-  def openObligationDetails(alcoholDutyReference: String, periodKey: String): Action[AnyContent] = Action.async {
+  def openObligationDetails(alcoholDutyReference: String, periodKey: String): Action[AnyContent] = authorise.async {
     implicit request =>
       periodKey match {
         case returnPeriodPattern(_) =>
@@ -61,7 +63,7 @@ class AlcoholDutyController @Inject() (
 
   }
 
-  def btaTileData(alcoholDutyReference: String): Action[AnyContent] = Action.async { implicit request =>
+  def btaTileData(alcoholDutyReference: String): Action[AnyContent] = authorise.async { implicit request =>
     alcoholDutyService
       .getAlcoholDutyCardData(alcoholDutyReference)
       .fold(

@@ -17,7 +17,6 @@
 package uk.gov.hmrc.alcoholdutyaccount.service
 
 import cats.data.{EitherT, OptionT}
-import org.mockito.MockitoSugar.{mock, when}
 import org.mockito.ArgumentMatchersSugar.*
 import org.mockito.IdiomaticMockito.StubbingOps
 import org.mockito.cats.IdiomaticMockitoCats.StubbingOpsCats
