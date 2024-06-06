@@ -18,11 +18,12 @@ package uk.gov.hmrc.alcoholdutyaccount.service
 
 import cats.data.EitherT
 import cats.implicits._
-import play.api.http.Status.{NOT_FOUND, NOT_IMPLEMENTED}
+import play.api.Logging
+import play.api.http.Status.NOT_FOUND
 import uk.gov.hmrc.alcoholdutyaccount.connectors.{FinancialDataConnector, ObligationDataConnector, SubscriptionSummaryConnector}
-import uk.gov.hmrc.alcoholdutyaccount.models.ApprovalStatus.Approved
+import uk.gov.hmrc.alcoholdutyaccount.models.ApprovalStatus.{DeRegistered, Revoked, SmallCiderProducer}
 import uk.gov.hmrc.alcoholdutyaccount.models._
-import uk.gov.hmrc.alcoholdutyaccount.models.hods.{FinancialTransactionDocument, ObligationData, ObligationDetails, ObligationStatus, Open}
+import uk.gov.hmrc.alcoholdutyaccount.models.hods.{FinancialTransactionDocument, ObligationData, ObligationDetails, ObligationStatus, Open, SubscriptionSummary}
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.bootstrap.backend.http.ErrorResponse
 
@@ -35,7 +36,8 @@ class AlcoholDutyService @Inject() (
   subscriptionSummaryConnector: SubscriptionSummaryConnector,
   obligationDataConnector: ObligationDataConnector,
   financialDataConnector: FinancialDataConnector
-)(implicit ec: ExecutionContext) {
+)(implicit ec: ExecutionContext)
+    extends Logging {
 
   def getSubscriptionSummary(
     alcoholDutyReference: String
@@ -81,28 +83,50 @@ class AlcoholDutyService @Inject() (
   def getAlcoholDutyCardData(
     alcoholDutyReference: String
   )(implicit hc: HeaderCarrier): EitherT[Future, ErrorResponse, AlcoholDutyCardData] =
-    subscriptionSummaryConnector.getSubscriptionSummary(alcoholDutyReference).flatMapF {
-      case subscriptionSummary if subscriptionSummary.insolvencyFlag                  =>
-        Future.successful(Right(InsolventCardData(alcoholDutyReference)))
-      case subscriptionSummary if subscriptionSummary.approvalStatus == hods.Approved =>
-        getObligationAndFinancialInfo(alcoholDutyReference)
-      case _                                                                          =>
-        Future.successful(Left(ErrorResponse(NOT_IMPLEMENTED, "Approval Status not yet supported")))
-    }
+    subscriptionSummaryConnector
+      .getSubscriptionSummary(alcoholDutyReference)
+      .flatMapF { subscriptionSummary: SubscriptionSummary =>
+        val approvalStatus = ApprovalStatus(subscriptionSummary)
+        if (
+          approvalStatus == SmallCiderProducer ||
+          approvalStatus == DeRegistered ||
+          approvalStatus == Revoked
+        ) { Future.successful(Right(RestrictedCardData(alcoholDutyReference, approvalStatus))) }
+        else { getObligationAndFinancialInfo(alcoholDutyReference, approvalStatus) }
+      }
+      .recover { case errorResponse: ErrorResponse =>
+        logger.warn(
+          s"Failed to retrieve subscription summary, returning an error card with hasSubscriptionSummaryError flag set. Error: $errorResponse"
+        )
+        AlcoholDutyCardData(
+          alcoholDutyReference = alcoholDutyReference,
+          approvalStatus = None,
+          hasSubscriptionSummaryError = true,
+          hasReturnsError = false,
+          hasPaymentError = false,
+          returns = Returns(),
+          payments = Payments()
+        )
+      }
 
-  private def getObligationAndFinancialInfo(alcoholDutyReference: String)(implicit
+  private def getObligationAndFinancialInfo(alcoholDutyReference: String, approvalStatus: ApprovalStatus)(implicit
     hc: HeaderCarrier
-  ): Future[Either[ErrorResponse, AlcoholDutyCardData]] = for {
-    obData <- getReturnDetails(alcoholDutyReference)
-    fData  <- getPaymentInformation(alcoholDutyReference)
-  } yield AlcoholDutyCardData(
-    alcoholDutyReference = alcoholDutyReference,
-    approvalStatus = Approved,
-    hasReturnsError = obData.isEmpty,
-    hasPaymentError = fData.isEmpty,
-    returns = obData.getOrElse(Returns()),
-    payments = fData.getOrElse(Payments())
-  ).asRight
+  ): Future[Either[ErrorResponse, AlcoholDutyCardData]] = {
+    val obDataFuture = getReturnDetails(alcoholDutyReference)
+    val fDataFuture  = getPaymentInformation(alcoholDutyReference)
+    for {
+      obData <- obDataFuture
+      fData  <- fDataFuture
+    } yield AlcoholDutyCardData(
+      alcoholDutyReference = alcoholDutyReference,
+      approvalStatus = Some(approvalStatus),
+      hasSubscriptionSummaryError = false,
+      hasReturnsError = obData.isEmpty,
+      hasPaymentError = fData.isEmpty,
+      returns = obData.getOrElse(Returns()),
+      payments = fData.getOrElse(Payments())
+    ).asRight
+  }
 
   private[service] def getReturnDetails(
     alcoholDutyReference: String
@@ -122,11 +146,16 @@ class AlcoholDutyService @Inject() (
     } else {
       val now = LocalDate.now()
 
-      val dueReturnExists        =
+      val dueReturnExists: Boolean    =
         obligationDetails.exists(_.inboundCorrespondenceDueDate.isAfter(now.minusDays(1)))
-      val numberOfOverdueReturns =
+      val numberOfOverdueReturns: Int =
         obligationDetails.count(_.inboundCorrespondenceDueDate.isBefore(now))
-      Returns(Some(dueReturnExists), Some(numberOfOverdueReturns))
+      val periodKey                   = obligationDetails match {
+        case Seq(singleObligation) => Some(singleObligation.periodKey)
+        case _                     => None
+      }
+
+      Returns(Some(dueReturnExists), Some(numberOfOverdueReturns), periodKey)
     }
 
   private[service] def getPaymentInformation(

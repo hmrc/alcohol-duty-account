@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 HM Revenue & Customs
+ * Copyright 2024 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,18 +14,17 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.alcoholdutyaccount.config
+package uk.gov.hmrc.alcoholdutyaccount.common.generators
 
-import com.google.inject.AbstractModule
-import uk.gov.hmrc.alcoholdutyaccount.controllers.actions.{AuthorisedAction, BaseAuthorisedAction}
+import org.scalacheck.Gen
 
-import java.time.{Clock, ZoneOffset}
+trait ModelGenerators {
 
-class Module extends AbstractModule {
+  def periodKeyGen: Gen[String] = for {
+    year  <- Gen.chooseNum(23, 50)
+    month <- Gen.chooseNum(0, 11)
+  } yield s"${year}A${(month + 'A').toChar}"
 
-  override def configure(): Unit = {
-    bind(classOf[AppConfig]).asEagerSingleton()
-    bind(classOf[AuthorisedAction]).to(classOf[BaseAuthorisedAction]).asEagerSingleton()
-    bind(classOf[Clock]).toInstance(Clock.systemDefaultZone.withZone(ZoneOffset.UTC))
-  }
+  def appaIdGen: Gen[String] = Gen.listOfN(10, Gen.numChar).map(id => s"XMADP${id.mkString}")
+
 }

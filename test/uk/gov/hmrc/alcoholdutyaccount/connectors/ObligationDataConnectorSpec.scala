@@ -17,14 +17,11 @@
 package uk.gov.hmrc.alcoholdutyaccount.connectors
 
 import org.scalatest.concurrent.ScalaFutures
-import play.api.http.Status.{BAD_REQUEST, INTERNAL_SERVER_ERROR, NOT_FOUND, OK}
 import play.api.libs.json.Json
 import uk.gov.hmrc.alcoholdutyaccount.base.{ConnectorTestHelpers, SpecBase}
 import uk.gov.hmrc.alcoholdutyaccount.common.AlcoholDutyTestData
 import uk.gov.hmrc.alcoholdutyaccount.models.hods.Open
 import uk.gov.hmrc.play.bootstrap.backend.http.ErrorResponse
-
-import scala.concurrent.ExecutionContext.Implicits.global
 
 class ObligationDataConnectorSpec extends SpecBase with ScalaFutures with ConnectorTestHelpers {
   protected val endpointName = "obligation"
