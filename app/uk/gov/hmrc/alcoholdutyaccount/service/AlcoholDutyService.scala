@@ -41,14 +41,10 @@ class AlcoholDutyService @Inject() (
 
   def getSubscriptionSummary(
     alcoholDutyReference: String
-  )(implicit hc: HeaderCarrier): EitherT[Future, ErrorResponse, AdrSubscriptionSummary] = EitherT {
+  )(implicit hc: HeaderCarrier): EitherT[Future, ErrorResponse, AdrSubscriptionSummary] =
     subscriptionSummaryConnector
       .getSubscriptionSummary(alcoholDutyReference)
-      .foldF(
-        errorResponse => Future.successful(Left(errorResponse)),
-        subscriptionSummary => Future.successful(Right(AdrSubscriptionSummary(subscriptionSummary)))
-      )
-  }
+      .subflatMap(AdrSubscriptionSummary.fromSubscriptionSummary)
 
   def getOpenObligations(
     alcoholDutyReference: String,
@@ -57,11 +53,10 @@ class AlcoholDutyService @Inject() (
     obligationDataConnector
       .getOpenObligationDetails(alcoholDutyReference)
       .map(findObligationDetailsForPeriod(_, periodKey))
-      .transform {
-        case l @ Left(_)                    => l.asInstanceOf[Either[ErrorResponse, AdrObligationData]]
-        case Right(None)                    =>
+      .subflatMap {
+        case None                    =>
           Left(ErrorResponse(NOT_FOUND, s"Obligation details not found for period key $periodKey"))
-        case Right(Some(obligationDetails)) =>
+        case Some(obligationDetails) =>
           Right[ErrorResponse, AdrObligationData](AdrObligationData(obligationDetails))
       }
 

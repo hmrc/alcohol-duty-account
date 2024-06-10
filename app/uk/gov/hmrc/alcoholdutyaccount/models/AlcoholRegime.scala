@@ -16,6 +16,7 @@
 
 package uk.gov.hmrc.alcoholdutyaccount.models
 
+import cats.Order
 import enumeratum.{Enum, EnumEntry, PlayJsonEnum}
 
 sealed trait AlcoholRegime extends EnumEntry
@@ -28,4 +29,9 @@ object AlcoholRegime extends Enum[AlcoholRegime] with PlayJsonEnum[AlcoholRegime
   case object Wine extends AlcoholRegime
   case object Spirits extends AlcoholRegime
   case object OtherFermentedProduct extends AlcoholRegime
+
+  implicit val ordering: Ordering[AlcoholRegime] =
+    (x: AlcoholRegime, y: AlcoholRegime) => x.hashCode() - y.hashCode()
+
+  implicit val order: Order[AlcoholRegime] = Order.fromOrdering
 }

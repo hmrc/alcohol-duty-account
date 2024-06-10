@@ -16,6 +16,7 @@
 
 package uk.gov.hmrc.alcoholdutyaccount.common
 
+import cats.data.NonEmptySet
 import org.scalacheck.Gen
 import uk.gov.hmrc.alcoholdutyaccount.models.{AdrObligationData, AdrSubscriptionSummary, AlcoholRegime, ApprovalStatus, ObligationStatus}
 import uk.gov.hmrc.alcoholdutyaccount.models.hods._
@@ -158,7 +159,7 @@ trait AlcoholDutyTestData {
 
   val approvedAdrSubscriptionSummary = new AdrSubscriptionSummary(
     approvalStatus = ApprovalStatus.Approved,
-    regimes = Set(
+    regimes = NonEmptySet.of[AlcoholRegime](
       AlcoholRegime.Beer,
       AlcoholRegime.Wine,
       AlcoholRegime.Cider,

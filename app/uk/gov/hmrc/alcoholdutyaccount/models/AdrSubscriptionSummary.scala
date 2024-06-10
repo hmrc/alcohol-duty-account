@@ -16,23 +16,36 @@
 
 package uk.gov.hmrc.alcoholdutyaccount.models
 
-import play.api.libs.json.{Json, Writes}
+import cats.data.NonEmptySet
+import play.api.libs.functional.syntax._
+import play.api.libs.json.{JsPath, Writes}
 import uk.gov.hmrc.alcoholdutyaccount.models.AlcoholRegime.{Beer, Cider, OtherFermentedProduct, Spirits, Wine}
 import uk.gov.hmrc.alcoholdutyaccount.models.ApprovalStatus._
 import uk.gov.hmrc.alcoholdutyaccount.models.hods.SubscriptionSummary
+import uk.gov.hmrc.play.bootstrap.backend.http.ErrorResponse
+
+import scala.collection.immutable.SortedSet
 
 case class AdrSubscriptionSummary(
   approvalStatus: ApprovalStatus,
-  regimes: Set[AlcoholRegime]
+  regimes: NonEmptySet[AlcoholRegime]
 )
 
 object AdrSubscriptionSummary {
 
-  def apply(subscriptionSummary: SubscriptionSummary): AdrSubscriptionSummary =
-    AdrSubscriptionSummary(
-      mapStatus(subscriptionSummary),
-      mapRegimes(subscriptionSummary.typeOfAlcoholApprovedForList)
-    )
+  def fromSubscriptionSummary(subscriptionSummary: SubscriptionSummary): Either[ErrorResponse, AdrSubscriptionSummary] =
+    NonEmptySet
+      .fromSet(SortedSet.from(mapRegimes(subscriptionSummary.typeOfAlcoholApprovedForList)))
+      .fold[Either[ErrorResponse, AdrSubscriptionSummary]](
+        Left(ErrorResponse(500, "Expected at least one approved regime to be provided"))
+      )(regimes =>
+        Right(
+          AdrSubscriptionSummary(
+            mapStatus(subscriptionSummary),
+            regimes
+          )
+        )
+      )
 
   private def mapRegimes(typeOfAlcohol: Set[hods.ApprovalType]): Set[AlcoholRegime] = typeOfAlcohol.flatMap {
     case hods.Beer                         => Seq(Beer)
@@ -50,5 +63,7 @@ object AdrSubscriptionSummary {
       case hods.Approved                           => Approved
     }
 
-  implicit val writes: Writes[AdrSubscriptionSummary] = Json.writes[AdrSubscriptionSummary]
+  implicit val writes: Writes[AdrSubscriptionSummary] =
+    ((JsPath \ "approvalStatus").write[ApprovalStatus] and
+      (JsPath \ "regimes").write[SortedSet[AlcoholRegime]])(a => (a.approvalStatus, a.regimes.toSortedSet))
 }
