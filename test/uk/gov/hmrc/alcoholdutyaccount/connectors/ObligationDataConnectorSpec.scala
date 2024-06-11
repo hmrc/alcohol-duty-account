@@ -29,7 +29,7 @@ class ObligationDataConnectorSpec extends SpecBase with ScalaFutures with Connec
   "ObligationDataConnector" - {
     "successfully get open obligation data" in new SetUp {
       stubGetWithParameters(url, expectedQueryParams, OK, Json.toJson(obligationDataSingleOpen).toString)
-      whenReady(connector.getOpenObligationDetails(alcoholDutyReference).value) { result =>
+      whenReady(connector.getObligationDetails(alcoholDutyReference, Some(obligationFilter)).value) { result =>
         result mustBe Right(obligationDataSingleOpen)
         verifyGetWithParameters(url, expectedQueryParams)
       }
@@ -37,15 +37,22 @@ class ObligationDataConnectorSpec extends SpecBase with ScalaFutures with Connec
 
     "successfully get fulfilled obligation data" in new SetUp {
       stubGetWithParameters(url, expectedQueryParams, OK, Json.toJson(obligationDataSingleFulfilled).toString)
-      whenReady(connector.getOpenObligationDetails(alcoholDutyReference).value) { result =>
+      whenReady(connector.getObligationDetails(alcoholDutyReference, Some(obligationFilter)).value) { result =>
         result mustBe Right(obligationDataSingleFulfilled)
         verifyGetWithParameters(url, expectedQueryParams)
+      }
+    }
+    "successfully get open and fulfilled obligation data if there is no filter" in new SetUp {
+      stubGet(url, OK, Json.toJson(obligationDataMultipleOpenAndFulfilled).toString)
+      whenReady(connector.getObligationDetails(alcoholDutyReference, None).value) { result =>
+        result mustBe Right(obligationDataMultipleOpenAndFulfilled)
+        verifyGet(url)
       }
     }
 
     "return an INTERNAL_SERVER_ERROR if the data retrieved cannot be parsed" in new SetUp {
       stubGetWithParameters(url, expectedQueryParams, OK, "blah")
-      whenReady(connector.getOpenObligationDetails(alcoholDutyReference).value) { result =>
+      whenReady(connector.getObligationDetails(alcoholDutyReference, Some(obligationFilter)).value) { result =>
         result mustBe Left(ErrorResponse(INTERNAL_SERVER_ERROR, "Unable to parse obligation data"))
         verifyGetWithParameters(url, expectedQueryParams)
       }
@@ -53,7 +60,7 @@ class ObligationDataConnectorSpec extends SpecBase with ScalaFutures with Connec
 
     "return not found if obligation data object cannot be found" in new SetUp {
       stubGetWithParameters(url, expectedQueryParams, NOT_FOUND, notFoundErrorMessage)
-      whenReady(connector.getOpenObligationDetails(alcoholDutyReference).value) { result =>
+      whenReady(connector.getObligationDetails(alcoholDutyReference, Some(obligationFilter)).value) { result =>
         result mustBe Left(ErrorResponse(NOT_FOUND, "Obligation data not found"))
         verifyGetWithParameters(url, expectedQueryParams)
       }
@@ -61,7 +68,7 @@ class ObligationDataConnectorSpec extends SpecBase with ScalaFutures with Connec
 
     "return an INTERNAL_SERVER_ERROR error if an error other than NOT_FOUND when fetching obligation data" in new SetUp {
       stubGetWithParameters(url, expectedQueryParams, BAD_REQUEST, otherErrorMessage)
-      whenReady(connector.getOpenObligationDetails(alcoholDutyReference).value) { result =>
+      whenReady(connector.getObligationDetails(alcoholDutyReference, Some(obligationFilter)).value) { result =>
         result mustBe Left(ErrorResponse(INTERNAL_SERVER_ERROR, "An error occurred"))
         verifyGetWithParameters(url, expectedQueryParams)
       }
@@ -71,9 +78,7 @@ class ObligationDataConnectorSpec extends SpecBase with ScalaFutures with Connec
   class SetUp extends ConnectorFixture with AlcoholDutyTestData {
     val alcoholDutyReference: String = generateAlcoholDutyReference().sample.get
     val connector                    = new ObligationDataConnector(config = config, httpClient = httpClient)
-    val expectedQueryParams          = Map(
-      "status" -> Open.value
-    )
+    val expectedQueryParams          = Seq("status" -> Open.value)
     val url                          =
       s"${config.obligationDataApiUrl}/enterprise/obligation-data/${config.idType}/$alcoholDutyReference/${config.regimeType}"
 

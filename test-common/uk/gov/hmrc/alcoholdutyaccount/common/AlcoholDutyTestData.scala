@@ -73,6 +73,8 @@ trait AlcoholDutyTestData {
   val periodKey3 = "24AG"
   val periodKey4 = "24AH"
 
+  val obligationFilter = Open
+
   val obligationDetails = ObligationDetails(
     status = Open,
     inboundCorrespondenceFromDate = LocalDate.of(2024, 1, 1),
@@ -113,8 +115,18 @@ trait AlcoholDutyTestData {
     periodKey = periodKey
   )
 
-  val obligationDataSingleFulfilled = ObligationData(
+  val obligationDataSingleFulfilled          = ObligationData(
     obligations = Seq(
+      Obligation(
+        obligationDetails = Seq(fulfilledObligationDetails)
+      )
+    )
+  )
+  val obligationDataMultipleOpenAndFulfilled = ObligationData(obligations =
+    Seq(
+      Obligation(
+        obligationDetails = Seq(obligationDetails, obligationDetails2)
+      ),
       Obligation(
         obligationDetails = Seq(fulfilledObligationDetails)
       )
@@ -171,12 +183,27 @@ trait AlcoholDutyTestData {
     status = ObligationStatus.Open,
     fromDate = LocalDate.of(2024, 1, 1),
     toDate = LocalDate.of(2024, 1, 1),
-    dueDate = LocalDate.of(2024, 1, 1)
+    dueDate = LocalDate.of(2024, 1, 1),
+    periodKey
+  )
+  val adrObligationDetailsOpen2     = new AdrObligationData(
+    status = ObligationStatus.Open,
+    fromDate = LocalDate.of(2024, 1, 1),
+    toDate = LocalDate.of(2024, 1, 1),
+    dueDate = LocalDate.of(2024, 1, 1),
+    periodKey2
   )
   val adrObligationDetailsFulfilled = new AdrObligationData(
     ObligationStatus.Fulfilled,
     fromDate = LocalDate.of(2024, 1, 1),
     toDate = LocalDate.of(2024, 1, 1),
-    dueDate = LocalDate.of(2024, 1, 1)
+    dueDate = LocalDate.of(2024, 1, 1),
+    periodKey
   )
+
+  val adrMultipleOpenAndFulfilledData =
+    Seq(adrObligationDetails, adrObligationDetailsOpen2, adrObligationDetailsFulfilled)
+
+  val adrMultipleOpenData =
+    Seq(adrObligationDetails, adrObligationDetailsOpen2)
 }

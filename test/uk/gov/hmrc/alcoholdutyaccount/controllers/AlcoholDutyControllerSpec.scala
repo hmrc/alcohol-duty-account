@@ -55,9 +55,9 @@ class AlcoholDutyControllerSpec extends SpecBase {
     }
   }
 
-  "GET /obligationDetails" - {
+  "GET /openObligationDetails" - {
     "return OK when is called with a valid alcoholDutyReference" in new SetUp {
-      alcoholDutyService.getOpenObligations(eqTo(alcoholDutyReference), eqTo(periodKey))(
+      alcoholDutyService.getOpenObligations(eqTo(alcoholDutyReference), eqTo(periodKey), eqTo(Some(obligationFilter)))(
         *
       ) returnsF adrObligationDetails
 
@@ -67,22 +67,43 @@ class AlcoholDutyControllerSpec extends SpecBase {
     }
 
     "return BAD_REQUEST when periodKey is invalid" in new SetUp {
-      alcoholDutyService.getOpenObligations(*, *)(*) returnsF adrObligationDetails
+      alcoholDutyService.getOpenObligations(*, *, *)(*) returnsF adrObligationDetails
 
       val result: Future[Result] = controller.openObligationDetails(alcoholDutyReference, badPeriodKey)(FakeRequest())
       status(result) mustBe BAD_REQUEST
 
-      verify(alcoholDutyService, never).getOpenObligations(*, *)(*)
+      verify(alcoholDutyService, never).getOpenObligations(*, *, *)(*)
     }
 
     "return any error returned from the service" in new SetUp {
-      when(alcoholDutyService.getOpenObligations(*, *)(*))
+      when(alcoholDutyService.getOpenObligations(*, *, *)(*))
         .thenReturn(EitherT.fromEither(Left(ErrorResponse(INTERNAL_SERVER_ERROR, "An error occurred"))))
 
       val result: Future[Result] = controller.openObligationDetails(alcoholDutyReference, periodKey)(FakeRequest())
       status(result) mustBe INTERNAL_SERVER_ERROR
 
-      verify(alcoholDutyService, times(1)).getOpenObligations(*, *)(*)
+      verify(alcoholDutyService, times(1)).getOpenObligations(*, *, *)(*)
+    }
+  }
+  "GET /obligationDetails" - {
+    "return OK when is called with a valid alcoholDutyReference" in new SetUp {
+      alcoholDutyService.getObligations(eqTo(alcoholDutyReference), None)(
+        *
+      ) returnsF adrMultipleOpenAndFulfilledData
+
+      val result: Future[Result] = controller.obligationDetails(alcoholDutyReference)(FakeRequest())
+      status(result) mustBe OK
+      contentAsJson(result) mustBe Json.toJson(adrMultipleOpenAndFulfilledData)
+    }
+
+    "return any error returned from the service" in new SetUp {
+      when(alcoholDutyService.getObligations(*, *)(*))
+        .thenReturn(EitherT.fromEither(Left(ErrorResponse(INTERNAL_SERVER_ERROR, "An error occurred"))))
+
+      val result: Future[Result] = controller.obligationDetails(alcoholDutyReference)(FakeRequest())
+      status(result) mustBe INTERNAL_SERVER_ERROR
+
+      verify(alcoholDutyService, times(1)).getObligations(*, *)(*)
     }
   }
 

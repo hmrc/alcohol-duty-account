@@ -57,36 +57,65 @@ class AlcoholDutyServiceSpec extends SpecBase with AlcoholDutyTestData {
       }
     }
 
-    "getObligations should" - {
+    "getOpenObligations should" - {
       "return obligation data from the connector where one open return matches the period key" in new SetUp {
-        when(obligationDataConnector.getOpenObligationDetails(alcoholDutyReference))
+        when(obligationDataConnector.getObligationDetails(alcoholDutyReference, Some(obligationFilter)))
           .thenReturn(EitherT.fromEither(Right(obligationDataMultipleOpen)))
-        whenReady(service.getOpenObligations(alcoholDutyReference, periodKey).value) {
+        whenReady(service.getOpenObligations(alcoholDutyReference, periodKey, Some(obligationFilter)).value) {
           _ mustBe Right(adrObligationDetails)
         }
       }
 
       "return obligation data from the connector where one fulfilled return matches the period key" in new SetUp {
-        when(obligationDataConnector.getOpenObligationDetails(alcoholDutyReference))
+        when(obligationDataConnector.getObligationDetails(alcoholDutyReference, Some(obligationFilter)))
           .thenReturn(EitherT.fromEither(Right(obligationDataSingleFulfilled)))
-        whenReady(service.getOpenObligations(alcoholDutyReference, periodKey).value) {
+        whenReady(service.getOpenObligations(alcoholDutyReference, periodKey, Some(obligationFilter)).value) {
           _ mustBe Right(adrObligationDetailsFulfilled)
         }
       }
 
       "return NOT_FOUND where no return matches the period key" in new SetUp {
-        when(obligationDataConnector.getOpenObligationDetails(alcoholDutyReference))
+        when(obligationDataConnector.getObligationDetails(alcoholDutyReference, Some(obligationFilter)))
           .thenReturn(EitherT.fromEither(Right(obligationDataMultipleOpen)))
-        whenReady(service.getOpenObligations(alcoholDutyReference, periodKey4).value) {
+        whenReady(service.getOpenObligations(alcoholDutyReference, periodKey4, Some(obligationFilter)).value) {
           _ mustBe Left(ErrorResponse(NOT_FOUND, "Obligation details not found for period key 24AH"))
         }
       }
 
       "return an error if the connector is unable to obtain obligation data" in new SetUp {
         val error = ErrorResponse(INTERNAL_SERVER_ERROR, "An error occurred")
-        when(obligationDataConnector.getOpenObligationDetails(alcoholDutyReference))
+        when(obligationDataConnector.getObligationDetails(alcoholDutyReference, Some(obligationFilter)))
           .thenReturn(EitherT.fromEither(Left(error)))
-        whenReady(service.getOpenObligations(alcoholDutyReference, periodKey).value)(_ mustBe Left(error))
+        whenReady(service.getOpenObligations(alcoholDutyReference, periodKey, Some(obligationFilter)).value)(
+          _ mustBe Left(error)
+        )
+      }
+    }
+
+    "getObligations should" - {
+      "return obligation data from the connector where multiple open and fulfilled obligations are returned" in new SetUp {
+        when(obligationDataConnector.getObligationDetails(alcoholDutyReference, None))
+          .thenReturn(EitherT.fromEither(Right(obligationDataMultipleOpenAndFulfilled)))
+        whenReady(service.getObligations(alcoholDutyReference, None).value) {
+          _ mustBe Right(adrMultipleOpenAndFulfilledData)
+        }
+      }
+
+      "return obligation data from the connector where one fulfilled obligation is returned" in new SetUp {
+        when(obligationDataConnector.getObligationDetails(alcoholDutyReference, None))
+          .thenReturn(EitherT.fromEither(Right(obligationDataSingleFulfilled)))
+        whenReady(service.getObligations(alcoholDutyReference, None).value) {
+          _ mustBe Right(Seq(adrObligationDetailsFulfilled))
+        }
+      }
+
+      "return an error if the connector is unable to obtain obligation data" in new SetUp {
+        val error = ErrorResponse(INTERNAL_SERVER_ERROR, "An error occurred")
+        when(obligationDataConnector.getObligationDetails(alcoholDutyReference, None))
+          .thenReturn(EitherT.fromEither(Left(error)))
+        whenReady(service.getObligations(alcoholDutyReference, None).value)(
+          _ mustBe Left(error)
+        )
       }
     }
 
@@ -228,7 +257,7 @@ class AlcoholDutyServiceSpec extends SpecBase with AlcoholDutyTestData {
 
     "getReturnDetails should" - {
       "return None if the obligationDataConnector returns an error" in new SetUp {
-        when(obligationDataConnector.getOpenObligationDetails(*)(*))
+        when(obligationDataConnector.getObligationDetails(*, *)(*))
           .thenReturn(EitherT.fromEither(Left(ErrorResponse(NOT_FOUND, ""))))
 
         val result = service.getReturnDetails(alcoholDutyReference)
@@ -240,7 +269,7 @@ class AlcoholDutyServiceSpec extends SpecBase with AlcoholDutyTestData {
 
       "return a Returns object if the obligationDataConnector returns an obligation" in new SetUp {
         val obligationDataOneDue = ObligationData(obligations = Seq.empty)
-        when(obligationDataConnector.getOpenObligationDetails(*)(*))
+        when(obligationDataConnector.getObligationDetails(*, *)(*))
           .thenReturn(EitherT.fromEither(Right(obligationDataOneDue)))
 
         service.getReturnDetails(alcoholDutyReference).onComplete { result =>
@@ -297,7 +326,7 @@ class AlcoholDutyServiceSpec extends SpecBase with AlcoholDutyTestData {
               )
             )
           )
-          when(obligationDataConnector.getOpenObligationDetails(*)(*))
+          when(obligationDataConnector.getObligationDetails(*, *)(*))
             .thenReturn(EitherT.fromEither(Right(obligationDataOneDue)))
 
           financialDataConnector.getFinancialData(*)(*) returnsF financialDocument
@@ -341,7 +370,7 @@ class AlcoholDutyServiceSpec extends SpecBase with AlcoholDutyTestData {
               )
             )
           )
-          when(obligationDataConnector.getOpenObligationDetails(*)(*))
+          when(obligationDataConnector.getObligationDetails(*, *)(*))
             .thenReturn(EitherT.fromEither(Right(obligationDataOneDue)))
 
           financialDataConnector.getFinancialData(*)(*) returnsF financialDocument
@@ -384,7 +413,7 @@ class AlcoholDutyServiceSpec extends SpecBase with AlcoholDutyTestData {
         )
         subscriptionSummaryConnector.getSubscriptionSummary(*)(*) returnsF subscriptionSummary
 
-        when(obligationDataConnector.getOpenObligationDetails(*)(*))
+        when(obligationDataConnector.getObligationDetails(*, *)(*))
           .thenReturn(EitherT.fromEither(Left(ErrorResponse(NOT_FOUND, ""))))
 
         financialDataConnector.getFinancialData(*)(*) returnsF financialDocument
@@ -429,7 +458,7 @@ class AlcoholDutyServiceSpec extends SpecBase with AlcoholDutyTestData {
             )
           )
         )
-        when(obligationDataConnector.getOpenObligationDetails(*)(*))
+        when(obligationDataConnector.getObligationDetails(*, *)(*))
           .thenReturn(EitherT.fromEither(Right(obligationDataOneDue)))
 
         financialDataConnector.getFinancialData(*)(*) returns OptionT.none[Future, FinancialTransactionDocument]
@@ -459,7 +488,7 @@ class AlcoholDutyServiceSpec extends SpecBase with AlcoholDutyTestData {
           )
           subscriptionSummaryConnector.getSubscriptionSummary(*)(*) returnsF subscriptionSummary
 
-          when(obligationDataConnector.getOpenObligationDetails(*)(*))
+          when(obligationDataConnector.getObligationDetails(*, *)(*))
             .thenReturn(EitherT.fromEither(Left(ErrorResponse(NOT_FOUND, ""))))
 
           financialDataConnector.getFinancialData(*)(*) returns OptionT.none[Future, FinancialTransactionDocument]
