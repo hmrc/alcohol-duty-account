@@ -16,40 +16,39 @@
 
 package uk.gov.hmrc.alcoholdutyaccount.models
 
-import cats.data.NonEmptySet
-import play.api.libs.functional.syntax._
-import play.api.libs.json.{JsPath, Writes}
+import play.api.libs.json.{Json, OWrites}
 import uk.gov.hmrc.alcoholdutyaccount.models.AlcoholRegime.{Beer, Cider, OtherFermentedProduct, Spirits, Wine}
 import uk.gov.hmrc.alcoholdutyaccount.models.ApprovalStatus._
 import uk.gov.hmrc.alcoholdutyaccount.models.hods.SubscriptionSummary
 import uk.gov.hmrc.play.bootstrap.backend.http.ErrorResponse
 
-import scala.collection.immutable.SortedSet
-
 case class AdrSubscriptionSummary(
   approvalStatus: ApprovalStatus,
-  regimes: NonEmptySet[AlcoholRegime]
+  regimes: Set[AlcoholRegime]
 )
 
 object AdrSubscriptionSummary {
 
-  def fromSubscriptionSummary(subscriptionSummary: SubscriptionSummary): Either[ErrorResponse, AdrSubscriptionSummary] =
-    NonEmptySet
-      .fromSet(SortedSet.from(mapRegimes(subscriptionSummary.typeOfAlcoholApprovedForList)))
-      .fold[Either[ErrorResponse, AdrSubscriptionSummary]](
-        Left(ErrorResponse(500, "Expected at least one approved regime to be provided"))
-      )(regimes =>
-        Right(
-          AdrSubscriptionSummary(
-            mapStatus(subscriptionSummary),
-            regimes
-          )
+  def fromSubscriptionSummary(
+    subscriptionSummary: SubscriptionSummary
+  ): Either[ErrorResponse, AdrSubscriptionSummary] = {
+    val regimes = mapRegimes(subscriptionSummary.typeOfAlcoholApprovedForList)
+
+    if (regimes.isEmpty) {
+      Left(ErrorResponse(500, "Expected at least one approved regime to be provided"))
+    } else {
+      Right(
+        AdrSubscriptionSummary(
+          mapStatus(subscriptionSummary),
+          regimes
         )
       )
+    }
+  }
 
   private def mapRegimes(typeOfAlcohol: Set[hods.ApprovalType]): Set[AlcoholRegime] = typeOfAlcohol.flatMap {
     case hods.Beer                         => Seq(Beer)
-    case hods.CiderOrPerry                 => Seq(Cider)
+    case hods.CiderOrPerry                 => Seq(Cider, OtherFermentedProduct)
     case hods.WineAndOtherFermentedProduct => Seq(Wine, OtherFermentedProduct)
     case hods.Spirits                      => Seq(Spirits)
   }
@@ -63,7 +62,5 @@ object AdrSubscriptionSummary {
       case hods.Approved                           => Approved
     }
 
-  implicit val writes: Writes[AdrSubscriptionSummary] =
-    ((JsPath \ "approvalStatus").write[ApprovalStatus] and
-      (JsPath \ "regimes").write[SortedSet[AlcoholRegime]])(a => (a.approvalStatus, a.regimes.toSortedSet))
+  implicit val writes: OWrites[AdrSubscriptionSummary] = Json.writes[AdrSubscriptionSummary]
 }

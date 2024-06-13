@@ -16,7 +16,6 @@
 
 package uk.gov.hmrc.alcoholdutyaccount.models
 
-import cats.data.NonEmptySet
 import org.scalatest.matchers.should.Matchers.convertToAnyShouldWrapper
 import uk.gov.hmrc.alcoholdutyaccount.base.SpecBase
 import uk.gov.hmrc.alcoholdutyaccount.models.ApprovalStatus.{Approved, DeRegistered, Insolvent, Revoked, SmallCiderProducer}
@@ -27,7 +26,7 @@ class AdrSubscriptionSummarySpec extends SpecBase {
   "AdrSubscriptionSummary fromSubscriptionSummary" - {
     val alcoholRegimes: Set[ApprovalType] =
       Set(hods.Beer, hods.CiderOrPerry, hods.WineAndOtherFermentedProduct, hods.Spirits)
-    val expectedRegimes                   = NonEmptySet.of[AlcoholRegime](
+    val expectedRegimes                   = Set(
       AlcoholRegime.Beer,
       AlcoholRegime.Cider,
       AlcoholRegime.Spirits,
@@ -46,6 +45,26 @@ class AdrSubscriptionSummarySpec extends SpecBase {
 
       adrSubscriptionSummary.approvalStatus shouldBe Approved
       adrSubscriptionSummary.regimes        shouldBe expectedRegimes
+    }
+
+    Seq(
+      (hods.Beer, Set(AlcoholRegime.Beer)),
+      (hods.CiderOrPerry, Set(AlcoholRegime.Cider, AlcoholRegime.OtherFermentedProduct)),
+      (hods.WineAndOtherFermentedProduct, Set(AlcoholRegime.Wine, AlcoholRegime.OtherFermentedProduct)),
+      (hods.Spirits, Set(AlcoholRegime.Spirits))
+    ).foreach { case (approvedSubscription, expectedRegimes) =>
+      s"should return an AdrSubscriptionSummary of ${expectedRegimes.map(_.entryName).mkString(",")} when ${approvedSubscription.getClass.getTypeName} is approved" in {
+        val subscriptionSummary: SubscriptionSummary = SubscriptionSummary(
+          typeOfAlcoholApprovedForList = Set(approvedSubscription),
+          smallCiderFlag = false,
+          approvalStatus = hods.Approved,
+          insolvencyFlag = false
+        )
+
+        val adrSubscriptionSummary = AdrSubscriptionSummary.fromSubscriptionSummary(subscriptionSummary).toOption.get
+
+        adrSubscriptionSummary.regimes shouldBe expectedRegimes
+      }
     }
 
     "should return a AdrSubscriptionSummary given a SubscriptionSummary with Approved status with insolvent flag and all alcohol regimes" in {
