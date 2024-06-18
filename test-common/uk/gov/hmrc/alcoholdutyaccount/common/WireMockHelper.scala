@@ -43,7 +43,7 @@ trait WireMockHelper {
     else
       url
 
-  private def urlWithParameters(url: String, parameters: Map[String, String]) = {
+  private def urlWithParameters(url: String, parameters: Seq[(String, String)]) = {
     val queryParams = parameters.map { case (k, v) => s"$k=$v" }.mkString("&")
 
     s"${stripToPath(url)}?$queryParams"
@@ -54,7 +54,7 @@ trait WireMockHelper {
       WireMock.get(urlEqualTo(stripToPath(url))).willReturn(aResponse().withStatus(status).withBody(body))
     )
 
-  def stubGetWithParameters(url: String, parameters: Map[String, String], status: Int, body: String): Unit =
+  def stubGetWithParameters(url: String, parameters: Seq[(String, String)], status: Int, body: String): Unit =
     wireMockServer.stubFor(
       WireMock
         .get(urlEqualTo(urlWithParameters(url, parameters)))
@@ -69,7 +69,7 @@ trait WireMockHelper {
   def verifyGet(url: String): Unit =
     wireMockServer.verify(getRequestedFor(urlEqualTo(stripToPath(url))))
 
-  def verifyGetWithParameters(url: String, parameters: Map[String, String]): Unit =
+  def verifyGetWithParameters(url: String, parameters: Seq[(String, String)]): Unit =
     wireMockServer.verify(getRequestedFor(urlEqualTo(urlWithParameters(url, parameters))))
 
   def verifyPost(url: String): Unit =

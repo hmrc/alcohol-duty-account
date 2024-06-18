@@ -34,7 +34,8 @@ case class AdrObligationData(
   status: ObligationStatus,
   fromDate: LocalDate,
   toDate: LocalDate,
-  dueDate: LocalDate
+  dueDate: LocalDate,
+  periodKey: String
 )
 
 object AdrObligationData {
@@ -49,7 +50,8 @@ object AdrObligationData {
       status = status,
       fromDate = obligationData.inboundCorrespondenceFromDate,
       toDate = obligationData.inboundCorrespondenceToDate,
-      dueDate = obligationData.inboundCorrespondenceDueDate
+      dueDate = obligationData.inboundCorrespondenceDueDate,
+      periodKey = obligationData.periodKey
     )
   }
 

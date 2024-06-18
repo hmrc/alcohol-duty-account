@@ -28,9 +28,7 @@ trait ObligationDataStubs extends WireMockHelper with AlcoholDutyTestData { ISpe
   private def url(alcoholDutyReference:String):String =
     s"${config.obligationDataApiUrl}/enterprise/obligation-data/${config.idType}/$alcoholDutyReference/${config.regimeType}"
 
-  val queryParams = Map(
-    "status" -> Open.value
-  )
+  val queryParams = Seq("status" -> Open.value)
 
   val notFoundErrorMessage = """{
                                |    "code": "NOT_FOUND",

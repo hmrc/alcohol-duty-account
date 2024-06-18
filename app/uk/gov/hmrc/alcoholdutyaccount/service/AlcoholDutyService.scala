@@ -23,7 +23,7 @@ import play.api.http.Status.NOT_FOUND
 import uk.gov.hmrc.alcoholdutyaccount.connectors.{FinancialDataConnector, ObligationDataConnector, SubscriptionSummaryConnector}
 import uk.gov.hmrc.alcoholdutyaccount.models.ApprovalStatus.{DeRegistered, Revoked, SmallCiderProducer}
 import uk.gov.hmrc.alcoholdutyaccount.models._
-import uk.gov.hmrc.alcoholdutyaccount.models.hods.{FinancialTransactionDocument, ObligationData, ObligationDetails, SubscriptionSummary}
+import uk.gov.hmrc.alcoholdutyaccount.models.hods.{FinancialTransactionDocument, ObligationData, ObligationDetails, ObligationStatus, Open, SubscriptionSummary}
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.bootstrap.backend.http.ErrorResponse
 
@@ -48,10 +48,11 @@ class AlcoholDutyService @Inject() (
 
   def getOpenObligations(
     alcoholDutyReference: String,
-    periodKey: String
+    periodKey: String,
+    obligationStatusFilter: Option[ObligationStatus]
   )(implicit hc: HeaderCarrier): EitherT[Future, ErrorResponse, AdrObligationData] =
     obligationDataConnector
-      .getOpenObligationDetails(alcoholDutyReference)
+      .getObligationDetails(alcoholDutyReference, obligationStatusFilter)
       .map(findObligationDetailsForPeriod(_, periodKey))
       .subflatMap {
         case None                    =>
@@ -59,6 +60,14 @@ class AlcoholDutyService @Inject() (
         case Some(obligationDetails) =>
           Right[ErrorResponse, AdrObligationData](AdrObligationData(obligationDetails))
       }
+
+  def getObligations(
+    alcoholDutyReference: String,
+    obligationStatusFilter: Option[ObligationStatus]
+  )(implicit hc: HeaderCarrier): EitherT[Future, ErrorResponse, Seq[AdrObligationData]] =
+    obligationDataConnector
+      .getObligationDetails(alcoholDutyReference, obligationStatusFilter)
+      .map(_.obligations.flatMap(_.obligationDetails.map(AdrObligationData(_))))
 
   private def findObligationDetailsForPeriod(
     obligationData: ObligationData,
@@ -118,7 +127,7 @@ class AlcoholDutyService @Inject() (
     alcoholDutyReference: String
   )(implicit hc: HeaderCarrier): Future[Option[Returns]] =
     obligationDataConnector
-      .getOpenObligationDetails(alcoholDutyReference)
+      .getObligationDetails(alcoholDutyReference, Some(Open))
       .toOption
       .fold {
         None: Option[Returns]
