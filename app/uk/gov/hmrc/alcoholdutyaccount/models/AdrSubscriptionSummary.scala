@@ -16,10 +16,11 @@
 
 package uk.gov.hmrc.alcoholdutyaccount.models
 
-import play.api.libs.json.{Json, Writes}
+import play.api.libs.json.{Json, OWrites}
 import uk.gov.hmrc.alcoholdutyaccount.models.AlcoholRegime.{Beer, Cider, OtherFermentedProduct, Spirits, Wine}
 import uk.gov.hmrc.alcoholdutyaccount.models.ApprovalStatus._
 import uk.gov.hmrc.alcoholdutyaccount.models.hods.SubscriptionSummary
+import uk.gov.hmrc.play.bootstrap.backend.http.ErrorResponse
 
 case class AdrSubscriptionSummary(
   approvalStatus: ApprovalStatus,
@@ -28,15 +29,26 @@ case class AdrSubscriptionSummary(
 
 object AdrSubscriptionSummary {
 
-  def apply(subscriptionSummary: SubscriptionSummary): AdrSubscriptionSummary =
-    AdrSubscriptionSummary(
-      mapStatus(subscriptionSummary),
-      mapRegimes(subscriptionSummary.typeOfAlcoholApprovedForList)
-    )
+  def fromSubscriptionSummary(
+    subscriptionSummary: SubscriptionSummary
+  ): Either[ErrorResponse, AdrSubscriptionSummary] = {
+    val regimes = mapRegimes(subscriptionSummary.typeOfAlcoholApprovedForList)
+
+    if (regimes.isEmpty) {
+      Left(ErrorResponse(500, "Expected at least one approved regime to be provided"))
+    } else {
+      Right(
+        AdrSubscriptionSummary(
+          mapStatus(subscriptionSummary),
+          regimes
+        )
+      )
+    }
+  }
 
   private def mapRegimes(typeOfAlcohol: Set[hods.ApprovalType]): Set[AlcoholRegime] = typeOfAlcohol.flatMap {
     case hods.Beer                         => Seq(Beer)
-    case hods.CiderOrPerry                 => Seq(Cider)
+    case hods.CiderOrPerry                 => Seq(Cider, OtherFermentedProduct)
     case hods.WineAndOtherFermentedProduct => Seq(Wine, OtherFermentedProduct)
     case hods.Spirits                      => Seq(Spirits)
   }
@@ -50,5 +62,5 @@ object AdrSubscriptionSummary {
       case hods.Approved                           => Approved
     }
 
-  implicit val writes: Writes[AdrSubscriptionSummary] = Json.writes[AdrSubscriptionSummary]
+  implicit val writes: OWrites[AdrSubscriptionSummary] = Json.writes[AdrSubscriptionSummary]
 }
