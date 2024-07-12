@@ -19,13 +19,10 @@ package uk.gov.hmrc.alcoholdutyaccount.controllers
 import play.api.libs.json.Json
 import play.api.test.FakeRequest
 import uk.gov.hmrc.alcoholdutyaccount.base.{ConnectorTestHelpers, ISpecBase}
-import uk.gov.hmrc.alcoholdutyaccount.common.AlcoholDutyTestData
 import uk.gov.hmrc.play.bootstrap.backend.http.ErrorResponse
 
 class SubscriptionSummaryIntegrationSpec extends ISpecBase with ConnectorTestHelpers {
   protected val endpointName = "subscription"
-
-  val alcoholDutyReference:String = generateAlcoholDutyReference().sample.get
 
   "the subscription summary endpoint should" should {
     "respond with OK if able to fetch subscription summary data" in new SetUp {
@@ -33,7 +30,7 @@ class SubscriptionSummaryIntegrationSpec extends ISpecBase with ConnectorTestHel
       stubGet(url, OK, Json.toJson(approvedSubscriptionSummary).toString)
 
       val response = callRoute(
-        FakeRequest("GET", routes.AlcoholDutyController.subscriptionSummary(alcoholDutyReference).url)
+        FakeRequest("GET", routes.AlcoholDutyController.subscriptionSummary(appaId).url)
           .withHeaders("Authorization" -> "Bearer 12345")
       )
 
@@ -48,7 +45,7 @@ class SubscriptionSummaryIntegrationSpec extends ISpecBase with ConnectorTestHel
       stubGet(url, OK, "blah")
 
       val response = callRoute(
-        FakeRequest("GET", routes.AlcoholDutyController.subscriptionSummary(alcoholDutyReference).url)
+        FakeRequest("GET", routes.AlcoholDutyController.subscriptionSummary(appaId).url)
           .withHeaders("Authorization" -> "Bearer 12345")
       )
 
@@ -58,12 +55,27 @@ class SubscriptionSummaryIntegrationSpec extends ISpecBase with ConnectorTestHel
       verifyGet(url)
     }
 
+    "respond with BAD_REQUEST if a bad request" in new SetUp {
+      stubAuthorised()
+      stubGet(url, BAD_REQUEST, "")
+
+      val response = callRoute(
+        FakeRequest("GET", routes.AlcoholDutyController.subscriptionSummary(appaId).url)
+          .withHeaders("Authorization" -> "Bearer 12345")
+      )
+
+      status(response) shouldBe BAD_REQUEST
+      contentAsJson(response) shouldBe Json.toJson(ErrorResponse(BAD_REQUEST, "Bad request"))
+
+      verifyGet(url)
+    }
+
     "respond with NOT_FOUND if subscription summary found" in new SetUp {
       stubAuthorised()
       stubGet(url, NOT_FOUND, "")
 
       val response = callRoute(
-        FakeRequest("GET", routes.AlcoholDutyController.subscriptionSummary(alcoholDutyReference).url)
+        FakeRequest("GET", routes.AlcoholDutyController.subscriptionSummary(appaId).url)
           .withHeaders("Authorization" -> "Bearer 12345")
       )
 
@@ -75,10 +87,10 @@ class SubscriptionSummaryIntegrationSpec extends ISpecBase with ConnectorTestHel
 
     "respond with INTERNAL_SERVER_ERROR if error(s) returned from the subscription summary api call" in new SetUp {
       stubAuthorised()
-      stubGet(url, BAD_REQUEST, "")
+      stubGet(url, INTERNAL_SERVER_ERROR, "")
 
       val response = callRoute(
-        FakeRequest("GET", routes.AlcoholDutyController.subscriptionSummary(alcoholDutyReference).url)
+        FakeRequest("GET", routes.AlcoholDutyController.subscriptionSummary(appaId).url)
           .withHeaders("Authorization" -> "Bearer 12345")
       )
 
@@ -89,8 +101,7 @@ class SubscriptionSummaryIntegrationSpec extends ISpecBase with ConnectorTestHel
     }
   }
 
-  class SetUp extends AlcoholDutyTestData {
-    val url       =
-      s"${config.subscriptionApiUrl}/subscription/${config.regimeType}/${config.idType}/$alcoholDutyReference/summary"
+  class SetUp {
+    val url       = config.getSubscriptionUrl(appaId)
   }
 }

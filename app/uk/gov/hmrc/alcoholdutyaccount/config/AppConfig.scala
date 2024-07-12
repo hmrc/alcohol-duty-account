@@ -20,17 +20,33 @@ import javax.inject.{Inject, Singleton}
 import play.api.Configuration
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 
+import java.text.MessageFormat
+
 @Singleton
 class AppConfig @Inject() (config: Configuration, servicesConfig: ServicesConfig) {
 
   val appName: String = config.get[String]("appName")
 
-  val subscriptionApiUrl: String   = servicesConfig.baseUrl("subscription")
-  val obligationDataApiUrl: String = servicesConfig.baseUrl("obligation")
-  val financialDataApiUrl: String  = servicesConfig.baseUrl("financial")
+  private val subscriptionHost: String = servicesConfig.baseUrl("subscription")
+  val obligationDataHost: String       = servicesConfig.baseUrl("obligation")
+  val financialDataHost: String        = servicesConfig.baseUrl("financial")
 
-  val idType: String     = config.get[String]("downstream-apis.idType")
-  val regimeType: String = config.get[String]("downstream-apis.regimeType")
+  lazy val subscriptionClientId                         = getConfStringAndThrowIfNotFound("subscription.clientId")
+  lazy val subscriptionSecret                           = getConfStringAndThrowIfNotFound("subscription.secret")
+  private lazy val subscriptionGetSubscriptionUrlFormat = new MessageFormat(
+    getConfStringAndThrowIfNotFound("subscription.url.subscriptionSummary")
+  )
+
+  val idType: String = config.get[String]("downstream-apis.idType")
+  val regime: String = config.get[String]("downstream-apis.regime")
 
   val enrolmentServiceName: String = config.get[String]("enrolment.serviceName")
+
+  def getSubscriptionUrl(appaId: String): String = {
+    val url = subscriptionGetSubscriptionUrlFormat.format(Array(regime, idType, appaId))
+    s"$subscriptionHost$url"
+  }
+
+  private def getConfStringAndThrowIfNotFound(key: String) =
+    servicesConfig.getConfString(key, throw new RuntimeException(s"Could not find services config key '$key'"))
 }

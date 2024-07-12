@@ -43,7 +43,7 @@ class ObligationDataConnector @Inject() (
     EitherT {
 
       val url =
-        s"${config.obligationDataApiUrl}/enterprise/obligation-data/${config.idType}/$alcoholDutyReference/${config.regimeType}"
+        s"${config.obligationDataHost}/enterprise/obligation-data/${config.idType}/$alcoholDutyReference/${config.regime}"
       logger.info(s"Fetching all open obligation data for appaId $alcoholDutyReference")
 
       httpClient

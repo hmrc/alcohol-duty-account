@@ -17,6 +17,7 @@
 package uk.gov.hmrc.alcoholdutyaccount.models
 
 import play.api.libs.json._
+import uk.gov.hmrc.alcoholdutyaccount.models.subscription.ApprovalStatus
 
 final case class Balance(
   totalPaymentAmount: BigDecimal,

@@ -14,12 +14,13 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.alcoholdutyaccount.models
+package uk.gov.hmrc.alcoholdutyaccount.models.subscription
 
 import org.scalatest.matchers.should.Matchers.convertToAnyShouldWrapper
 import uk.gov.hmrc.alcoholdutyaccount.base.SpecBase
-import uk.gov.hmrc.alcoholdutyaccount.models.ApprovalStatus.{Approved, DeRegistered, Insolvent, Revoked, SmallCiderProducer}
+import uk.gov.hmrc.alcoholdutyaccount.models.hods
 import uk.gov.hmrc.alcoholdutyaccount.models.hods.{ApprovalType, SubscriptionSummary}
+import uk.gov.hmrc.alcoholdutyaccount.models.subscription.ApprovalStatus.{Approved, Deregistered, Insolvent, Revoked, SmallCiderProducer}
 
 class AdrSubscriptionSummarySpec extends SpecBase {
 
@@ -34,10 +35,10 @@ class AdrSubscriptionSummarySpec extends SpecBase {
       AlcoholRegime.OtherFermentedProduct
     )
 
-    "should return a AdrSubscriptionSummary given a SubscriptionSummary with Approved status and all alcohol regimes" in {
+    "should return a AdrSubscriptionSummary with Approved and all regimes given a SubscriptionSummary with Approved status and all alcohol types approved" in {
       val subscriptionSummary: SubscriptionSummary = SubscriptionSummary(
-        typeOfAlcoholApprovedForList = alcoholRegimes,
-        smallCiderFlag = false,
+        typeOfAlcoholApprovedFor = alcoholRegimes,
+        smallciderFlag = false,
         approvalStatus = hods.Approved,
         insolvencyFlag = false
       )
@@ -55,8 +56,8 @@ class AdrSubscriptionSummarySpec extends SpecBase {
     ).foreach { case (approvedSubscription, expectedRegimes) =>
       s"should return an AdrSubscriptionSummary of ${expectedRegimes.map(_.entryName).mkString(",")} when ${approvedSubscription.getClass.getTypeName} is approved" in {
         val subscriptionSummary: SubscriptionSummary = SubscriptionSummary(
-          typeOfAlcoholApprovedForList = Set(approvedSubscription),
-          smallCiderFlag = false,
+          typeOfAlcoholApprovedFor = Set(approvedSubscription),
+          smallciderFlag = false,
           approvalStatus = hods.Approved,
           insolvencyFlag = false
         )
@@ -67,10 +68,10 @@ class AdrSubscriptionSummarySpec extends SpecBase {
       }
     }
 
-    "should return a AdrSubscriptionSummary given a SubscriptionSummary with Approved status with insolvent flag and all alcohol regimes" in {
+    "should return a AdrSubscriptionSummary with Insolvent given a SubscriptionSummary with Approved status with insolvent flag and all alcohol types approved" in {
       val subscriptionSummary: SubscriptionSummary = SubscriptionSummary(
-        typeOfAlcoholApprovedForList = alcoholRegimes,
-        smallCiderFlag = false,
+        typeOfAlcoholApprovedFor = alcoholRegimes,
+        smallciderFlag = false,
         approvalStatus = hods.Approved,
         insolvencyFlag = true
       )
@@ -79,10 +80,10 @@ class AdrSubscriptionSummarySpec extends SpecBase {
       adrSubscriptionSummary.approvalStatus shouldBe Insolvent
     }
 
-    "should return a AdrSubscriptionSummary given a SubscriptionSummary with Approved status with small cider producer flag and all alcohol regimes" in {
+    "should return a AdrSubscriptionSummary with SmallCiderProducer status given a SubscriptionSummary with Approved status with small cider producer flag and all alcohol types approved" in {
       val subscriptionSummary: SubscriptionSummary = SubscriptionSummary(
-        typeOfAlcoholApprovedForList = alcoholRegimes,
-        smallCiderFlag = true,
+        typeOfAlcoholApprovedFor = alcoholRegimes,
+        smallciderFlag = true,
         approvalStatus = hods.Approved,
         insolvencyFlag = false
       )
@@ -91,10 +92,10 @@ class AdrSubscriptionSummarySpec extends SpecBase {
       adrSubscriptionSummary.approvalStatus shouldBe SmallCiderProducer
     }
 
-    "should return a AdrSubscriptionSummary given a SubscriptionSummary with Revoked status and all alcohol regimes" in {
+    "should return a AdrSubscriptionSummary with Revoked given a SubscriptionSummary with Revoked status and all alcohol types approved" in {
       val subscriptionSummary: SubscriptionSummary = SubscriptionSummary(
-        typeOfAlcoholApprovedForList = alcoholRegimes,
-        smallCiderFlag = false,
+        typeOfAlcoholApprovedFor = alcoholRegimes,
+        smallciderFlag = false,
         approvalStatus = hods.Revoked,
         insolvencyFlag = false
       )
@@ -103,23 +104,23 @@ class AdrSubscriptionSummarySpec extends SpecBase {
       adrSubscriptionSummary.approvalStatus shouldBe Revoked
     }
 
-    "should return a AdrSubscriptionSummary given a SubscriptionSummary with DeRegistered status and all alcohol regimes" in {
+    "should return a AdrSubscriptionSummary with Deregistered given a SubscriptionSummary with Deregistered status and all alcohol types approved" in {
 
       val subscriptionSummary: SubscriptionSummary = SubscriptionSummary(
-        typeOfAlcoholApprovedForList = alcoholRegimes,
-        smallCiderFlag = false,
-        approvalStatus = hods.DeRegistered,
+        typeOfAlcoholApprovedFor = alcoholRegimes,
+        smallciderFlag = false,
+        approvalStatus = hods.Deregistered,
         insolvencyFlag = false
       )
       val adrSubscriptionSummary                   = AdrSubscriptionSummary.fromSubscriptionSummary(subscriptionSummary).toOption.get
 
-      adrSubscriptionSummary.approvalStatus shouldBe DeRegistered
+      adrSubscriptionSummary.approvalStatus shouldBe Deregistered
     }
 
-    "should return an INTERNAL_SERVER_ERROR if no regimes were provided" in {
+    "should return an INTERNAL_SERVER_ERROR if no alcohol types were approved" in {
       val subscriptionSummary: SubscriptionSummary = SubscriptionSummary(
-        typeOfAlcoholApprovedForList = Set.empty,
-        smallCiderFlag = false,
+        typeOfAlcoholApprovedFor = Set.empty,
+        smallciderFlag = false,
         approvalStatus = hods.Approved,
         insolvencyFlag = false
       )

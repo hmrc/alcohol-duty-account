@@ -37,7 +37,7 @@ class FinancialDataConnector @Inject() (config: AppConfig, implicit val httpClie
   )(implicit hc: HeaderCarrier): OptionT[Future, FinancialTransactionDocument] =
     OptionT {
       val url =
-        s"${config.financialDataApiUrl}/enterprise/financial-data/${config.idType}/$alcoholDutyReference/${config.regimeType}"
+        s"${config.financialDataHost}/enterprise/financial-data/${config.idType}/$alcoholDutyReference/${config.regime}"
 
       logger.info(s"Fetching financial transaction document for appaId $alcoholDutyReference")
 

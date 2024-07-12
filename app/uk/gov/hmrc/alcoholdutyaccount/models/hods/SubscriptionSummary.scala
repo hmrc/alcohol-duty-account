@@ -17,6 +17,7 @@
 package uk.gov.hmrc.alcoholdutyaccount.models.hods
 
 import play.api.libs.json._
+import uk.gov.hmrc.alcoholdutyaccount.models.JsonHelpers
 
 sealed trait ApprovalType
 
@@ -51,7 +52,7 @@ object ApprovalType {
 sealed trait ApprovalStatus
 
 case object Approved extends ApprovalStatus
-case object DeRegistered extends ApprovalStatus
+case object Deregistered extends ApprovalStatus
 case object Revoked extends ApprovalStatus
 
 object ApprovalStatus {
@@ -60,7 +61,7 @@ object ApprovalStatus {
       case JsSuccess(value, _) =>
         value match {
           case "01" => JsSuccess(Approved)
-          case "02" => JsSuccess(DeRegistered)
+          case "02" => JsSuccess(Deregistered)
           case "03" => JsSuccess(Revoked)
           case s    => JsError(s"$s is not a valid ApprovalStatus")
         }
@@ -69,30 +70,21 @@ object ApprovalStatus {
 
   implicit val writes: Writes[ApprovalStatus] = {
     case Approved     => JsString("01")
-    case DeRegistered => JsString("02")
+    case Deregistered => JsString("02")
     case Revoked      => JsString("03")
   }
 }
 
 final case class SubscriptionSummary(
-  typeOfAlcoholApprovedForList: Set[ApprovalType],
-  smallCiderFlag: Boolean,
+  typeOfAlcoholApprovedFor: Set[ApprovalType],
+  smallciderFlag: Boolean,
   approvalStatus: ApprovalStatus,
   insolvencyFlag: Boolean
 )
 
 object SubscriptionSummary {
+  import JsonHelpers.booleanReads
+  import JsonHelpers.booleanWrites
 
-  implicit val booleanReads: Reads[Boolean] = {
-    case JsString("0") => JsSuccess(false)
-    case JsString("1") => JsSuccess(true)
-    case s             => JsError(s"$s is not a valid Boolean")
-  }
-
-  implicit val booleanWrites: Writes[Boolean] = {
-    case false => JsString("0")
-    case true  => JsString("1")
-  }
-
-  implicit val format: Format[SubscriptionSummary] = Json.format[SubscriptionSummary]
+  implicit val subscriptionSummaryFormat: OFormat[SubscriptionSummary] = Json.format[SubscriptionSummary]
 }

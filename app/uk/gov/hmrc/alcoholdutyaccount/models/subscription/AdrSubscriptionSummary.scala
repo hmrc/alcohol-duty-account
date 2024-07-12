@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.alcoholdutyaccount.models
+package uk.gov.hmrc.alcoholdutyaccount.models.subscription
 
 import play.api.libs.json.{Json, OWrites}
-import uk.gov.hmrc.alcoholdutyaccount.models.AlcoholRegime.{Beer, Cider, OtherFermentedProduct, Spirits, Wine}
-import uk.gov.hmrc.alcoholdutyaccount.models.ApprovalStatus._
+import AlcoholRegime.{Beer, Cider, OtherFermentedProduct, Spirits, Wine}
 import uk.gov.hmrc.alcoholdutyaccount.models.hods.SubscriptionSummary
+import uk.gov.hmrc.alcoholdutyaccount.models.hods
 import uk.gov.hmrc.play.bootstrap.backend.http.ErrorResponse
 
 case class AdrSubscriptionSummary(
@@ -32,14 +32,14 @@ object AdrSubscriptionSummary {
   def fromSubscriptionSummary(
     subscriptionSummary: SubscriptionSummary
   ): Either[ErrorResponse, AdrSubscriptionSummary] = {
-    val regimes = mapRegimes(subscriptionSummary.typeOfAlcoholApprovedForList)
+    val regimes = mapRegimes(subscriptionSummary.typeOfAlcoholApprovedFor)
 
     if (regimes.isEmpty) {
       Left(ErrorResponse(500, "Expected at least one approved regime to be provided"))
     } else {
       Right(
         AdrSubscriptionSummary(
-          mapStatus(subscriptionSummary),
+          ApprovalStatus.fromSubscriptionSummary(subscriptionSummary),
           regimes
         )
       )
@@ -52,15 +52,6 @@ object AdrSubscriptionSummary {
     case hods.WineAndOtherFermentedProduct => Seq(Wine, OtherFermentedProduct)
     case hods.Spirits                      => Seq(Spirits)
   }
-
-  private def mapStatus(subscriptionSummary: SubscriptionSummary): ApprovalStatus =
-    subscriptionSummary.approvalStatus match {
-      case hods.DeRegistered                       => DeRegistered
-      case hods.Revoked                            => Revoked
-      case _ if subscriptionSummary.smallCiderFlag => SmallCiderProducer
-      case _ if subscriptionSummary.insolvencyFlag => Insolvent
-      case hods.Approved                           => Approved
-    }
 
   implicit val writes: OWrites[AdrSubscriptionSummary] = Json.writes[AdrSubscriptionSummary]
 }

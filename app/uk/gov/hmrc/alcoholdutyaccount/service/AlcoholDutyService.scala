@@ -21,9 +21,10 @@ import cats.implicits._
 import play.api.Logging
 import play.api.http.Status.NOT_FOUND
 import uk.gov.hmrc.alcoholdutyaccount.connectors.{FinancialDataConnector, ObligationDataConnector, SubscriptionSummaryConnector}
-import uk.gov.hmrc.alcoholdutyaccount.models.ApprovalStatus.{DeRegistered, Revoked, SmallCiderProducer}
+import uk.gov.hmrc.alcoholdutyaccount.models.subscription.ApprovalStatus.{Deregistered, Revoked, SmallCiderProducer}
 import uk.gov.hmrc.alcoholdutyaccount.models._
 import uk.gov.hmrc.alcoholdutyaccount.models.hods.{FinancialTransactionDocument, ObligationData, ObligationDetails, ObligationStatus, Open, SubscriptionSummary}
+import uk.gov.hmrc.alcoholdutyaccount.models.subscription.{AdrSubscriptionSummary, ApprovalStatus}
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.bootstrap.backend.http.ErrorResponse
 
@@ -81,10 +82,10 @@ class AlcoholDutyService @Inject() (
     subscriptionSummaryConnector
       .getSubscriptionSummary(alcoholDutyReference)
       .flatMapF { subscriptionSummary: SubscriptionSummary =>
-        val approvalStatus = ApprovalStatus(subscriptionSummary)
+        val approvalStatus = ApprovalStatus.fromSubscriptionSummary(subscriptionSummary)
         if (
           approvalStatus == SmallCiderProducer ||
-          approvalStatus == DeRegistered ||
+          approvalStatus == Deregistered ||
           approvalStatus == Revoked
         ) { Future.successful(Right(RestrictedCardData(alcoholDutyReference, approvalStatus))) }
         else { getObligationAndFinancialInfo(alcoholDutyReference, approvalStatus) }

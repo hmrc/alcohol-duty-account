@@ -19,7 +19,7 @@ package uk.gov.hmrc.alcoholdutyaccount.models
 import org.scalatest.matchers.should.Matchers.convertToAnyShouldWrapper
 import play.api.libs.json.Json
 import uk.gov.hmrc.alcoholdutyaccount.base.SpecBase
-import uk.gov.hmrc.alcoholdutyaccount.models.ApprovalStatus._
+import uk.gov.hmrc.alcoholdutyaccount.models.subscription.ApprovalStatus._
 
 class AlcoholDutyCardDataSpec extends SpecBase {
 
@@ -73,7 +73,7 @@ class AlcoholDutyCardDataSpec extends SpecBase {
         result shouldBe Json.parse(expectedJson)
       }
 
-      Seq(Revoked, DeRegistered, SmallCiderProducer).foreach { approvalStatus =>
+      Seq(Revoked, Deregistered, SmallCiderProducer).foreach { approvalStatus =>
         s"when the Returns and Payments are empty and approval type is $approvalStatus" in {
           val alcoholDutyCardData = AlcoholDutyCardData(
             alcoholDutyReference = "REF01",

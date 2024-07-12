@@ -19,7 +19,7 @@ package uk.gov.hmrc.alcoholdutyaccount.connectors
 import org.scalatest.concurrent.ScalaFutures
 import play.api.libs.json.Json
 import uk.gov.hmrc.alcoholdutyaccount.base.{ConnectorTestHelpers, SpecBase}
-import uk.gov.hmrc.alcoholdutyaccount.common.AlcoholDutyTestData
+import uk.gov.hmrc.alcoholdutyaccount.connectors.helpers.Headers
 import uk.gov.hmrc.play.bootstrap.backend.http.ErrorResponse
 
 class SubscriptionSummaryConnectorSpec extends SpecBase with ScalaFutures with ConnectorTestHelpers {
@@ -28,41 +28,48 @@ class SubscriptionSummaryConnectorSpec extends SpecBase with ScalaFutures with C
   "SubscriptionSummaryConnector" - {
     "successfully get subscription summary data" in new SetUp {
       stubGet(url, OK, Json.toJson(approvedSubscriptionSummary).toString)
-      whenReady(connector.getSubscriptionSummary(alcoholDutyReference).value) { result =>
+      whenReady(connector.getSubscriptionSummary(appaId).value) { result =>
         result mustBe Right(approvedSubscriptionSummary)
         verifyGet(url)
       }
     }
 
-    "return an INTERNAL_SERVER_ERROR if the data retrieved cannot be parsed" in new SetUp {
+    "return INTERNAL_SERVER_ERROR if the data retrieved cannot be parsed" in new SetUp {
       stubGet(url, OK, "blah")
-      whenReady(connector.getSubscriptionSummary(alcoholDutyReference).value) { result =>
+      whenReady(connector.getSubscriptionSummary(appaId).value) { result =>
         result mustBe Left(ErrorResponse(INTERNAL_SERVER_ERROR, "Unable to parse subscription summary"))
         verifyGet(url)
       }
     }
 
-    "return not found if subscription summary data cannot be found" in new SetUp {
+    "return BAD_REQUEST if a bad request received" in new SetUp {
+      stubGet(url, BAD_REQUEST, Json.toJson(badRequest).toString)
+      whenReady(connector.getSubscriptionSummary(appaId).value) { result =>
+        result mustBe Left(ErrorResponse(BAD_REQUEST, "Bad request"))
+        verifyGet(url)
+      }
+    }
+
+    "return NOT_FOUND if subscription summary data cannot be found" in new SetUp {
       stubGet(url, NOT_FOUND, "")
-      whenReady(connector.getSubscriptionSummary(alcoholDutyReference).value) { result =>
+      whenReady(connector.getSubscriptionSummary(appaId).value) { result =>
         result mustBe Left(ErrorResponse(NOT_FOUND, "Subscription summary not found"))
         verifyGet(url)
       }
     }
 
-    "return an INTERNAL_SERVER_ERROR error if an error other than NOT_FOUND when fetching obligation data" in new SetUp {
-      stubGet(url, BAD_REQUEST, "")
-      whenReady(connector.getSubscriptionSummary(alcoholDutyReference).value) { result =>
+    "return INTERNAL_SERVER_ERROR error if an error other than BAD_REQUEST or NOT_FOUND is returned" in new SetUp {
+      stubGet(url, INTERNAL_SERVER_ERROR, Json.toJson(internalServerError).toString)
+      whenReady(connector.getSubscriptionSummary(appaId).value) { result =>
         result mustBe Left(ErrorResponse(INTERNAL_SERVER_ERROR, "An error occurred"))
         verifyGet(url)
       }
     }
   }
 
-  class SetUp extends ConnectorFixture with AlcoholDutyTestData {
-    val alcoholDutyReference: String = generateAlcoholDutyReference().sample.get
-    val connector                    = new SubscriptionSummaryConnector(config = config, httpClient = httpClient)
-    val url                          =
-      s"${config.subscriptionApiUrl}/subscription/${config.regimeType}/${config.idType}/$alcoholDutyReference/summary"
+  class SetUp extends ConnectorFixture {
+    val headers   = new Headers(fakeUUIDGenerator, appConfig, clock)
+    val connector = new SubscriptionSummaryConnector(config = config, headers = headers, httpClient = httpClient)
+    lazy val url  = appConfig.getSubscriptionUrl(appaId)
   }
 }

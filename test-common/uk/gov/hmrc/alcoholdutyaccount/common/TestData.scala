@@ -17,51 +17,37 @@
 package uk.gov.hmrc.alcoholdutyaccount.common
 
 import org.scalacheck.Gen
-import uk.gov.hmrc.alcoholdutyaccount.models.{AdrObligationData, AdrSubscriptionSummary, AlcoholRegime, ApprovalStatus, ObligationStatus}
+import play.api.libs.json.{Json, OFormat}
+import uk.gov.hmrc.alcoholdutyaccount.common.generators.ModelGenerators
+import uk.gov.hmrc.alcoholdutyaccount.models.{AdrObligationData, ObligationStatus}
 import uk.gov.hmrc.alcoholdutyaccount.models.hods._
+import uk.gov.hmrc.alcoholdutyaccount.models.subscription.{AdrSubscriptionSummary, AlcoholRegime, ApprovalStatus}
 
-import java.time.LocalDate
+import java.time.{Clock, Instant, LocalDate, ZoneId}
 
-trait AlcoholDutyTestData {
+trait TestData extends ModelGenerators {
+  val clock = Clock.fixed(Instant.ofEpochMilli(1718118467838L), ZoneId.of("UTC"))
+
+  val dummyUUID = "01234567-89ab-cdef-0123-456789abcdef"
+
+  val appaId: String = appaIdGen.sample.get
+
+  val allApprovals = Set[ApprovalType](Beer, CiderOrPerry, WineAndOtherFermentedProduct, Spirits)
 
   val approvedSubscriptionSummary = SubscriptionSummary(
-    typeOfAlcoholApprovedForList = Set(Beer, CiderOrPerry, WineAndOtherFermentedProduct, Spirits),
-    smallCiderFlag = false,
+    typeOfAlcoholApprovedFor = allApprovals,
+    smallciderFlag = false,
     approvalStatus = Approved,
     insolvencyFlag = false
   )
 
-  val insolventSubscriptionSummary = SubscriptionSummary(
-    typeOfAlcoholApprovedForList = Set(Beer, CiderOrPerry, WineAndOtherFermentedProduct, Spirits),
-    smallCiderFlag = false,
-    approvalStatus = Approved,
-    insolvencyFlag = true
-  )
+  val insolventSubscriptionSummary = approvedSubscriptionSummary.copy(insolvencyFlag = true)
 
-  val deregisteredSubscriptionSummary = SubscriptionSummary(
-    typeOfAlcoholApprovedForList = Set(Beer, CiderOrPerry, WineAndOtherFermentedProduct, Spirits),
-    smallCiderFlag = false,
-    approvalStatus = DeRegistered,
-    insolvencyFlag = false
-  )
+  val deregisteredSubscriptionSummary = approvedSubscriptionSummary.copy(approvalStatus = Deregistered)
 
-  val revokedSubscriptionSummary = SubscriptionSummary(
-    typeOfAlcoholApprovedForList = Set(Beer, CiderOrPerry, WineAndOtherFermentedProduct, Spirits),
-    smallCiderFlag = false,
-    approvalStatus = Revoked,
-    insolvencyFlag = false
-  )
+  val revokedSubscriptionSummary = approvedSubscriptionSummary.copy(approvalStatus = Revoked)
 
-  val smallCiderProducerSubscriptionSummary = SubscriptionSummary(
-    typeOfAlcoholApprovedForList = Set(Beer, CiderOrPerry, WineAndOtherFermentedProduct, Spirits),
-    smallCiderFlag = true,
-    approvalStatus = Approved,
-    insolvencyFlag = false
-  )
-
-  def generateAlcoholDutyReference(): Gen[String] = for {
-    idNumSection <- Gen.listOfN(10, Gen.numChar)
-  } yield s"XMADP${idNumSection.mkString}"
+  val smallCiderProducerSubscriptionSummary = approvedSubscriptionSummary.copy(smallciderFlag = true)
 
   def generateProductKey(): Gen[String] = for {
     year  <- Gen.listOfN(2, Gen.numChar)
@@ -206,4 +192,13 @@ trait AlcoholDutyTestData {
 
   val adrMultipleOpenData =
     Seq(adrObligationDetails, adrObligationDetailsOpen2)
+
+  case class DownstreamErrorDetails(code: String, message: String, logID: String)
+
+  object DownstreamErrorDetails {
+    implicit val downstreamErrorDetailsWrites: OFormat[DownstreamErrorDetails] = Json.format[DownstreamErrorDetails]
+  }
+
+  val badRequest          = DownstreamErrorDetails("400", "You messed up", "id")
+  val internalServerError = DownstreamErrorDetails("500", "Computer says No!", "id")
 }

@@ -29,7 +29,7 @@ import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.mvc.{Result, Results}
 import play.api.test._
 import play.api.{Application, Mode}
-import uk.gov.hmrc.alcoholdutyaccount.common.AlcoholDutyTestData
+import uk.gov.hmrc.alcoholdutyaccount.common.TestData
 import uk.gov.hmrc.alcoholdutyaccount.config.AppConfig
 import uk.gov.hmrc.http.test.WireMockSupport
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
@@ -60,7 +60,7 @@ abstract class ISpecBase
     with WireMockSupport
     with AuthStubs
     with IntegrationPatience
-    with AlcoholDutyTestData {
+    with TestData {
 
   implicit lazy val arbString: Arbitrary[String] = Arbitrary(Gen.alphaNumStr.retryUntil(_.nonEmpty))
 
