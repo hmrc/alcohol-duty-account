@@ -16,23 +16,35 @@
 
 package uk.gov.hmrc.alcoholdutyaccount.models
 
-import play.api.libs.json.Json
+import play.api.libs.json.{JsResultException, Json}
 import uk.gov.hmrc.alcoholdutyaccount.base.SpecBase
 
 class JsonHelpersSpec extends SpecBase {
   "SubscriptionSummary" - {
     Seq((false, """"0""""), (true, """"1"""")).foreach { case (v, code) =>
-      s"deserialise the code $code to boolean $v" in {
+      s"should deserialise the code $code to boolean $v" in {
         import JsonHelpers.booleanReads
 
         Json.parse(code).as[Boolean] mustBe v
       }
 
-      s"serialise boolean $v to the code $code" in {
+      s"should serialise boolean $v to the code $code" in {
         import JsonHelpers.booleanWrites
 
         Json.toJson(v).toString mustBe code
       }
+    }
+
+    "should return an error if a read value is an invalid string" in {
+      import JsonHelpers.booleanReads
+
+      a[JsResultException] mustBe thrownBy(Json.parse(""""2"""").as[Boolean])
+    }
+
+    "should return an error if a read value is an invalid type" in {
+      import JsonHelpers.booleanReads
+
+      a[JsResultException] mustBe thrownBy(Json.parse("""1""").as[Boolean])
     }
   }
 }

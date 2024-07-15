@@ -22,7 +22,8 @@ object JsonHelpers {
   implicit val booleanReads: Reads[Boolean] = {
     case JsString("0") => JsSuccess(false)
     case JsString("1") => JsSuccess(true)
-    case s             => JsError(s"$s is not a valid Boolean")
+    case s: JsString   => JsError(s"$s is not a valid Boolean")
+    case v             => JsError(s"got $v was expecting a string representing a Boolean")
   }
 
   implicit val booleanWrites: Writes[Boolean] = {

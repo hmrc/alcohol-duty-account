@@ -88,7 +88,21 @@ class SubscriptionSummarySpec extends SpecBase {
       val json =
         """
           |{
-          |    "typeOfAlcoholApprovedFor": ["99"],
+          |    "typeOfAlcoholApprovedFor": ["05"],
+          |    "smallciderFlag": "0",
+          |    "approvalStatus": "01",
+          |    "insolvencyFlag": "0"
+          |}
+          |""".stripMargin
+
+      an[JsResultException] should be thrownBy Json.parse(json).as[SubscriptionSummary]
+    }
+
+    "should throw an Exception if one of the the alcohol approved types is not a string" in {
+      val json =
+        """
+          |{
+          |    "typeOfAlcoholApprovedFor": [2],
           |    "smallciderFlag": "0",
           |    "approvalStatus": "01",
           |    "insolvencyFlag": "0"
@@ -104,7 +118,21 @@ class SubscriptionSummarySpec extends SpecBase {
           |{
           |    "typeOfAlcoholApprovedFor": ["01"],
           |    "smallciderFlag": "0",
-          |    "approvalStatus": "99",
+          |    "approvalStatus": "4",
+          |    "insolvencyFlag": "0"
+          |}
+          |""".stripMargin
+
+      an[JsResultException] should be thrownBy Json.parse(json).as[SubscriptionSummary]
+    }
+
+    "should throw an Exception if the Approval Status is not a string" in {
+      val json =
+        """
+          |{
+          |    "typeOfAlcoholApprovedFor": ["01"],
+          |    "smallciderFlag": "0",
+          |    "approvalStatus": 1,
           |    "insolvencyFlag": "0"
           |}
           |""".stripMargin
