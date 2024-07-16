@@ -31,7 +31,7 @@ class ApprovalStatusSpec extends SpecBase {
           approvalStatus = hods.Deregistered,
           insolvencyFlag = false
         )
-        ApprovalStatus.fromSubscriptionSummary(subscriptionSummary) mustBe ApprovalStatus.Deregistered
+        ApprovalStatus.fromSubscriptionSummary(subscriptionSummary) mustBe ApprovalStatus.DeRegistered
       }
 
       "when hods status is Deregistered regardless of the state of smallciderFlag and insolvencyFlag" in {
@@ -41,7 +41,7 @@ class ApprovalStatusSpec extends SpecBase {
           approvalStatus = hods.Deregistered,
           insolvencyFlag = true
         )
-        ApprovalStatus.fromSubscriptionSummary(subscriptionSummary) mustBe ApprovalStatus.Deregistered
+        ApprovalStatus.fromSubscriptionSummary(subscriptionSummary) mustBe ApprovalStatus.DeRegistered
       }
     }
 

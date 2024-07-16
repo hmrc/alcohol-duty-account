@@ -19,7 +19,7 @@ package uk.gov.hmrc.alcoholdutyaccount.connectors
 import org.scalatest.concurrent.ScalaFutures
 import play.api.libs.json.Json
 import uk.gov.hmrc.alcoholdutyaccount.base.{ConnectorTestHelpers, SpecBase}
-import uk.gov.hmrc.alcoholdutyaccount.connectors.helpers.Headers
+import uk.gov.hmrc.alcoholdutyaccount.connectors.helpers.HIPHeaders
 import uk.gov.hmrc.play.bootstrap.backend.http.ErrorResponse
 
 class SubscriptionSummaryConnectorSpec extends SpecBase with ScalaFutures with ConnectorTestHelpers {
@@ -68,7 +68,7 @@ class SubscriptionSummaryConnectorSpec extends SpecBase with ScalaFutures with C
   }
 
   class SetUp extends ConnectorFixture {
-    val headers   = new Headers(fakeUUIDGenerator, appConfig, clock)
+    val headers   = new HIPHeaders(fakeUUIDGenerator, appConfig, clock)
     val connector = new SubscriptionSummaryConnector(config = config, headers = headers, httpClient = httpClient)
     lazy val url  = appConfig.getSubscriptionUrl(appaId)
   }

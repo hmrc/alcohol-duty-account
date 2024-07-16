@@ -32,11 +32,13 @@ class SubscriptionSummarySpec extends SpecBase {
         insolvencyFlag = true
       )
 
+      val businessName = businessGen.sample.get
+
       val json =
-        """
+        s"""
           |{
           |    "processingDate":"2024-06-11T15:07:47.838Z",
-          |    "organizationName":"Boozy Bob's Beers",
+          |    "organizationName":"$businessName",
           |    "typeOfAlcoholApprovedFor": [
           |        "01",
           |        "02",
@@ -45,7 +47,7 @@ class SubscriptionSummarySpec extends SpecBase {
           |    ],
           |    "smallciderFlag": "0",
           |    "paperlessReference":"1",
-          |    "emailAddress":"bob@beers.co.uk",
+          |    "emailAddress":"john.doe@example.com",
           |    "approvalStatus": "01",
           |    "insolvencyFlag": "1"
           |}

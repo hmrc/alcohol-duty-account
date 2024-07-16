@@ -21,7 +21,7 @@ import cats.implicits._
 import play.api.Logging
 import play.api.http.Status.NOT_FOUND
 import uk.gov.hmrc.alcoholdutyaccount.connectors.{FinancialDataConnector, ObligationDataConnector, SubscriptionSummaryConnector}
-import uk.gov.hmrc.alcoholdutyaccount.models.subscription.ApprovalStatus.{Deregistered, Revoked, SmallCiderProducer}
+import uk.gov.hmrc.alcoholdutyaccount.models.subscription.ApprovalStatus.{DeRegistered, Revoked, SmallCiderProducer}
 import uk.gov.hmrc.alcoholdutyaccount.models._
 import uk.gov.hmrc.alcoholdutyaccount.models.hods.{FinancialTransactionDocument, ObligationData, ObligationDetails, ObligationStatus, Open, SubscriptionSummary}
 import uk.gov.hmrc.alcoholdutyaccount.models.subscription.{AdrSubscriptionSummary, ApprovalStatus}
@@ -85,7 +85,7 @@ class AlcoholDutyService @Inject() (
         val approvalStatus = ApprovalStatus.fromSubscriptionSummary(subscriptionSummary)
         if (
           approvalStatus == SmallCiderProducer ||
-          approvalStatus == Deregistered ||
+          approvalStatus == DeRegistered ||
           approvalStatus == Revoked
         ) { Future.successful(Right(RestrictedCardData(alcoholDutyReference, approvalStatus))) }
         else { getObligationAndFinancialInfo(alcoholDutyReference, approvalStatus) }

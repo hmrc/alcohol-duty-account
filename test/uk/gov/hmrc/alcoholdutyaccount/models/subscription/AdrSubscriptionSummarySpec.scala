@@ -20,7 +20,7 @@ import org.scalatest.matchers.should.Matchers.convertToAnyShouldWrapper
 import uk.gov.hmrc.alcoholdutyaccount.base.SpecBase
 import uk.gov.hmrc.alcoholdutyaccount.models.hods
 import uk.gov.hmrc.alcoholdutyaccount.models.hods.{ApprovalType, SubscriptionSummary}
-import uk.gov.hmrc.alcoholdutyaccount.models.subscription.ApprovalStatus.{Approved, Deregistered, Insolvent, Revoked, SmallCiderProducer}
+import uk.gov.hmrc.alcoholdutyaccount.models.subscription.ApprovalStatus.{Approved, DeRegistered, Insolvent, Revoked, SmallCiderProducer}
 
 class AdrSubscriptionSummarySpec extends SpecBase {
 
@@ -114,7 +114,7 @@ class AdrSubscriptionSummarySpec extends SpecBase {
       )
       val adrSubscriptionSummary                   = AdrSubscriptionSummary.fromSubscriptionSummary(subscriptionSummary).toOption.get
 
-      adrSubscriptionSummary.approvalStatus shouldBe Deregistered
+      adrSubscriptionSummary.approvalStatus shouldBe DeRegistered
     }
 
     "should return an INTERNAL_SERVER_ERROR if no alcohol types were approved" in {

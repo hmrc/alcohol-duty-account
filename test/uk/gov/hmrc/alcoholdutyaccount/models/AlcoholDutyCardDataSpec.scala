@@ -73,7 +73,7 @@ class AlcoholDutyCardDataSpec extends SpecBase {
         result shouldBe Json.parse(expectedJson)
       }
 
-      Seq(Revoked, Deregistered, SmallCiderProducer).foreach { approvalStatus =>
+      Seq(Revoked, DeRegistered, SmallCiderProducer).foreach { approvalStatus =>
         s"when the Returns and Payments are empty and approval type is $approvalStatus" in {
           val alcoholDutyCardData = AlcoholDutyCardData(
             alcoholDutyReference = "REF01",

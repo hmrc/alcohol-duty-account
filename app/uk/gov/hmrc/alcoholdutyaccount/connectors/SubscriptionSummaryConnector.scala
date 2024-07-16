@@ -20,9 +20,9 @@ import cats.data.EitherT
 import play.api.Logging
 import play.api.http.Status.{BAD_REQUEST, INTERNAL_SERVER_ERROR, NOT_FOUND}
 import uk.gov.hmrc.alcoholdutyaccount.config.AppConfig
-import uk.gov.hmrc.alcoholdutyaccount.connectors.helpers.Headers
+import uk.gov.hmrc.alcoholdutyaccount.connectors.helpers.HIPHeaders
 import uk.gov.hmrc.alcoholdutyaccount.models.hods.SubscriptionSummary
-import uk.gov.hmrc.http.{HttpClient, _}
+import uk.gov.hmrc.http._
 import uk.gov.hmrc.play.bootstrap.backend.http.ErrorResponse
 
 import javax.inject.Inject
@@ -31,7 +31,7 @@ import scala.util.Try
 
 class SubscriptionSummaryConnector @Inject() (
   config: AppConfig,
-  headers: Headers,
+  headers: HIPHeaders,
   implicit val httpClient: HttpClient
 )(implicit ec: ExecutionContext)
     extends HttpReadsInstances

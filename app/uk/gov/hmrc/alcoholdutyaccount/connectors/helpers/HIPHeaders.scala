@@ -24,7 +24,7 @@ import java.time.{Clock, Instant}
 import java.util.Base64
 import javax.inject.Inject
 
-class Headers @Inject() (randomUUIDGenerator: RandomUUIDGenerator, appConfig: AppConfig, clock: Clock) {
+class HIPHeaders @Inject() (randomUUIDGenerator: RandomUUIDGenerator, appConfig: AppConfig, clock: Clock) {
   private val correlationIdHeader: String       = "correlationId"
   private val xOriginatingSystemHeader: String  = "X-Originating-System"
   private val xReceiptDateHeader: String        = "X-Receipt-Date"
@@ -36,7 +36,7 @@ class Headers @Inject() (randomUUIDGenerator: RandomUUIDGenerator, appConfig: Ap
   def subscriptionHeaders(): Seq[(String, String)] =
     Seq(
       (HeaderNames.AUTHORIZATION, authorization()),
-      (correlationIdHeader, randomUUIDGenerator.uuidHyphenTrimmed),
+      (correlationIdHeader, randomUUIDGenerator.uuid),
       (xOriginatingSystemHeader, mdtp),
       (xReceiptDateHeader, DateTimeHelper.formatISOInstantSeconds(Instant.now(clock))),
       (xTransmittingSystemHeader, hip)

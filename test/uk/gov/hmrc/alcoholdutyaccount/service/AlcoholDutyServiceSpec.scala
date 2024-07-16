@@ -23,7 +23,7 @@ import org.mockito.cats.IdiomaticMockitoCats.StubbingOpsCats
 import uk.gov.hmrc.alcoholdutyaccount.base.SpecBase
 import uk.gov.hmrc.alcoholdutyaccount.common.TestData
 import uk.gov.hmrc.alcoholdutyaccount.connectors.{FinancialDataConnector, ObligationDataConnector, SubscriptionSummaryConnector}
-import uk.gov.hmrc.alcoholdutyaccount.models.subscription.ApprovalStatus.{Approved, Deregistered, Insolvent, Revoked, SmallCiderProducer}
+import uk.gov.hmrc.alcoholdutyaccount.models.subscription.ApprovalStatus.{Approved, DeRegistered, Insolvent, Revoked, SmallCiderProducer}
 import uk.gov.hmrc.alcoholdutyaccount.models._
 import uk.gov.hmrc.alcoholdutyaccount.models.hods.{Beer, FinancialTransaction, FinancialTransactionDocument, FinancialTransactionItem, Obligation, ObligationData, ObligationDetails, Open, SubscriptionSummary}
 import uk.gov.hmrc.alcoholdutyaccount.models.subscription.ApprovalStatus
@@ -506,7 +506,7 @@ class AlcoholDutyServiceSpec extends SpecBase with TestData {
           }
         }
 
-      Seq(hods.Revoked -> Revoked, hods.Deregistered -> Deregistered).foreach {
+      Seq(hods.Revoked -> Revoked, hods.Deregistered -> DeRegistered).foreach {
         case (hodsApprovalStatus: hods.ApprovalStatus, approvalStatus: ApprovalStatus) =>
           s"return a Restricted Card Data if the subscription summary has $hodsApprovalStatus approval status" in new SetUp {
             val subscriptionSummary = SubscriptionSummary(

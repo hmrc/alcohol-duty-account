@@ -24,10 +24,5 @@ class RandomUUIDGeneratorSpec extends SpecBase {
     "return a random UUID" in {
       new RandomUUIDGenerator().uuid.replaceAll("[0-9a-fA-F]", "*") mustBe "********-****-****-****-************"
     }
-
-    "return a random UUID without hyphens" in {
-      new RandomUUIDGenerator().uuidHyphenTrimmed
-        .replaceAll("[0-9a-fA-F]", "*") mustBe "********************************"
-    }
   }
 }

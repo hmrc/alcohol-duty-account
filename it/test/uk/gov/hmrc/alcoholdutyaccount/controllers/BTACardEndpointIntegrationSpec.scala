@@ -19,7 +19,7 @@ package uk.gov.hmrc.alcoholdutyaccount.controllers
 import play.api.libs.json.Json
 import play.api.test.FakeRequest
 import uk.gov.hmrc.alcoholdutyaccount.base.{FinancialDataStubs, ISpecBase, ObligationDataStubs, SubscriptionSummaryStubs}
-import uk.gov.hmrc.alcoholdutyaccount.models.subscription.ApprovalStatus.{Approved, Deregistered, Insolvent, Revoked, SmallCiderProducer}
+import uk.gov.hmrc.alcoholdutyaccount.models.subscription.ApprovalStatus.{Approved, DeRegistered, Insolvent, Revoked, SmallCiderProducer}
 import uk.gov.hmrc.alcoholdutyaccount.models.{AlcoholDutyCardData, Balance, Payments, RestrictedCardData, Returns}
 
 class BTACardEndpointIntegrationSpec
@@ -110,7 +110,7 @@ class BTACardEndpointIntegrationSpec
         stubAuthorised()
         stubGetSubscriptionSummary(appaId, deregisteredSubscriptionSummary)
 
-        val expectedBTACardData = RestrictedCardData(appaId, Deregistered)
+        val expectedBTACardData = RestrictedCardData(appaId, DeRegistered)
 
         val response = callRoute(
           FakeRequest("GET", routes.AlcoholDutyController.btaTileData(appaId).url)
