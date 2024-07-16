@@ -20,6 +20,7 @@ import org.scalatest.concurrent.ScalaFutures
 import play.api.libs.json.Json
 import uk.gov.hmrc.alcoholdutyaccount.base.{ConnectorTestHelpers, SpecBase}
 import uk.gov.hmrc.alcoholdutyaccount.connectors.helpers.HIPHeaders
+import uk.gov.hmrc.alcoholdutyaccount.models.hods.SubscriptionSummarySuccess
 import uk.gov.hmrc.play.bootstrap.backend.http.ErrorResponse
 
 class SubscriptionSummaryConnectorSpec extends SpecBase with ScalaFutures with ConnectorTestHelpers {
@@ -27,7 +28,7 @@ class SubscriptionSummaryConnectorSpec extends SpecBase with ScalaFutures with C
 
   "SubscriptionSummaryConnector" - {
     "successfully get subscription summary data" in new SetUp {
-      stubGet(url, OK, Json.toJson(approvedSubscriptionSummary).toString)
+      stubGet(url, OK, Json.toJson(SubscriptionSummarySuccess(approvedSubscriptionSummary)).toString)
       whenReady(connector.getSubscriptionSummary(appaId).value) { result =>
         result mustBe Right(approvedSubscriptionSummary)
         verifyGet(url)
@@ -37,7 +38,7 @@ class SubscriptionSummaryConnectorSpec extends SpecBase with ScalaFutures with C
     "return INTERNAL_SERVER_ERROR if the data retrieved cannot be parsed" in new SetUp {
       stubGet(url, OK, "blah")
       whenReady(connector.getSubscriptionSummary(appaId).value) { result =>
-        result mustBe Left(ErrorResponse(INTERNAL_SERVER_ERROR, "Unable to parse subscription summary"))
+        result mustBe Left(ErrorResponse(INTERNAL_SERVER_ERROR, "Unable to parse subscription summary success"))
         verifyGet(url)
       }
     }

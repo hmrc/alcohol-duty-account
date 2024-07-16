@@ -67,6 +67,13 @@ object ApprovalStatus {
   }
 }
 
+final case class SubscriptionSummarySuccess(success: SubscriptionSummary)
+
+object SubscriptionSummarySuccess {
+  implicit val subscriptionSummarySuccessFormat: OFormat[SubscriptionSummarySuccess] =
+    Json.format[SubscriptionSummarySuccess]
+}
+
 final case class SubscriptionSummary(
   typeOfAlcoholApprovedFor: Set[ApprovalType],
   smallciderFlag: Boolean,

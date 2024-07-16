@@ -19,6 +19,7 @@ package uk.gov.hmrc.alcoholdutyaccount.controllers
 import play.api.libs.json.Json
 import play.api.test.FakeRequest
 import uk.gov.hmrc.alcoholdutyaccount.base.{ConnectorTestHelpers, ISpecBase}
+import uk.gov.hmrc.alcoholdutyaccount.models.hods.SubscriptionSummarySuccess
 import uk.gov.hmrc.play.bootstrap.backend.http.ErrorResponse
 
 class SubscriptionSummaryIntegrationSpec extends ISpecBase with ConnectorTestHelpers {
@@ -27,7 +28,7 @@ class SubscriptionSummaryIntegrationSpec extends ISpecBase with ConnectorTestHel
   "the subscription summary endpoint should" should {
     "respond with OK if able to fetch subscription summary data" in new SetUp {
       stubAuthorised()
-      stubGet(url, OK, Json.toJson(approvedSubscriptionSummary).toString)
+      stubGet(url, OK, Json.toJson(SubscriptionSummarySuccess(approvedSubscriptionSummary)).toString)
 
       val response = callRoute(
         FakeRequest("GET", routes.AlcoholDutyController.subscriptionSummary(appaId).url)
@@ -50,7 +51,7 @@ class SubscriptionSummaryIntegrationSpec extends ISpecBase with ConnectorTestHel
       )
 
       status(response) shouldBe INTERNAL_SERVER_ERROR
-      contentAsJson(response) shouldBe Json.toJson(ErrorResponse(INTERNAL_SERVER_ERROR, "Unable to parse subscription summary"))
+      contentAsJson(response) shouldBe Json.toJson(ErrorResponse(INTERNAL_SERVER_ERROR, "Unable to parse subscription summary success"))
 
       verifyGet(url)
     }

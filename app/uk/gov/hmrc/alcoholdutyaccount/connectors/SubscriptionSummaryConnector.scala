@@ -21,7 +21,7 @@ import play.api.Logging
 import play.api.http.Status.{BAD_REQUEST, INTERNAL_SERVER_ERROR, NOT_FOUND}
 import uk.gov.hmrc.alcoholdutyaccount.config.AppConfig
 import uk.gov.hmrc.alcoholdutyaccount.connectors.helpers.HIPHeaders
-import uk.gov.hmrc.alcoholdutyaccount.models.hods.SubscriptionSummary
+import uk.gov.hmrc.alcoholdutyaccount.models.hods.{SubscriptionSummary, SubscriptionSummarySuccess}
 import uk.gov.hmrc.http._
 import uk.gov.hmrc.play.bootstrap.backend.http.ErrorResponse
 
@@ -53,14 +53,14 @@ class SubscriptionSummaryConnector @Inject() (
           case Right(response) =>
             Try {
               response.json
-                .asOpt[SubscriptionSummary]
+                .asOpt[SubscriptionSummarySuccess]
             }.toOption.flatten
               .fold[Either[ErrorResponse, SubscriptionSummary]] {
-                logger.warn(s"Unable to parse subscription summary for appaId $appaId")
-                Left(ErrorResponse(INTERNAL_SERVER_ERROR, "Unable to parse subscription summary"))
-              } {
-                logger.info(s"Retrieved subscription summary for appaId $appaId")
-                Right(_)
+                logger.warn(s"Unable to parse subscription summary success for appaId $appaId")
+                Left(ErrorResponse(INTERNAL_SERVER_ERROR, "Unable to parse subscription summary success"))
+              } { subscriptionSummarySuccess =>
+                logger.info(s"Retrieved subscription summary success for appaId $appaId")
+                Right(subscriptionSummarySuccess.success)
               }
           case Left(error)     => Left(processError(error, appaId))
         }

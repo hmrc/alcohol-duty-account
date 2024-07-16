@@ -25,36 +25,39 @@ class SubscriptionSummarySpec extends SpecBase {
   "SubscriptionSummary" - {
     "should be able to to be serialised from the full json" in {
 
-      val expectedSubscriptionSummary = SubscriptionSummary(
-        typeOfAlcoholApprovedFor = allApprovals,
-        smallciderFlag = false,
-        approvalStatus = Approved,
-        insolvencyFlag = true
+      val expectedSubscriptionSummarySuccess = SubscriptionSummarySuccess(
+        SubscriptionSummary(
+          typeOfAlcoholApprovedFor = allApprovals,
+          smallciderFlag = false,
+          approvalStatus = Approved,
+          insolvencyFlag = true
+        )
       )
 
       val businessName = businessGen.sample.get
 
       val json =
         s"""
-          |{
-          |    "processingDate":"2024-06-11T15:07:47.838Z",
-          |    "organizationName":"$businessName",
-          |    "typeOfAlcoholApprovedFor": [
-          |        "01",
-          |        "02",
-          |        "03",
-          |        "04"
-          |    ],
-          |    "smallciderFlag": "0",
-          |    "paperlessReference":"1",
-          |    "emailAddress":"john.doe@example.com",
-          |    "approvalStatus": "01",
-          |    "insolvencyFlag": "1"
+          |{   "success": {
+          |        "processingDate":"2024-06-11T15:07:47.838Z",
+          |        "organizationName":"$businessName",
+          |        "typeOfAlcoholApprovedFor": [
+          |            "01",
+          |            "02",
+          |            "03",
+          |            "04"
+          |        ],
+          |        "smallciderFlag": "0",
+          |        "paperlessReference":"1",
+          |        "emailAddress":"john.doe@example.com",
+          |        "approvalStatus": "01",
+          |        "insolvencyFlag": "1"
+          |    }
           |}
           |""".stripMargin
 
-      val result = Json.parse(json).asOpt[SubscriptionSummary]
-      result shouldBe Some(expectedSubscriptionSummary)
+      val result = Json.parse(json).asOpt[SubscriptionSummarySuccess]
+      result shouldBe Some(expectedSubscriptionSummarySuccess)
     }
 
     Seq(
