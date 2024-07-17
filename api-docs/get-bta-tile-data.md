@@ -106,12 +106,12 @@ Calls to this API must be made by an authenticated and authorised user with an A
 
 Same payloads as approved but the status will be "Insolvent"
 
-***Deregistered / Revoked / Small Cider Producer:***
+***DeRegistered / Revoked / Small Cider Producer:***
 
 ```json
 {
   "alcoholDutyReference": "AP0000000001", 
-  "approvalStatus": "Deregistered",
+  "approvalStatus": "DeRegistered",
   "hasSubscriptionSummaryError": false,
   "hasReturnsError": false,
   "hasPaymentsError": false,
@@ -119,7 +119,7 @@ Same payloads as approved but the status will be "Insolvent"
   "payments": {}
 }
 ```
-Possible status values are "Deregistered", "Revoked" and "SmallCiderProducer"
+Possible status values are "DeRegistered", "Revoked" and "SmallCiderProducer"
 
 ***Subscription Summary Error:***
 
@@ -157,7 +157,7 @@ Possible status values are "Deregistered", "Revoked" and "SmallCiderProducer"
 
 The status prioritisation will be as below:
 
-1. Deregistered - Revoked
+1. DeRegistered - Revoked
 1. SmallCiderProducer
 1. Approved - Insolvent
 

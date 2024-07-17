@@ -32,7 +32,7 @@ object ApprovalStatus extends Enum[ApprovalStatus] with PlayJsonEnum[ApprovalSta
 
   def fromSubscriptionSummary(subscriptionSummary: SubscriptionSummary): ApprovalStatus =
     subscriptionSummary.approvalStatus match {
-      case hods.Deregistered                                   => DeRegistered
+      case hods.DeRegistered                                   => DeRegistered
       case hods.Revoked                                        => Revoked
       case hods.Approved if subscriptionSummary.smallciderFlag => SmallCiderProducer
       case hods.Approved if subscriptionSummary.insolvencyFlag => Insolvent

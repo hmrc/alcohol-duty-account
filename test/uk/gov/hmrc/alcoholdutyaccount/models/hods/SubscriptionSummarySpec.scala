@@ -62,7 +62,7 @@ class SubscriptionSummarySpec extends SpecBase {
 
     Seq(
       (Approved, "01"),
-      (Deregistered, "02"),
+      (DeRegistered, "02"),
       (Revoked, "03")
     ).foreach { case (approvalStatus, approvalCode) =>
       s"should be able to to be deserialise the approval status $approvalStatus from json" in {

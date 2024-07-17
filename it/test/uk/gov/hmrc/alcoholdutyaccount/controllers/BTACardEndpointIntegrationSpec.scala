@@ -106,7 +106,7 @@ class BTACardEndpointIntegrationSpec
     }
 
     "respond with 200 status and with Restricted Card Data" when {
-      "subscription has Deregistered status" in {
+      "subscription has DeRegistered status" in {
         stubAuthorised()
         stubGetSubscriptionSummary(appaId, deregisteredSubscriptionSummary)
 

@@ -48,13 +48,13 @@ object ApprovalType {
 sealed trait ApprovalStatus
 
 case object Approved extends ApprovalStatus
-case object Deregistered extends ApprovalStatus
+case object DeRegistered extends ApprovalStatus
 case object Revoked extends ApprovalStatus
 
 object ApprovalStatus {
   implicit val approvalStatusReads: Reads[ApprovalStatus] = {
     case JsString("01") => JsSuccess(Approved)
-    case JsString("02") => JsSuccess(Deregistered)
+    case JsString("02") => JsSuccess(DeRegistered)
     case JsString("03") => JsSuccess(Revoked)
     case s: JsString    => JsError(s"$s is not a valid ApprovalStatus")
     case v              => JsError(s"got $v was expecting a string representing a ApprovalStatus")
@@ -62,7 +62,7 @@ object ApprovalStatus {
 
   implicit val approvalStatusWrites: Writes[ApprovalStatus] = {
     case Approved     => JsString("01")
-    case Deregistered => JsString("02")
+    case DeRegistered => JsString("02")
     case Revoked      => JsString("03")
   }
 }

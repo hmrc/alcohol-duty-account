@@ -506,7 +506,7 @@ class AlcoholDutyServiceSpec extends SpecBase with TestData {
           }
         }
 
-      Seq(hods.Revoked -> Revoked, hods.Deregistered -> DeRegistered).foreach {
+      Seq(hods.Revoked -> Revoked, hods.DeRegistered -> DeRegistered).foreach {
         case (hodsApprovalStatus: hods.ApprovalStatus, approvalStatus: ApprovalStatus) =>
           s"return a Restricted Card Data if the subscription summary has $hodsApprovalStatus approval status" in new SetUp {
             val subscriptionSummary = SubscriptionSummary(

@@ -43,7 +43,7 @@ trait TestData extends ModelGenerators {
 
   val insolventSubscriptionSummary = approvedSubscriptionSummary.copy(insolvencyFlag = true)
 
-  val deregisteredSubscriptionSummary = approvedSubscriptionSummary.copy(approvalStatus = Deregistered)
+  val deregisteredSubscriptionSummary = approvedSubscriptionSummary.copy(approvalStatus = DeRegistered)
 
   val revokedSubscriptionSummary = approvedSubscriptionSummary.copy(approvalStatus = Revoked)
 

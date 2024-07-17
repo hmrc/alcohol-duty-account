@@ -23,22 +23,22 @@ import uk.gov.hmrc.alcoholdutyaccount.models.hods.{Beer, SubscriptionSummary}
 class ApprovalStatusSpec extends SpecBase {
 
   "ApprovalStatus apply" - {
-    " should return Deregistered" - {
-      "when hods status is Deregistered" in {
+    "should return DeRegistered" - {
+      "when hods status is DeRegistered" in {
         val subscriptionSummary = SubscriptionSummary(
           typeOfAlcoholApprovedFor = Set(Beer),
           smallciderFlag = false,
-          approvalStatus = hods.Deregistered,
+          approvalStatus = hods.DeRegistered,
           insolvencyFlag = false
         )
         ApprovalStatus.fromSubscriptionSummary(subscriptionSummary) mustBe ApprovalStatus.DeRegistered
       }
 
-      "when hods status is Deregistered regardless of the state of smallciderFlag and insolvencyFlag" in {
+      "when hods status is DeRegistered regardless of the state of smallciderFlag and insolvencyFlag" in {
         val subscriptionSummary = SubscriptionSummary(
           typeOfAlcoholApprovedFor = Set(Beer),
           smallciderFlag = true,
-          approvalStatus = hods.Deregistered,
+          approvalStatus = hods.DeRegistered,
           insolvencyFlag = true
         )
         ApprovalStatus.fromSubscriptionSummary(subscriptionSummary) mustBe ApprovalStatus.DeRegistered

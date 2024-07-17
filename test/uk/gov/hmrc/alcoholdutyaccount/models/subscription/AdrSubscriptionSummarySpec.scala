@@ -104,12 +104,12 @@ class AdrSubscriptionSummarySpec extends SpecBase {
       adrSubscriptionSummary.approvalStatus shouldBe Revoked
     }
 
-    "should return a AdrSubscriptionSummary with Deregistered given a SubscriptionSummary with Deregistered status and all alcohol types approved" in {
+    "should return a AdrSubscriptionSummary with DeRegistered given a SubscriptionSummary with DeRegistered status and all alcohol types approved" in {
 
       val subscriptionSummary: SubscriptionSummary = SubscriptionSummary(
         typeOfAlcoholApprovedFor = alcoholRegimes,
         smallciderFlag = false,
-        approvalStatus = hods.Deregistered,
+        approvalStatus = hods.DeRegistered,
         insolvencyFlag = false
       )
       val adrSubscriptionSummary                   = AdrSubscriptionSummary.fromSubscriptionSummary(subscriptionSummary).toOption.get
