@@ -106,7 +106,7 @@ Calls to this API must be made by an authenticated and authorised user with an A
 
 Same payloads as approved but the status will be "Insolvent"
 
-***De-registered / Revoked / Small Cider Producer:***
+***DeRegistered / Revoked / Small Cider Producer:***
 
 ```json
 {

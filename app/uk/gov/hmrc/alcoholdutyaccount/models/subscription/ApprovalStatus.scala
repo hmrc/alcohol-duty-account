@@ -14,9 +14,10 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.alcoholdutyaccount.models
+package uk.gov.hmrc.alcoholdutyaccount.models.subscription
 
 import enumeratum.{Enum, EnumEntry, PlayJsonEnum}
+import uk.gov.hmrc.alcoholdutyaccount.models.hods
 import uk.gov.hmrc.alcoholdutyaccount.models.hods.SubscriptionSummary
 
 sealed trait ApprovalStatus extends EnumEntry
@@ -29,11 +30,11 @@ object ApprovalStatus extends Enum[ApprovalStatus] with PlayJsonEnum[ApprovalSta
   case object DeRegistered extends ApprovalStatus
   case object Revoked extends ApprovalStatus
 
-  def apply(subscriptionSummary: SubscriptionSummary): ApprovalStatus =
+  def fromSubscriptionSummary(subscriptionSummary: SubscriptionSummary): ApprovalStatus =
     subscriptionSummary.approvalStatus match {
       case hods.DeRegistered                                   => DeRegistered
       case hods.Revoked                                        => Revoked
-      case hods.Approved if subscriptionSummary.smallCiderFlag => SmallCiderProducer
+      case hods.Approved if subscriptionSummary.smallciderFlag => SmallCiderProducer
       case hods.Approved if subscriptionSummary.insolvencyFlag => Insolvent
       case hods.Approved                                       => Approved
     }

@@ -18,15 +18,15 @@ package uk.gov.hmrc.alcoholdutyaccount.base
 
 import play.api.http.Status.{INTERNAL_SERVER_ERROR, NOT_FOUND, OK}
 import play.api.libs.json.Json
-import uk.gov.hmrc.alcoholdutyaccount.common.{AlcoholDutyTestData, WireMockHelper}
+import uk.gov.hmrc.alcoholdutyaccount.common.{TestData, WireMockHelper}
 import uk.gov.hmrc.alcoholdutyaccount.config.AppConfig
 import uk.gov.hmrc.alcoholdutyaccount.models.hods.{ObligationData, Open}
 
-trait ObligationDataStubs extends WireMockHelper with AlcoholDutyTestData { ISpecBase =>
+trait ObligationDataStubs extends WireMockHelper with TestData { ISpecBase =>
   val config: AppConfig
 
   private def url(alcoholDutyReference:String):String =
-    s"${config.obligationDataApiUrl}/enterprise/obligation-data/${config.idType}/$alcoholDutyReference/${config.regimeType}"
+    s"${config.obligationDataHost}/enterprise/obligation-data/${config.idType}/$alcoholDutyReference/${config.regime}"
 
   val queryParams = Seq("status" -> Open.value)
 

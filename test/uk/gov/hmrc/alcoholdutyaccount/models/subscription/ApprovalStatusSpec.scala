@@ -14,91 +14,99 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.alcoholdutyaccount.models
+package uk.gov.hmrc.alcoholdutyaccount.models.subscription
 
 import uk.gov.hmrc.alcoholdutyaccount.base.SpecBase
+import uk.gov.hmrc.alcoholdutyaccount.models.hods
 import uk.gov.hmrc.alcoholdutyaccount.models.hods.{Beer, SubscriptionSummary}
 
 class ApprovalStatusSpec extends SpecBase {
 
   "ApprovalStatus apply" - {
-    " should return Deregistered" - {
-      "when hods status is Deregistered" in {
+    "should return DeRegistered" - {
+      "when hods status is DeRegistered" in {
         val subscriptionSummary = SubscriptionSummary(
-          typeOfAlcoholApprovedForList = Set(Beer),
-          smallCiderFlag = false,
+          typeOfAlcoholApprovedFor = Set(Beer),
+          smallciderFlag = false,
           approvalStatus = hods.DeRegistered,
           insolvencyFlag = false
         )
-        ApprovalStatus(subscriptionSummary) mustBe ApprovalStatus.DeRegistered
+        ApprovalStatus.fromSubscriptionSummary(subscriptionSummary) mustBe ApprovalStatus.DeRegistered
       }
-      "when hods status is Deregistered regardless of the state of smallCiderFlag and insolvencyFlag" in {
+
+      "when hods status is DeRegistered regardless of the state of smallciderFlag and insolvencyFlag" in {
         val subscriptionSummary = SubscriptionSummary(
-          typeOfAlcoholApprovedForList = Set(Beer),
-          smallCiderFlag = true,
+          typeOfAlcoholApprovedFor = Set(Beer),
+          smallciderFlag = true,
           approvalStatus = hods.DeRegistered,
           insolvencyFlag = true
         )
-        ApprovalStatus(subscriptionSummary) mustBe ApprovalStatus.DeRegistered
+        ApprovalStatus.fromSubscriptionSummary(subscriptionSummary) mustBe ApprovalStatus.DeRegistered
       }
     }
+
     "should return Revoked" - {
       "when hods status is Revoked" in {
         val subscriptionSummary = SubscriptionSummary(
-          typeOfAlcoholApprovedForList = Set(Beer),
-          smallCiderFlag = false,
+          typeOfAlcoholApprovedFor = Set(Beer),
+          smallciderFlag = false,
           approvalStatus = hods.Revoked,
           insolvencyFlag = false
         )
-        ApprovalStatus(subscriptionSummary) mustBe ApprovalStatus.Revoked
+        ApprovalStatus.fromSubscriptionSummary(subscriptionSummary) mustBe ApprovalStatus.Revoked
       }
-      "when hods status is Revoked regardless of the state of smallCiderFlag and insolvencyFlag" in {
+
+      "when hods status is Revoked regardless of the state of smallciderFlag and insolvencyFlag" in {
         val subscriptionSummary = SubscriptionSummary(
-          typeOfAlcoholApprovedForList = Set(Beer),
-          smallCiderFlag = true,
+          typeOfAlcoholApprovedFor = Set(Beer),
+          smallciderFlag = true,
           approvalStatus = hods.Revoked,
           insolvencyFlag = true
         )
-        ApprovalStatus(subscriptionSummary) mustBe ApprovalStatus.Revoked
+        ApprovalStatus.fromSubscriptionSummary(subscriptionSummary) mustBe ApprovalStatus.Revoked
       }
     }
+
     "should return SmallCiderProducer" - {
-      "when hods status is Approved and smallCiderFlag is set" in {
+      "when hods status is Approved and smallciderFlag is set" in {
         val subscriptionSummary = SubscriptionSummary(
-          typeOfAlcoholApprovedForList = Set(Beer),
-          smallCiderFlag = true,
+          typeOfAlcoholApprovedFor = Set(Beer),
+          smallciderFlag = true,
           approvalStatus = hods.Approved,
           insolvencyFlag = false
         )
-        ApprovalStatus(subscriptionSummary) mustBe ApprovalStatus.SmallCiderProducer
+        ApprovalStatus.fromSubscriptionSummary(subscriptionSummary) mustBe ApprovalStatus.SmallCiderProducer
       }
-      "when hods status is Approved and smallCiderFlag is set, regardless of the state of insolvencyFlag" in {
+
+      "when hods status is Approved and smallciderFlag is set, regardless of the state of insolvencyFlag" in {
         val subscriptionSummary = SubscriptionSummary(
-          typeOfAlcoholApprovedForList = Set(Beer),
-          smallCiderFlag = true,
+          typeOfAlcoholApprovedFor = Set(Beer),
+          smallciderFlag = true,
           approvalStatus = hods.Approved,
           insolvencyFlag = true
         )
-        ApprovalStatus(subscriptionSummary) mustBe ApprovalStatus.SmallCiderProducer
+        ApprovalStatus.fromSubscriptionSummary(subscriptionSummary) mustBe ApprovalStatus.SmallCiderProducer
       }
     }
+
     "should return Insolvent when hods status is Approved and insolvencyFlag is set" in {
       val subscriptionSummary = SubscriptionSummary(
-        typeOfAlcoholApprovedForList = Set(Beer),
-        smallCiderFlag = false,
+        typeOfAlcoholApprovedFor = Set(Beer),
+        smallciderFlag = false,
         approvalStatus = hods.Approved,
         insolvencyFlag = true
       )
-      ApprovalStatus(subscriptionSummary) mustBe ApprovalStatus.Insolvent
+      ApprovalStatus.fromSubscriptionSummary(subscriptionSummary) mustBe ApprovalStatus.Insolvent
     }
-    "should return Approved when hods status is Approved and both smallCiderFlag and insolvencyFlag are false" in {
+
+    "should return Approved when hods status is Approved and both smallciderFlag and insolvencyFlag are false" in {
       val subscriptionSummary = SubscriptionSummary(
-        typeOfAlcoholApprovedForList = Set(Beer),
-        smallCiderFlag = false,
+        typeOfAlcoholApprovedFor = Set(Beer),
+        smallciderFlag = false,
         approvalStatus = hods.Approved,
         insolvencyFlag = false
       )
-      ApprovalStatus(subscriptionSummary) mustBe ApprovalStatus.Approved
+      ApprovalStatus.fromSubscriptionSummary(subscriptionSummary) mustBe ApprovalStatus.Approved
     }
   }
 }

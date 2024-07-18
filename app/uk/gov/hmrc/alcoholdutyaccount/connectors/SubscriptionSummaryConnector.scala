@@ -18,10 +18,11 @@ package uk.gov.hmrc.alcoholdutyaccount.connectors
 
 import cats.data.EitherT
 import play.api.Logging
-import play.api.http.Status.{INTERNAL_SERVER_ERROR, NOT_FOUND}
+import play.api.http.Status.{BAD_REQUEST, INTERNAL_SERVER_ERROR, NOT_FOUND}
 import uk.gov.hmrc.alcoholdutyaccount.config.AppConfig
-import uk.gov.hmrc.alcoholdutyaccount.models.hods.SubscriptionSummary
-import uk.gov.hmrc.http.{HttpClient, _}
+import uk.gov.hmrc.alcoholdutyaccount.connectors.helpers.HIPHeaders
+import uk.gov.hmrc.alcoholdutyaccount.models.hods.{SubscriptionSummary, SubscriptionSummarySuccess}
+import uk.gov.hmrc.http._
 import uk.gov.hmrc.play.bootstrap.backend.http.ErrorResponse
 
 import javax.inject.Inject
@@ -30,47 +31,52 @@ import scala.util.Try
 
 class SubscriptionSummaryConnector @Inject() (
   config: AppConfig,
+  headers: HIPHeaders,
   implicit val httpClient: HttpClient
 )(implicit ec: ExecutionContext)
     extends HttpReadsInstances
     with Logging {
 
   def getSubscriptionSummary(
-    alcoholDutyReference: String
+    appaId: String
   )(implicit hc: HeaderCarrier): EitherT[Future, ErrorResponse, SubscriptionSummary] =
     EitherT {
 
-      val url =
-        s"${config.subscriptionApiUrl}/subscription/${config.regimeType}/${config.idType}/$alcoholDutyReference/summary"
-      logger.info(s"Fetching subscription summary for appaId $alcoholDutyReference")
+      logger.info(s"Fetching subscription summary for appaId $appaId")
 
       httpClient
-        .GET[Either[UpstreamErrorResponse, HttpResponse]](url = url)
+        .GET[Either[UpstreamErrorResponse, HttpResponse]](
+          url = config.getSubscriptionUrl(appaId),
+          headers = headers.subscriptionHeaders()
+        )
         .map {
           case Right(response) =>
             Try {
               response.json
-                .asOpt[SubscriptionSummary]
+                .asOpt[SubscriptionSummarySuccess]
             }.toOption.flatten
               .fold[Either[ErrorResponse, SubscriptionSummary]] {
-                logger.warn(s"Unable to parse subscription summary for appaId $alcoholDutyReference")
-                Left(ErrorResponse(INTERNAL_SERVER_ERROR, "Unable to parse subscription summary"))
-              } {
-                logger.info(s"Retrieved subscription summary for appaId $alcoholDutyReference")
-                Right(_)
+                logger.warn(s"Unable to parse subscription summary success for appaId $appaId")
+                Left(ErrorResponse(INTERNAL_SERVER_ERROR, "Unable to parse subscription summary success"))
+              } { subscriptionSummarySuccess =>
+                logger.info(s"Retrieved subscription summary success for appaId $appaId")
+                Right(subscriptionSummarySuccess.success)
               }
-          case Left(error)     => Left(processError(error, alcoholDutyReference))
+          case Left(error)     => Left(processError(error, appaId))
         }
     }
 
-  private def processError(error: UpstreamErrorResponse, alcoholDutyReference: String): ErrorResponse =
+  private def processError(error: UpstreamErrorResponse, appaId: String): ErrorResponse =
     error.statusCode match {
-      case NOT_FOUND =>
-        logger.info(s"No subscription summary found for appaId $alcoholDutyReference")
+      case BAD_REQUEST =>
+        logger.info(s"Bad request sent to get subscription for appaId $appaId: ${error.message}")
+        ErrorResponse(BAD_REQUEST, "Bad request")
+      case NOT_FOUND   =>
+        logger.info(s"No subscription summary found for appaId $appaId")
         ErrorResponse(NOT_FOUND, "Subscription summary not found")
-      case _         =>
+      case _           =>
         logger.warn(
-          s"An error was returned while trying to fetch subscription summary appaId $alcoholDutyReference: ${error.message}"
+          s"An error was returned while trying to fetch subscription summary appaId $appaId: ${error.message}"
         )
         ErrorResponse(INTERNAL_SERVER_ERROR, "An error occurred")
     }

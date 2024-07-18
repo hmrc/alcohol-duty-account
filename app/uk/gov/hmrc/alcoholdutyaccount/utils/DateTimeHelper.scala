@@ -14,18 +14,13 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.alcoholdutyaccount.common.generators
+package uk.gov.hmrc.alcoholdutyaccount.utils
 
-import org.scalacheck.Gen
+import java.time.Instant
+import java.time.format.DateTimeFormatter
+import java.time.temporal.ChronoUnit
 
-trait ModelGenerators {
-
-  def periodKeyGen: Gen[String] = for {
-    year  <- Gen.chooseNum(23, 50)
-    month <- Gen.chooseNum(0, 11)
-  } yield s"${year}A${(month + 'A').toChar}"
-
-  def appaIdGen: Gen[String] = Gen.listOfN(10, Gen.numChar).map(id => s"XMADP${id.mkString}")
-
-  def businessGen: Gen[String] = Gen.listOfN(6, Gen.alphaLowerChar).map(id => s"test$id Ltd")
+object DateTimeHelper {
+  def formatISOInstantSeconds(now: Instant): String =
+    DateTimeFormatter.ISO_INSTANT.format(now.truncatedTo(ChronoUnit.SECONDS))
 }

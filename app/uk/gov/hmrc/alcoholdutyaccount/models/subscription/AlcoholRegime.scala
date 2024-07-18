@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.alcoholdutyaccount.models
+package uk.gov.hmrc.alcoholdutyaccount.models.subscription
 
 import enumeratum.{Enum, EnumEntry, PlayJsonEnum}
 

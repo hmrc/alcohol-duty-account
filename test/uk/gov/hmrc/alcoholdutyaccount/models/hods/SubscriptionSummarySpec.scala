@@ -23,32 +23,41 @@ import uk.gov.hmrc.alcoholdutyaccount.base.SpecBase
 class SubscriptionSummarySpec extends SpecBase {
 
   "SubscriptionSummary" - {
-    "should be able to to be read from a Json" in {
+    "should be able to to be serialised from the full json" in {
 
-      val expectedSubscriptionSummary = SubscriptionSummary(
-        typeOfAlcoholApprovedForList = Set(Beer, CiderOrPerry, WineAndOtherFermentedProduct, Spirits),
-        smallCiderFlag = false,
-        approvalStatus = Approved,
-        insolvencyFlag = true
+      val expectedSubscriptionSummarySuccess = SubscriptionSummarySuccess(
+        SubscriptionSummary(
+          typeOfAlcoholApprovedFor = allApprovals,
+          smallciderFlag = false,
+          approvalStatus = Approved,
+          insolvencyFlag = true
+        )
       )
 
+      val businessName = businessGen.sample.get
+
       val json =
-        """
-          |{
-          |    "typeOfAlcoholApprovedForList": [
-          |        "01",
-          |        "02",
-          |        "03",
-          |        "04"
-          |    ],
-          |    "smallCiderFlag": "0",
-          |    "approvalStatus": "01",
-          |    "insolvencyFlag": "1"
+        s"""
+          |{   "success": {
+          |        "processingDate":"2024-06-11T15:07:47.838Z",
+          |        "organizationName":"$businessName",
+          |        "typeOfAlcoholApprovedFor": [
+          |            "01",
+          |            "02",
+          |            "03",
+          |            "04"
+          |        ],
+          |        "smallciderFlag": "0",
+          |        "paperlessReference":"1",
+          |        "emailAddress":"john.doe@example.com",
+          |        "approvalStatus": "01",
+          |        "insolvencyFlag": "1"
+          |    }
           |}
           |""".stripMargin
 
-      val result = Json.parse(json).asOpt[SubscriptionSummary]
-      result shouldBe Some(expectedSubscriptionSummary)
+      val result = Json.parse(json).asOpt[SubscriptionSummarySuccess]
+      result shouldBe Some(expectedSubscriptionSummarySuccess)
     }
 
     Seq(
@@ -56,11 +65,11 @@ class SubscriptionSummarySpec extends SpecBase {
       (DeRegistered, "02"),
       (Revoked, "03")
     ).foreach { case (approvalStatus, approvalCode) =>
-      s"should be able to to be read from a Json if the approval status is: $approvalStatus" in {
+      s"should be able to to be deserialise the approval status $approvalStatus from json" in {
 
         val expectedSubscriptionSummary = SubscriptionSummary(
-          typeOfAlcoholApprovedForList = Set(Beer),
-          smallCiderFlag = false,
+          typeOfAlcoholApprovedFor = Set(Beer),
+          smallciderFlag = false,
           approvalStatus = approvalStatus,
           insolvencyFlag = false
         )
@@ -68,8 +77,8 @@ class SubscriptionSummarySpec extends SpecBase {
         val json =
           s"""
             |{
-            |    "typeOfAlcoholApprovedForList": ["01"],
-            |    "smallCiderFlag": "0",
+            |    "typeOfAlcoholApprovedFor": ["01"],
+            |    "smallciderFlag": "0",
             |    "approvalStatus": "$approvalCode",
             |    "insolvencyFlag": "0"
             |}
@@ -80,12 +89,12 @@ class SubscriptionSummarySpec extends SpecBase {
       }
     }
 
-    "should throw an Exception if one of the Type of Alcohol Approved is not valid" in {
+    "should throw an Exception if one of the the alcohol approved types cannot be deserialised" in {
       val json =
         """
           |{
-          |    "typeOfAlcoholApprovedForList": ["99"],
-          |    "smallCiderFlag": "0",
+          |    "typeOfAlcoholApprovedFor": ["05"],
+          |    "smallciderFlag": "0",
           |    "approvalStatus": "01",
           |    "insolvencyFlag": "0"
           |}
@@ -94,27 +103,13 @@ class SubscriptionSummarySpec extends SpecBase {
       an[JsResultException] should be thrownBy Json.parse(json).as[SubscriptionSummary]
     }
 
-    "should throw an Exception if one of the Type of Alcohol Approved is not a string" in {
+    "should throw an Exception if one of the the alcohol approved types is not a string" in {
       val json =
         """
           |{
-          |    "typeOfAlcoholApprovedForList": [123],
-          |    "smallCiderFlag": "0",
+          |    "typeOfAlcoholApprovedFor": [2],
+          |    "smallciderFlag": "0",
           |    "approvalStatus": "01",
-          |    "insolvencyFlag": "0"
-          |}
-          |""".stripMargin
-
-      an[JsResultException] should be thrownBy Json.parse(json).as[SubscriptionSummary]
-    }
-
-    "should throw an Exception if the Approval Status is not a String" in {
-      val json =
-        """
-          |{
-          |    "typeOfAlcoholApprovedForList": ["01"],
-          |    "smallCiderFlag": "0",
-          |    "approvalStatus": 123,
           |    "insolvencyFlag": "0"
           |}
           |""".stripMargin
@@ -126,9 +121,23 @@ class SubscriptionSummarySpec extends SpecBase {
       val json =
         """
           |{
-          |    "typeOfAlcoholApprovedForList": ["01"],
-          |    "smallCiderFlag": "0",
-          |    "approvalStatus": "99",
+          |    "typeOfAlcoholApprovedFor": ["01"],
+          |    "smallciderFlag": "0",
+          |    "approvalStatus": "4",
+          |    "insolvencyFlag": "0"
+          |}
+          |""".stripMargin
+
+      an[JsResultException] should be thrownBy Json.parse(json).as[SubscriptionSummary]
+    }
+
+    "should throw an Exception if the Approval Status is not a string" in {
+      val json =
+        """
+          |{
+          |    "typeOfAlcoholApprovedFor": ["01"],
+          |    "smallciderFlag": "0",
+          |    "approvalStatus": 1,
           |    "insolvencyFlag": "0"
           |}
           |""".stripMargin
@@ -140,22 +149,8 @@ class SubscriptionSummarySpec extends SpecBase {
       val json =
         """
           |{
-          |    "typeOfAlcoholApprovedForList": ["01"],
-          |    "smallCiderFlag": "2",
-          |    "approvalStatus": "01",
-          |    "insolvencyFlag": "0"
-          |}
-          |""".stripMargin
-
-      an[JsResultException] should be thrownBy Json.parse(json).as[SubscriptionSummary]
-    }
-
-    "should throw an Exception if a boolean is not a passed as string" in {
-      val json =
-        """
-          |{
-          |    "typeOfAlcoholApprovedForList": ["01"],
-          |    "smallCiderFlag": 123,
+          |    "typeOfAlcoholApprovedFor": ["01"],
+          |    "smallciderFlag": "2",
           |    "approvalStatus": "01",
           |    "insolvencyFlag": "0"
           |}

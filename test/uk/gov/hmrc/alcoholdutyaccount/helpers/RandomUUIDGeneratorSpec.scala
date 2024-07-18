@@ -14,18 +14,15 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.alcoholdutyaccount.common.generators
+package uk.gov.hmrc.alcoholdutyaccount.helpers
 
-import org.scalacheck.Gen
+import uk.gov.hmrc.alcoholdutyaccount.base.SpecBase
+import uk.gov.hmrc.alcoholdutyaccount.connectors.helpers.RandomUUIDGenerator
 
-trait ModelGenerators {
-
-  def periodKeyGen: Gen[String] = for {
-    year  <- Gen.chooseNum(23, 50)
-    month <- Gen.chooseNum(0, 11)
-  } yield s"${year}A${(month + 'A').toChar}"
-
-  def appaIdGen: Gen[String] = Gen.listOfN(10, Gen.numChar).map(id => s"XMADP${id.mkString}")
-
-  def businessGen: Gen[String] = Gen.listOfN(6, Gen.alphaLowerChar).map(id => s"test$id Ltd")
+class RandomUUIDGeneratorSpec extends SpecBase {
+  "RandomUUIDGenerator" - {
+    "return a random UUID" in {
+      new RandomUUIDGenerator().uuid.replaceAll("[0-9a-fA-F]", "*") mustBe "********-****-****-****-************"
+    }
+  }
 }

@@ -17,6 +17,7 @@
 package uk.gov.hmrc.alcoholdutyaccount.models.hods
 
 import play.api.libs.json._
+import uk.gov.hmrc.alcoholdutyaccount.models.JsonHelpers
 
 sealed trait ApprovalType
 
@@ -27,20 +28,16 @@ case object Spirits extends ApprovalType
 
 object ApprovalType {
 
-  implicit val jsonReads: Reads[ApprovalType] = (json: JsValue) =>
-    json.validate[String] match {
-      case JsSuccess(value, _) =>
-        value match {
-          case "01" => JsSuccess(Beer)
-          case "02" => JsSuccess(CiderOrPerry)
-          case "03" => JsSuccess(WineAndOtherFermentedProduct)
-          case "04" => JsSuccess(Spirits)
-          case s    => JsError(s"$s is not a valid ApprovalType")
-        }
-      case e: JsError          => e
-    }
+  implicit val approvalTypeReads: Reads[ApprovalType] = {
+    case JsString("01") => JsSuccess(Beer)
+    case JsString("02") => JsSuccess(CiderOrPerry)
+    case JsString("03") => JsSuccess(WineAndOtherFermentedProduct)
+    case JsString("04") => JsSuccess(Spirits)
+    case s: JsString    => JsError(s"$s is not a valid ApprovalType")
+    case v              => JsError(s"got $v was expecting a string representing a ApprovalType")
+  }
 
-  implicit val writes: Writes[ApprovalType] = {
+  implicit val approvalTypeWrites: Writes[ApprovalType] = {
     case Beer                         => JsString("01")
     case CiderOrPerry                 => JsString("02")
     case WineAndOtherFermentedProduct => JsString("03")
@@ -55,44 +52,38 @@ case object DeRegistered extends ApprovalStatus
 case object Revoked extends ApprovalStatus
 
 object ApprovalStatus {
-  implicit val jsonReads: Reads[ApprovalStatus] = (json: JsValue) =>
-    json.validate[String] match {
-      case JsSuccess(value, _) =>
-        value match {
-          case "01" => JsSuccess(Approved)
-          case "02" => JsSuccess(DeRegistered)
-          case "03" => JsSuccess(Revoked)
-          case s    => JsError(s"$s is not a valid ApprovalStatus")
-        }
-      case e: JsError          => e
-    }
+  implicit val approvalStatusReads: Reads[ApprovalStatus] = {
+    case JsString("01") => JsSuccess(Approved)
+    case JsString("02") => JsSuccess(DeRegistered)
+    case JsString("03") => JsSuccess(Revoked)
+    case s: JsString    => JsError(s"$s is not a valid ApprovalStatus")
+    case v              => JsError(s"got $v was expecting a string representing a ApprovalStatus")
+  }
 
-  implicit val writes: Writes[ApprovalStatus] = {
+  implicit val approvalStatusWrites: Writes[ApprovalStatus] = {
     case Approved     => JsString("01")
     case DeRegistered => JsString("02")
     case Revoked      => JsString("03")
   }
 }
 
+final case class SubscriptionSummarySuccess(success: SubscriptionSummary)
+
+object SubscriptionSummarySuccess {
+  implicit val subscriptionSummarySuccessFormat: OFormat[SubscriptionSummarySuccess] =
+    Json.format[SubscriptionSummarySuccess]
+}
+
 final case class SubscriptionSummary(
-  typeOfAlcoholApprovedForList: Set[ApprovalType],
-  smallCiderFlag: Boolean,
+  typeOfAlcoholApprovedFor: Set[ApprovalType],
+  smallciderFlag: Boolean,
   approvalStatus: ApprovalStatus,
   insolvencyFlag: Boolean
 )
 
 object SubscriptionSummary {
+  import JsonHelpers.booleanReads
+  import JsonHelpers.booleanWrites
 
-  implicit val booleanReads: Reads[Boolean] = {
-    case JsString("0") => JsSuccess(false)
-    case JsString("1") => JsSuccess(true)
-    case s             => JsError(s"$s is not a valid Boolean")
-  }
-
-  implicit val booleanWrites: Writes[Boolean] = {
-    case false => JsString("0")
-    case true  => JsString("1")
-  }
-
-  implicit val format: Format[SubscriptionSummary] = Json.format[SubscriptionSummary]
+  implicit val subscriptionSummaryFormat: OFormat[SubscriptionSummary] = Json.format[SubscriptionSummary]
 }

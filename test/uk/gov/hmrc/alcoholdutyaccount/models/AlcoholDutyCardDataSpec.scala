@@ -19,7 +19,7 @@ package uk.gov.hmrc.alcoholdutyaccount.models
 import org.scalatest.matchers.should.Matchers.convertToAnyShouldWrapper
 import play.api.libs.json.Json
 import uk.gov.hmrc.alcoholdutyaccount.base.SpecBase
-import uk.gov.hmrc.alcoholdutyaccount.models.ApprovalStatus._
+import uk.gov.hmrc.alcoholdutyaccount.models.subscription.ApprovalStatus._
 
 class AlcoholDutyCardDataSpec extends SpecBase {
 

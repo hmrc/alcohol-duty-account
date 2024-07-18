@@ -24,9 +24,9 @@ import org.mockito.cats.IdiomaticMockitoCats.StubbingOpsCats
 import play.api.libs.json.Json
 import play.api.mvc.Result
 import uk.gov.hmrc.alcoholdutyaccount.base.SpecBase
-import uk.gov.hmrc.alcoholdutyaccount.common.AlcoholDutyTestData
+import uk.gov.hmrc.alcoholdutyaccount.common.TestData
 import uk.gov.hmrc.alcoholdutyaccount.models.AlcoholDutyCardData
-import uk.gov.hmrc.alcoholdutyaccount.models.ApprovalStatus.Approved
+import uk.gov.hmrc.alcoholdutyaccount.models.subscription.ApprovalStatus.Approved
 import uk.gov.hmrc.alcoholdutyaccount.models._
 import uk.gov.hmrc.alcoholdutyaccount.service.AlcoholDutyService
 import uk.gov.hmrc.play.bootstrap.backend.http.ErrorResponse
@@ -36,10 +36,10 @@ import scala.concurrent.Future
 class AlcoholDutyControllerSpec extends SpecBase {
 
   "GET /subscriptionSummary" - {
-    "return OK when is called with a valid alcoholDutyReference" in new SetUp {
-      alcoholDutyService.getSubscriptionSummary(eqTo(alcoholDutyReference))(*) returnsF approvedAdrSubscriptionSummary
+    "return OK when is called with a valid appaId" in new SetUp {
+      alcoholDutyService.getSubscriptionSummary(eqTo(appaId))(*) returnsF approvedAdrSubscriptionSummary
 
-      val result: Future[Result] = controller.subscriptionSummary(alcoholDutyReference)(FakeRequest())
+      val result: Future[Result] = controller.subscriptionSummary(appaId)(FakeRequest())
       status(result) mustBe OK
       contentAsJson(result) mustBe Json.toJson(approvedAdrSubscriptionSummary)
     }
@@ -48,7 +48,7 @@ class AlcoholDutyControllerSpec extends SpecBase {
       when(alcoholDutyService.getSubscriptionSummary(*)(*))
         .thenReturn(EitherT.fromEither(Left(ErrorResponse(INTERNAL_SERVER_ERROR, "An error occurred"))))
 
-      val result: Future[Result] = controller.subscriptionSummary(alcoholDutyReference)(FakeRequest())
+      val result: Future[Result] = controller.subscriptionSummary(appaId)(FakeRequest())
       status(result) mustBe INTERNAL_SERVER_ERROR
 
       verify(alcoholDutyService, times(1)).getSubscriptionSummary(*)(*)
@@ -56,12 +56,12 @@ class AlcoholDutyControllerSpec extends SpecBase {
   }
 
   "GET /openObligationDetails" - {
-    "return OK when is called with a valid alcoholDutyReference" in new SetUp {
-      alcoholDutyService.getOpenObligations(eqTo(alcoholDutyReference), eqTo(periodKey), eqTo(Some(obligationFilter)))(
+    "return OK when is called with a valid appaId" in new SetUp {
+      alcoholDutyService.getOpenObligations(eqTo(appaId), eqTo(periodKey), eqTo(Some(obligationFilter)))(
         *
       ) returnsF adrObligationDetails
 
-      val result: Future[Result] = controller.openObligationDetails(alcoholDutyReference, periodKey)(FakeRequest())
+      val result: Future[Result] = controller.openObligationDetails(appaId, periodKey)(FakeRequest())
       status(result) mustBe OK
       contentAsJson(result) mustBe Json.toJson(adrObligationDetails)
     }
@@ -69,7 +69,7 @@ class AlcoholDutyControllerSpec extends SpecBase {
     "return BAD_REQUEST when periodKey is invalid" in new SetUp {
       alcoholDutyService.getOpenObligations(*, *, *)(*) returnsF adrObligationDetails
 
-      val result: Future[Result] = controller.openObligationDetails(alcoholDutyReference, badPeriodKey)(FakeRequest())
+      val result: Future[Result] = controller.openObligationDetails(appaId, badPeriodKey)(FakeRequest())
       status(result) mustBe BAD_REQUEST
 
       verify(alcoholDutyService, never).getOpenObligations(*, *, *)(*)
@@ -79,19 +79,19 @@ class AlcoholDutyControllerSpec extends SpecBase {
       when(alcoholDutyService.getOpenObligations(*, *, *)(*))
         .thenReturn(EitherT.fromEither(Left(ErrorResponse(INTERNAL_SERVER_ERROR, "An error occurred"))))
 
-      val result: Future[Result] = controller.openObligationDetails(alcoholDutyReference, periodKey)(FakeRequest())
+      val result: Future[Result] = controller.openObligationDetails(appaId, periodKey)(FakeRequest())
       status(result) mustBe INTERNAL_SERVER_ERROR
 
       verify(alcoholDutyService, times(1)).getOpenObligations(*, *, *)(*)
     }
   }
   "GET /obligationDetails" - {
-    "return OK when is called with a valid alcoholDutyReference" in new SetUp {
-      alcoholDutyService.getObligations(eqTo(alcoholDutyReference), None)(
+    "return OK when is called with a valid appaId" in new SetUp {
+      alcoholDutyService.getObligations(eqTo(appaId), None)(
         *
       ) returnsF adrMultipleOpenAndFulfilledData
 
-      val result: Future[Result] = controller.obligationDetails(alcoholDutyReference)(FakeRequest())
+      val result: Future[Result] = controller.obligationDetails(appaId)(FakeRequest())
       status(result) mustBe OK
       contentAsJson(result) mustBe Json.toJson(adrMultipleOpenAndFulfilledData)
     }
@@ -100,7 +100,7 @@ class AlcoholDutyControllerSpec extends SpecBase {
       when(alcoholDutyService.getObligations(*, *)(*))
         .thenReturn(EitherT.fromEither(Left(ErrorResponse(INTERNAL_SERVER_ERROR, "An error occurred"))))
 
-      val result: Future[Result] = controller.obligationDetails(alcoholDutyReference)(FakeRequest())
+      val result: Future[Result] = controller.obligationDetails(appaId)(FakeRequest())
       status(result) mustBe INTERNAL_SERVER_ERROR
 
       verify(alcoholDutyService, times(1)).getObligations(*, *)(*)
@@ -108,27 +108,26 @@ class AlcoholDutyControllerSpec extends SpecBase {
   }
 
   "GET /bta-tile-data" - {
-    "return 200 when is called with a valid alcoholDutyReference" in new SetUp {
+    "return 200 when is called with a valid appaId" in new SetUp {
       alcoholDutyService.getAlcoholDutyCardData(*)(*) returnsF cardData
 
-      val result: Future[Result] = controller.btaTileData(alcoholDutyReference)(FakeRequest())
+      val result: Future[Result] = controller.btaTileData(appaId)(FakeRequest())
       status(result) mustBe OK
       contentAsJson(result) mustBe Json.toJson(cardData)
     }
 
-    "return 400 when is called with an invalid alcoholDutyReference" in new SetUp {
+    "return 400 when is called with an invalid appaId" in new SetUp {
       val expectedError = ErrorResponse(BAD_REQUEST, "Invalid alcohol duty reference")
 
       when(alcoholDutyService.getAlcoholDutyCardData(*)(*)).thenReturn(EitherT.fromEither(Left(expectedError)))
 
-      val result: Future[Result] = controller.btaTileData(alcoholDutyReference)(FakeRequest())
+      val result: Future[Result] = controller.btaTileData(appaId)(FakeRequest())
       status(result) mustBe BAD_REQUEST
       contentAsJson(result) mustBe Json.toJson(expectedError)
     }
   }
 
-  class SetUp extends AlcoholDutyTestData {
-    val alcoholDutyReference: String           = generateAlcoholDutyReference().sample.get
+  class SetUp extends TestData {
     val alcoholDutyService: AlcoholDutyService = mock[AlcoholDutyService]
     val cc                                     = Helpers.stubControllerComponents()
     val controller                             = new AlcoholDutyController(fakeAuthorisedAction, alcoholDutyService, cc)
@@ -136,7 +135,7 @@ class AlcoholDutyControllerSpec extends SpecBase {
     val badPeriodKey = "blah"
 
     val cardData = AlcoholDutyCardData(
-      alcoholDutyReference = "testAlcoholDutyReference",
+      alcoholDutyReference = appaId,
       approvalStatus = Some(Approved),
       hasSubscriptionSummaryError = false,
       hasReturnsError = false,

@@ -21,11 +21,12 @@ import org.mockito.ArgumentMatchersSugar.*
 import org.mockito.IdiomaticMockito.StubbingOps
 import org.mockito.cats.IdiomaticMockitoCats.StubbingOpsCats
 import uk.gov.hmrc.alcoholdutyaccount.base.SpecBase
-import uk.gov.hmrc.alcoholdutyaccount.common.AlcoholDutyTestData
+import uk.gov.hmrc.alcoholdutyaccount.common.TestData
 import uk.gov.hmrc.alcoholdutyaccount.connectors.{FinancialDataConnector, ObligationDataConnector, SubscriptionSummaryConnector}
-import uk.gov.hmrc.alcoholdutyaccount.models.ApprovalStatus.{Approved, DeRegistered, Insolvent, Revoked, SmallCiderProducer}
+import uk.gov.hmrc.alcoholdutyaccount.models.subscription.ApprovalStatus.{Approved, DeRegistered, Insolvent, Revoked, SmallCiderProducer}
 import uk.gov.hmrc.alcoholdutyaccount.models._
 import uk.gov.hmrc.alcoholdutyaccount.models.hods.{Beer, FinancialTransaction, FinancialTransactionDocument, FinancialTransactionItem, Obligation, ObligationData, ObligationDetails, Open, SubscriptionSummary}
+import uk.gov.hmrc.alcoholdutyaccount.models.subscription.ApprovalStatus
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.bootstrap.backend.http.ErrorResponse
 
@@ -33,24 +34,22 @@ import java.time.LocalDate
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Success
 
-class AlcoholDutyServiceSpec extends SpecBase with AlcoholDutyTestData {
+class AlcoholDutyServiceSpec extends SpecBase with TestData {
   "AlcoholDutyService" - {
-    val alcoholDutyReference: String = generateAlcoholDutyReference().sample.get
-
     "getSubscriptionSummary should" - {
       "return summary data from the connector when successful" in new SetUp {
-        when(subscriptionSummaryConnector.getSubscriptionSummary(alcoholDutyReference))
+        when(subscriptionSummaryConnector.getSubscriptionSummary(appaId))
           .thenReturn(EitherT.fromEither(Right(approvedSubscriptionSummary)))
-        whenReady(service.getSubscriptionSummary(alcoholDutyReference).value) {
+        whenReady(service.getSubscriptionSummary(appaId).value) {
           _ mustBe Right(approvedAdrSubscriptionSummary)
         }
       }
 
       "return an error if the connector is unable to obtain obligation data or an error occurred" in new SetUp {
         val error = ErrorResponse(INTERNAL_SERVER_ERROR, "An error occurred")
-        when(subscriptionSummaryConnector.getSubscriptionSummary(alcoholDutyReference))
+        when(subscriptionSummaryConnector.getSubscriptionSummary(appaId))
           .thenReturn(EitherT.fromEither(Left(error)))
-        whenReady(service.getSubscriptionSummary(alcoholDutyReference).value) {
+        whenReady(service.getSubscriptionSummary(appaId).value) {
           _ mustBe Left(error)
         }
       }
@@ -58,34 +57,34 @@ class AlcoholDutyServiceSpec extends SpecBase with AlcoholDutyTestData {
 
     "getOpenObligations should" - {
       "return obligation data from the connector where one open return matches the period key" in new SetUp {
-        when(obligationDataConnector.getObligationDetails(alcoholDutyReference, Some(obligationFilter)))
+        when(obligationDataConnector.getObligationDetails(appaId, Some(obligationFilter)))
           .thenReturn(EitherT.fromEither(Right(obligationDataMultipleOpen)))
-        whenReady(service.getOpenObligations(alcoholDutyReference, periodKey, Some(obligationFilter)).value) {
+        whenReady(service.getOpenObligations(appaId, periodKey, Some(obligationFilter)).value) {
           _ mustBe Right(adrObligationDetails)
         }
       }
 
       "return obligation data from the connector where one fulfilled return matches the period key" in new SetUp {
-        when(obligationDataConnector.getObligationDetails(alcoholDutyReference, Some(obligationFilter)))
+        when(obligationDataConnector.getObligationDetails(appaId, Some(obligationFilter)))
           .thenReturn(EitherT.fromEither(Right(obligationDataSingleFulfilled)))
-        whenReady(service.getOpenObligations(alcoholDutyReference, periodKey, Some(obligationFilter)).value) {
+        whenReady(service.getOpenObligations(appaId, periodKey, Some(obligationFilter)).value) {
           _ mustBe Right(adrObligationDetailsFulfilled)
         }
       }
 
       "return NOT_FOUND where no return matches the period key" in new SetUp {
-        when(obligationDataConnector.getObligationDetails(alcoholDutyReference, Some(obligationFilter)))
+        when(obligationDataConnector.getObligationDetails(appaId, Some(obligationFilter)))
           .thenReturn(EitherT.fromEither(Right(obligationDataMultipleOpen)))
-        whenReady(service.getOpenObligations(alcoholDutyReference, periodKey4, Some(obligationFilter)).value) {
+        whenReady(service.getOpenObligations(appaId, periodKey4, Some(obligationFilter)).value) {
           _ mustBe Left(ErrorResponse(NOT_FOUND, "Obligation details not found for period key 24AH"))
         }
       }
 
       "return an error if the connector is unable to obtain obligation data" in new SetUp {
         val error = ErrorResponse(INTERNAL_SERVER_ERROR, "An error occurred")
-        when(obligationDataConnector.getObligationDetails(alcoholDutyReference, Some(obligationFilter)))
+        when(obligationDataConnector.getObligationDetails(appaId, Some(obligationFilter)))
           .thenReturn(EitherT.fromEither(Left(error)))
-        whenReady(service.getOpenObligations(alcoholDutyReference, periodKey, Some(obligationFilter)).value)(
+        whenReady(service.getOpenObligations(appaId, periodKey, Some(obligationFilter)).value)(
           _ mustBe Left(error)
         )
       }
@@ -93,26 +92,26 @@ class AlcoholDutyServiceSpec extends SpecBase with AlcoholDutyTestData {
 
     "getObligations should" - {
       "return obligation data from the connector where multiple open and fulfilled obligations are returned" in new SetUp {
-        when(obligationDataConnector.getObligationDetails(alcoholDutyReference, None))
+        when(obligationDataConnector.getObligationDetails(appaId, None))
           .thenReturn(EitherT.fromEither(Right(obligationDataMultipleOpenAndFulfilled)))
-        whenReady(service.getObligations(alcoholDutyReference, None).value) {
+        whenReady(service.getObligations(appaId, None).value) {
           _ mustBe Right(adrMultipleOpenAndFulfilledData)
         }
       }
 
       "return obligation data from the connector where one fulfilled obligation is returned" in new SetUp {
-        when(obligationDataConnector.getObligationDetails(alcoholDutyReference, None))
+        when(obligationDataConnector.getObligationDetails(appaId, None))
           .thenReturn(EitherT.fromEither(Right(obligationDataSingleFulfilled)))
-        whenReady(service.getObligations(alcoholDutyReference, None).value) {
+        whenReady(service.getObligations(appaId, None).value) {
           _ mustBe Right(Seq(adrObligationDetailsFulfilled))
         }
       }
 
       "return an error if the connector is unable to obtain obligation data" in new SetUp {
         val error = ErrorResponse(INTERNAL_SERVER_ERROR, "An error occurred")
-        when(obligationDataConnector.getObligationDetails(alcoholDutyReference, None))
+        when(obligationDataConnector.getObligationDetails(appaId, None))
           .thenReturn(EitherT.fromEither(Left(error)))
-        whenReady(service.getObligations(alcoholDutyReference, None).value)(
+        whenReady(service.getObligations(appaId, None).value)(
           _ mustBe Left(error)
         )
       }
@@ -259,7 +258,7 @@ class AlcoholDutyServiceSpec extends SpecBase with AlcoholDutyTestData {
         when(obligationDataConnector.getObligationDetails(*, *)(*))
           .thenReturn(EitherT.fromEither(Left(ErrorResponse(NOT_FOUND, ""))))
 
-        val result = service.getReturnDetails(alcoholDutyReference)
+        val result = service.getReturnDetails(appaId)
         result onComplete {
           case Success(value) => value mustBe None
           case _              => fail("Expected a successful future")
@@ -271,7 +270,7 @@ class AlcoholDutyServiceSpec extends SpecBase with AlcoholDutyTestData {
         when(obligationDataConnector.getObligationDetails(*, *)(*))
           .thenReturn(EitherT.fromEither(Right(obligationDataOneDue)))
 
-        service.getReturnDetails(alcoholDutyReference).onComplete { result =>
+        service.getReturnDetails(appaId).onComplete { result =>
           result mustBe Success(Some(Returns()))
         }
       }
@@ -282,7 +281,7 @@ class AlcoholDutyServiceSpec extends SpecBase with AlcoholDutyTestData {
         when(financialDataConnector.getFinancialData(*)(*))
           .thenReturn(OptionT.none[Future, FinancialTransactionDocument])
 
-        val result = service.getPaymentInformation(alcoholDutyReference)
+        val result = service.getPaymentInformation(appaId)
         result onComplete {
           case Success(value) => value mustBe None
           case _              => fail("Expected a successful future")
@@ -292,7 +291,7 @@ class AlcoholDutyServiceSpec extends SpecBase with AlcoholDutyTestData {
       "return a empty Payments object if the financialDataConnector returns an empty Document" in new SetUp {
         financialDataConnector.getFinancialData(*)(*) returnsF emptyFinancialDocument
 
-        service.getPaymentInformation(alcoholDutyReference).onComplete { result =>
+        service.getPaymentInformation(appaId).onComplete { result =>
           result mustBe Success(Some(Payments()))
         }
       }
@@ -302,8 +301,8 @@ class AlcoholDutyServiceSpec extends SpecBase with AlcoholDutyTestData {
       "return a Returns and Payments object" - {
         "if the approval status is Approved and all the api calls return data" in new SetUp {
           val subscriptionSummary = SubscriptionSummary(
-            typeOfAlcoholApprovedForList = Set(Beer),
-            smallCiderFlag = false,
+            typeOfAlcoholApprovedFor = Set(Beer),
+            smallciderFlag = false,
             approvalStatus = hods.Approved,
             insolvencyFlag = false
           )
@@ -330,10 +329,10 @@ class AlcoholDutyServiceSpec extends SpecBase with AlcoholDutyTestData {
 
           financialDataConnector.getFinancialData(*)(*) returnsF financialDocument
 
-          whenReady(service.getAlcoholDutyCardData(alcoholDutyReference).value) { result =>
+          whenReady(service.getAlcoholDutyCardData(appaId).value) { result =>
             result mustBe Right(
               AlcoholDutyCardData(
-                alcoholDutyReference,
+                appaId,
                 Some(Approved),
                 false,
                 false,
@@ -346,8 +345,8 @@ class AlcoholDutyServiceSpec extends SpecBase with AlcoholDutyTestData {
         }
         "if the approval status is Insolvent and all the api calls return data" in new SetUp {
           val subscriptionSummary = SubscriptionSummary(
-            typeOfAlcoholApprovedForList = Set(Beer),
-            smallCiderFlag = false,
+            typeOfAlcoholApprovedFor = Set(Beer),
+            smallciderFlag = false,
             approvalStatus = hods.Approved,
             insolvencyFlag = true
           )
@@ -374,10 +373,10 @@ class AlcoholDutyServiceSpec extends SpecBase with AlcoholDutyTestData {
 
           financialDataConnector.getFinancialData(*)(*) returnsF financialDocument
 
-          whenReady(service.getAlcoholDutyCardData(alcoholDutyReference).value) { result =>
+          whenReady(service.getAlcoholDutyCardData(appaId).value) { result =>
             result mustBe Right(
               AlcoholDutyCardData(
-                alcoholDutyReference,
+                appaId,
                 Some(Insolvent),
                 false,
                 false,
@@ -393,20 +392,20 @@ class AlcoholDutyServiceSpec extends SpecBase with AlcoholDutyTestData {
       "return an empty card if subscription summary return an error" in new SetUp {
         val error = ErrorResponse(INTERNAL_SERVER_ERROR, "An error occurred")
 
-        when(subscriptionSummaryConnector.getSubscriptionSummary(alcoholDutyReference))
+        when(subscriptionSummaryConnector.getSubscriptionSummary(appaId))
           .thenReturn(EitherT.fromEither(Left(error)))
 
-        whenReady(service.getAlcoholDutyCardData(alcoholDutyReference).value) { result =>
+        whenReady(service.getAlcoholDutyCardData(appaId).value) { result =>
           result mustBe Right(
-            AlcoholDutyCardData(alcoholDutyReference, None, true, false, false, Returns(), Payments())
+            AlcoholDutyCardData(appaId, None, true, false, false, Returns(), Payments())
           )
         }
       }
 
       "return data with hasReturnError set empty Return object if the obligationDataConnector returns an error" in new SetUp {
         val subscriptionSummary = SubscriptionSummary(
-          typeOfAlcoholApprovedForList = Set(Beer),
-          smallCiderFlag = false,
+          typeOfAlcoholApprovedFor = Set(Beer),
+          smallciderFlag = false,
           approvalStatus = hods.Approved,
           insolvencyFlag = false
         )
@@ -417,10 +416,10 @@ class AlcoholDutyServiceSpec extends SpecBase with AlcoholDutyTestData {
 
         financialDataConnector.getFinancialData(*)(*) returnsF financialDocument
 
-        whenReady(service.getAlcoholDutyCardData(alcoholDutyReference).value) { result =>
+        whenReady(service.getAlcoholDutyCardData(appaId).value) { result =>
           result mustBe Right(
             AlcoholDutyCardData(
-              alcoholDutyReference,
+              appaId,
               Some(Approved),
               false,
               true,
@@ -434,8 +433,8 @@ class AlcoholDutyServiceSpec extends SpecBase with AlcoholDutyTestData {
 
       "return data with hasPaymentError set and empty Payment object if the financialDataConnector returns an error" in new SetUp {
         val subscriptionSummary = SubscriptionSummary(
-          typeOfAlcoholApprovedForList = Set(Beer),
-          smallCiderFlag = false,
+          typeOfAlcoholApprovedFor = Set(Beer),
+          smallciderFlag = false,
           approvalStatus = hods.Approved,
           insolvencyFlag = false
         )
@@ -462,10 +461,10 @@ class AlcoholDutyServiceSpec extends SpecBase with AlcoholDutyTestData {
 
         financialDataConnector.getFinancialData(*)(*) returns OptionT.none[Future, FinancialTransactionDocument]
 
-        whenReady(service.getAlcoholDutyCardData(alcoholDutyReference).value) { result =>
+        whenReady(service.getAlcoholDutyCardData(appaId).value) { result =>
           result mustBe Right(
             AlcoholDutyCardData(
-              alcoholDutyReference,
+              appaId,
               Some(Approved),
               false,
               false,
@@ -480,8 +479,8 @@ class AlcoholDutyServiceSpec extends SpecBase with AlcoholDutyTestData {
       "return data with hasReturnError and hasPaymentError set and empty Return and Payment objects " +
         "if both obligationDataConnector and financialDataConnector return errors" in new SetUp {
           val subscriptionSummary = SubscriptionSummary(
-            typeOfAlcoholApprovedForList = Set(Beer),
-            smallCiderFlag = false,
+            typeOfAlcoholApprovedFor = Set(Beer),
+            smallciderFlag = false,
             approvalStatus = hods.Approved,
             insolvencyFlag = false
           )
@@ -492,10 +491,10 @@ class AlcoholDutyServiceSpec extends SpecBase with AlcoholDutyTestData {
 
           financialDataConnector.getFinancialData(*)(*) returns OptionT.none[Future, FinancialTransactionDocument]
 
-          whenReady(service.getAlcoholDutyCardData(alcoholDutyReference).value) { result =>
+          whenReady(service.getAlcoholDutyCardData(appaId).value) { result =>
             result mustBe Right(
               AlcoholDutyCardData(
-                alcoholDutyReference,
+                appaId,
                 Some(Approved),
                 false,
                 true,
@@ -511,16 +510,16 @@ class AlcoholDutyServiceSpec extends SpecBase with AlcoholDutyTestData {
         case (hodsApprovalStatus: hods.ApprovalStatus, approvalStatus: ApprovalStatus) =>
           s"return a Restricted Card Data if the subscription summary has $hodsApprovalStatus approval status" in new SetUp {
             val subscriptionSummary = SubscriptionSummary(
-              typeOfAlcoholApprovedForList = Set(Beer),
-              smallCiderFlag = false,
+              typeOfAlcoholApprovedFor = Set(Beer),
+              smallciderFlag = false,
               approvalStatus = hodsApprovalStatus,
               insolvencyFlag = false
             )
             subscriptionSummaryConnector.getSubscriptionSummary(*)(*) returnsF subscriptionSummary
 
-            whenReady(service.getAlcoholDutyCardData(alcoholDutyReference).value) { result =>
+            whenReady(service.getAlcoholDutyCardData(appaId).value) { result =>
               result mustBe Right(
-                RestrictedCardData(alcoholDutyReference, approvalStatus)
+                RestrictedCardData(appaId, approvalStatus)
               )
             }
           }
@@ -528,23 +527,23 @@ class AlcoholDutyServiceSpec extends SpecBase with AlcoholDutyTestData {
 
       s"return a Restricted Card Data if the subscription summary has smallCiderFlag as true" in new SetUp {
         val subscriptionSummary = SubscriptionSummary(
-          typeOfAlcoholApprovedForList = Set(Beer),
-          smallCiderFlag = true,
+          typeOfAlcoholApprovedFor = Set(Beer),
+          smallciderFlag = true,
           approvalStatus = hods.Approved,
           insolvencyFlag = false
         )
         subscriptionSummaryConnector.getSubscriptionSummary(*)(*) returnsF subscriptionSummary
 
-        whenReady(service.getAlcoholDutyCardData(alcoholDutyReference).value) { result =>
+        whenReady(service.getAlcoholDutyCardData(appaId).value) { result =>
           result mustBe Right(
-            RestrictedCardData(alcoholDutyReference, SmallCiderProducer)
+            RestrictedCardData(appaId, SmallCiderProducer)
           )
         }
       }
     }
   }
 
-  class SetUp extends AlcoholDutyTestData {
+  class SetUp extends TestData {
     implicit val ec: ExecutionContext = ExecutionContext.global
     implicit val hc: HeaderCarrier    = HeaderCarrier()
 

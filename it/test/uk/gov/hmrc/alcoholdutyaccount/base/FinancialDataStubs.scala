@@ -18,15 +18,15 @@ package uk.gov.hmrc.alcoholdutyaccount.base
 
 import play.api.http.Status.{NOT_FOUND, OK}
 import play.api.libs.json.Json
-import uk.gov.hmrc.alcoholdutyaccount.common.{AlcoholDutyTestData, WireMockHelper}
+import uk.gov.hmrc.alcoholdutyaccount.common.{TestData, WireMockHelper}
 import uk.gov.hmrc.alcoholdutyaccount.config.AppConfig
 import uk.gov.hmrc.alcoholdutyaccount.models.hods.FinancialTransactionDocument
 
-trait FinancialDataStubs  extends WireMockHelper with AlcoholDutyTestData { ISpecBase =>
+trait FinancialDataStubs  extends WireMockHelper with TestData { ISpecBase =>
   val config: AppConfig
 
   private def url(alcoholDutyReference:String):String =
-    s"${config.financialDataApiUrl}/enterprise/financial-data/${config.idType}/$alcoholDutyReference/${config.regimeType}"
+    s"${config.financialDataHost}/enterprise/financial-data/${config.idType}/$alcoholDutyReference/${config.regime}"
 
   def stubGetFinancialData(alcoholDutyReference:String, financialTransactionDocument: FinancialTransactionDocument): Unit =
     stubGet(url(alcoholDutyReference), OK, Json.toJson(financialTransactionDocument).toString())

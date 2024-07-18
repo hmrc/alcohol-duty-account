@@ -18,22 +18,20 @@ package uk.gov.hmrc.alcoholdutyaccount.base
 
 import play.api.http.Status.{INTERNAL_SERVER_ERROR, NOT_FOUND, OK}
 import play.api.libs.json.Json
-import uk.gov.hmrc.alcoholdutyaccount.common.{AlcoholDutyTestData, WireMockHelper}
+import uk.gov.hmrc.alcoholdutyaccount.common.{TestData, WireMockHelper}
 import uk.gov.hmrc.alcoholdutyaccount.config.AppConfig
-import uk.gov.hmrc.alcoholdutyaccount.models.hods.SubscriptionSummary
+import uk.gov.hmrc.alcoholdutyaccount.models.hods.{SubscriptionSummary, SubscriptionSummarySuccess}
 
-trait SubscriptionSummaryStubs extends WireMockHelper with AlcoholDutyTestData { ISpecBase =>
+trait SubscriptionSummaryStubs extends WireMockHelper with TestData { ISpecBase =>
   val config: AppConfig
+  def url(appaId: String) = config.getSubscriptionUrl(appaId)
 
-  private def url(alcoholDutyReference:String)=
-    s"${config.subscriptionApiUrl}/subscription/${config.regimeType}/${config.idType}/$alcoholDutyReference/summary"
+  def stubGetSubscriptionSummary(appaId: String, subscriptionSummary: SubscriptionSummary): Unit =
+    stubGet(url(appaId), OK, Json.toJson(SubscriptionSummarySuccess(subscriptionSummary)).toString)
 
-  def stubGetSubscriptionSummary(alcoholDutyReference:String, subscriptionSummary: SubscriptionSummary ): Unit =
-    stubGet(url(alcoholDutyReference), OK, Json.toJson(subscriptionSummary).toString)
+  def stubSubscriptionSummaryNotFound(appaId: String): Unit =
+    stubGet(url(appaId), NOT_FOUND, "No subscription summary data found")
 
-  def stubSubscriptionSummaryNotFound(alcoholDutyReference:String): Unit =
-    stubGet(url(alcoholDutyReference), NOT_FOUND, "No subscription summary data found")
-
-  def stubSubscriptionSummaryError(alcoholDutyReference:String): Unit =
-    stubGet(url(alcoholDutyReference), INTERNAL_SERVER_ERROR, "An error occurred")
+  def stubSubscriptionSummaryError(appaId: String): Unit =
+    stubGet(url(appaId), INTERNAL_SERVER_ERROR, "An error occurred")
 }

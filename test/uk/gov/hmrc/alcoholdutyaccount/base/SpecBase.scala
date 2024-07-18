@@ -30,8 +30,10 @@ import play.api.libs.json.JsValue
 import play.api.mvc.{AnyContentAsEmpty, ControllerComponents, PlayBodyParsers, Results}
 import play.api.test.Helpers.stubControllerComponents
 import play.api.test.{DefaultAwaitTimeout, FakeHeaders, FakeRequest, ResultExtractors}
+import uk.gov.hmrc.alcoholdutyaccount.common.TestData
 import uk.gov.hmrc.alcoholdutyaccount.common.generators.ModelGenerators
 import uk.gov.hmrc.alcoholdutyaccount.config.AppConfig
+import uk.gov.hmrc.alcoholdutyaccount.connectors.helpers.RandomUUIDGenerator
 import uk.gov.hmrc.alcoholdutyaccount.controllers.actions.FakeAuthorisedAction
 import uk.gov.hmrc.http.HeaderCarrier
 
@@ -52,6 +54,7 @@ trait SpecBase
     with MockitoSugar
     with ScalaCheckPropertyChecks
     with BeforeAndAfterEach
+    with TestData
     with ModelGenerators
     with IntegrationPatience {
 
@@ -74,6 +77,10 @@ trait SpecBase
   val fakeAuthorisedAction                             = new FakeAuthorisedAction(bodyParsers)
 
   def fakeRequestWithJsonBody(json: JsValue): FakeRequest[JsValue] = FakeRequest("", "/", FakeHeaders(), json)
+
+  val fakeUUIDGenerator = new RandomUUIDGenerator {
+    override def uuid: String = dummyUUID
+  }
 
   implicit val ec: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
   implicit val hc: HeaderCarrier    = HeaderCarrier()
