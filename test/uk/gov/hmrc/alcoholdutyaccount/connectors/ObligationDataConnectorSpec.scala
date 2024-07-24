@@ -20,65 +20,88 @@ import org.scalatest.concurrent.ScalaFutures
 import play.api.libs.json.Json
 import uk.gov.hmrc.alcoholdutyaccount.base.{ConnectorTestHelpers, SpecBase}
 import uk.gov.hmrc.alcoholdutyaccount.common.TestData
-import uk.gov.hmrc.alcoholdutyaccount.models.hods.Open
+import uk.gov.hmrc.alcoholdutyaccount.models.hods.{Fulfilled, Open}
 import uk.gov.hmrc.play.bootstrap.backend.http.ErrorResponse
+
+import java.time.{LocalDate, ZoneOffset}
 
 class ObligationDataConnectorSpec extends SpecBase with ScalaFutures with ConnectorTestHelpers {
   protected val endpointName = "obligation"
 
   "ObligationDataConnector" - {
     "successfully get open obligation data" in new SetUp {
-      stubGetWithParameters(url, expectedQueryParams, OK, Json.toJson(obligationDataSingleOpen).toString)
-      whenReady(connector.getObligationDetails(appaId, Some(obligationFilter)).value) { result =>
+      stubGetWithParameters(url, expectedQueryParamsOpen, OK, Json.toJson(obligationDataSingleOpen).toString)
+      whenReady(connector.getObligationDetails(appaId, Some(obligationFilterOpen)).value) { result =>
         result mustBe Right(obligationDataSingleOpen)
-        verifyGetWithParameters(url, expectedQueryParams)
+        verifyGetWithParameters(url, expectedQueryParamsOpen)
       }
     }
 
     "successfully get fulfilled obligation data" in new SetUp {
-      stubGetWithParameters(url, expectedQueryParams, OK, Json.toJson(obligationDataSingleFulfilled).toString)
-      whenReady(connector.getObligationDetails(appaId, Some(obligationFilter)).value) { result =>
+      stubGetWithParameters(url, expectedQueryParamsFulfilled, OK, Json.toJson(obligationDataSingleFulfilled).toString)
+      whenReady(connector.getObligationDetails(appaId, Some(obligationFilterFulfilled)).value) { result =>
         result mustBe Right(obligationDataSingleFulfilled)
-        verifyGetWithParameters(url, expectedQueryParams)
+        verifyGetWithParameters(url, expectedQueryParamsFulfilled)
       }
     }
     "successfully get open and fulfilled obligation data if there is no filter" in new SetUp {
-      stubGet(url, OK, Json.toJson(obligationDataMultipleOpenAndFulfilled).toString)
+      stubGetWithParameters(
+        url,
+        expectedQueryParamsNoStatus,
+        OK,
+        Json.toJson(obligationDataMultipleOpenAndFulfilled).toString
+      )
       whenReady(connector.getObligationDetails(appaId, None).value) { result =>
         result mustBe Right(obligationDataMultipleOpenAndFulfilled)
-        verifyGet(url)
+        verifyGetWithParameters(url, expectedQueryParamsNoStatus)
       }
     }
 
     "return an INTERNAL_SERVER_ERROR if the data retrieved cannot be parsed" in new SetUp {
-      stubGetWithParameters(url, expectedQueryParams, OK, "blah")
-      whenReady(connector.getObligationDetails(appaId, Some(obligationFilter)).value) { result =>
+      stubGetWithParameters(url, expectedQueryParamsOpen, OK, "blah")
+      whenReady(connector.getObligationDetails(appaId, Some(obligationFilterOpen)).value) { result =>
         result mustBe Left(ErrorResponse(INTERNAL_SERVER_ERROR, "Unable to parse obligation data"))
-        verifyGetWithParameters(url, expectedQueryParams)
+        verifyGetWithParameters(url, expectedQueryParamsOpen)
       }
     }
 
     "return not found if obligation data object cannot be found" in new SetUp {
-      stubGetWithParameters(url, expectedQueryParams, NOT_FOUND, notFoundErrorMessage)
-      whenReady(connector.getObligationDetails(appaId, Some(obligationFilter)).value) { result =>
+      stubGetWithParameters(url, expectedQueryParamsOpen, NOT_FOUND, notFoundErrorMessage)
+      whenReady(connector.getObligationDetails(appaId, Some(obligationFilterOpen)).value) { result =>
         result mustBe Left(ErrorResponse(NOT_FOUND, "Obligation data not found"))
-        verifyGetWithParameters(url, expectedQueryParams)
+        verifyGetWithParameters(url, expectedQueryParamsOpen)
       }
     }
 
-    "return an INTERNAL_SERVER_ERROR error if an error other than NOT_FOUND when fetching obligation data" in new SetUp {
-      stubGetWithParameters(url, expectedQueryParams, BAD_REQUEST, otherErrorMessage)
-      whenReady(connector.getObligationDetails(appaId, Some(obligationFilter)).value) { result =>
-        result mustBe Left(ErrorResponse(INTERNAL_SERVER_ERROR, "An error occurred"))
-        verifyGetWithParameters(url, expectedQueryParams)
+    "return an INTERNAL_SERVER_ERROR error" - {
+      "if an http error other than NOT_FOUND when fetching obligation data" in new SetUp {
+        stubGetWithParameters(url, expectedQueryParamsOpen, BAD_REQUEST, otherErrorMessage)
+        whenReady(connector.getObligationDetails(appaId, Some(obligationFilterOpen)).value) { result =>
+          result mustBe Left(ErrorResponse(INTERNAL_SERVER_ERROR, "An error occurred"))
+          verifyGetWithParameters(url, expectedQueryParamsOpen)
+        }
+      }
+      "if an exception thrown when fetching obligation data" in new SetUp {
+        stubGetFaultWithParameters(url, expectedQueryParamsOpen)
+        whenReady(connector.getObligationDetails(appaId, Some(obligationFilterOpen)).value) { result =>
+          result mustBe Left(ErrorResponse(INTERNAL_SERVER_ERROR, "Connection reset by peer"))
+          verifyGetWithParameters(url, expectedQueryParamsOpen)
+        }
       }
     }
   }
 
   class SetUp extends ConnectorFixture with TestData {
-    val connector           = new ObligationDataConnector(config = config, httpClient = httpClient)
-    val expectedQueryParams = Seq("status" -> Open.value)
-    val url                 =
+    val connector                        = new ObligationDataConnector(config = config, httpClient = httpClient)
+    private val dateFilterHeadersHeaders = Seq("from" -> "2023-09-01", "to" -> LocalDate.now(ZoneOffset.UTC).toString)
+    val expectedQueryParamsOpen          = Seq("status" -> Open.value)
+
+    val expectedQueryParamsFulfilled =
+      Seq("status" -> Fulfilled.value) ++ dateFilterHeadersHeaders
+
+    val expectedQueryParamsNoStatus  = dateFilterHeadersHeaders
+
+    val url =
       s"${config.obligationDataHost}/enterprise/obligation-data/${config.idType}/$appaId/${config.regime}"
 
     val notFoundErrorMessage = """{

@@ -20,10 +20,11 @@ import cats.data.EitherT
 import play.api.{Logger, Logging}
 import play.api.http.Status.{INTERNAL_SERVER_ERROR, NOT_FOUND}
 import uk.gov.hmrc.alcoholdutyaccount.config.AppConfig
-import uk.gov.hmrc.alcoholdutyaccount.models.hods.{ObligationData, ObligationStatus}
+import uk.gov.hmrc.alcoholdutyaccount.models.hods.{ObligationData, ObligationStatus, Open}
 import uk.gov.hmrc.http.{HttpClient, _}
 import uk.gov.hmrc.play.bootstrap.backend.http.ErrorResponse
 
+import java.time.{LocalDate, ZoneId}
 import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Try
@@ -42,6 +43,11 @@ class ObligationDataConnector @Inject() (
   )(implicit hc: HeaderCarrier): EitherT[Future, ErrorResponse, ObligationData] =
     EitherT {
 
+      val headers: Seq[(String, String)] = Seq(
+        HeaderNames.authorisation -> config.obligationDataToken,
+        "Environment"             -> config.obligationDataEnv
+      )
+
       val url =
         s"${config.obligationDataHost}/enterprise/obligation-data/${config.idType}/$alcoholDutyReference/${config.regime}"
       logger.info(s"Fetching all open obligation data for appaId $alcoholDutyReference")
@@ -49,7 +55,8 @@ class ObligationDataConnector @Inject() (
       httpClient
         .GET[Either[UpstreamErrorResponse, HttpResponse]](
           url = url,
-          queryParams = getQueryParam(obligationStatusFilter)
+          queryParams = getQueryParam(obligationStatusFilter),
+          headers = headers
         )
         .map {
           case Right(response) =>
@@ -66,13 +73,24 @@ class ObligationDataConnector @Inject() (
               }
           case Left(error)     => Left(processError(error, alcoholDutyReference))
         }
+        .recoverWith { case e: Exception =>
+          logger.warn(
+            s"An exception was returned while trying to fetch obligation data appaId $alcoholDutyReference: ${e.getMessage}"
+          )
+          Future.successful(Left(ErrorResponse(INTERNAL_SERVER_ERROR, e.getMessage)))
+        }
     }
 
-  private def getQueryParam(obligationStatusFilter: Option[ObligationStatus]): Seq[(String, String)] =
+  private def getQueryParam(obligationStatusFilter: Option[ObligationStatus]): Seq[(String, String)] = {
+    // date filter headers should only be added if the status is not defined or is not Open (according to api specs)
+    val dateFilterHeaders =
+      Seq("from" -> config.obligationDataFilterStartDate, "to" -> LocalDate.now(ZoneId.of("Europe/London")).toString)
     obligationStatusFilter match {
-      case Some(obligationStatus) => Seq("status" -> obligationStatus.value)
-      case _                      => Seq.empty
+      case Some(Open)   => Seq("status" -> Open.value)
+      case Some(status) => Seq("status" -> status.value) ++ dateFilterHeaders
+      case None         => dateFilterHeaders
     }
+  }
 
   private def processError(error: UpstreamErrorResponse, alcoholDutyReference: String): ErrorResponse =
     error.statusCode match {

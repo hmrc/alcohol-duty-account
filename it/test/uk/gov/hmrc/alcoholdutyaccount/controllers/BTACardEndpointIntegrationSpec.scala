@@ -176,7 +176,7 @@ class BTACardEndpointIntegrationSpec
         contentAsJson(response) shouldBe Json.toJson(expectedBTATileData)
       }
 
-      "obligation api call fails" in {
+      "obligation api call fails with an HTTP status" in {
         stubAuthorised()
         stubGetSubscriptionSummary(appaId, approvedSubscriptionSummary)
         stubObligationsNotFound(appaId)
@@ -206,6 +206,39 @@ class BTACardEndpointIntegrationSpec
         )
 
         status(response)        shouldBe OK
+        contentAsJson(response) shouldBe Json.toJson(expectedBTATileData)
+      }
+
+      "obligation api call fails with an exception" in {
+        stubAuthorised()
+        stubGetSubscriptionSummary(appaId, approvedSubscriptionSummary)
+        stubObligationsServiceWithFault(appaId)
+        stubGetFinancialData(appaId, financialDocument)
+
+        val expectedBTATileData = AlcoholDutyCardData(
+          alcoholDutyReference = appaId,
+          approvalStatus = Some(Approved),
+          hasSubscriptionSummaryError = false,
+          hasReturnsError = true,
+          hasPaymentError = false,
+          returns = Returns(),
+          payments = Payments(
+            balance = Some(
+              Balance(
+                totalPaymentAmount = 100,
+                isMultiplePaymentDue = false,
+                chargeReference = Some("X1234567890")
+              )
+            )
+          )
+        )
+
+        val response = callRoute(
+          FakeRequest("GET", routes.AlcoholDutyController.btaTileData(appaId).url)
+            .withHeaders("Authorization" -> "Bearer 12345")
+        )
+
+        status(response) shouldBe OK
         contentAsJson(response) shouldBe Json.toJson(expectedBTATileData)
       }
 

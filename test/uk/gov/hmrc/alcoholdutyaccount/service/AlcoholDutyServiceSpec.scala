@@ -57,34 +57,34 @@ class AlcoholDutyServiceSpec extends SpecBase with TestData {
 
     "getOpenObligations should" - {
       "return obligation data from the connector where one open return matches the period key" in new SetUp {
-        when(obligationDataConnector.getObligationDetails(appaId, Some(obligationFilter)))
+        when(obligationDataConnector.getObligationDetails(appaId, Some(obligationFilterOpen)))
           .thenReturn(EitherT.fromEither(Right(obligationDataMultipleOpen)))
-        whenReady(service.getOpenObligations(appaId, periodKey, Some(obligationFilter)).value) {
+        whenReady(service.getOpenObligations(appaId, periodKey).value) {
           _ mustBe Right(adrObligationDetails)
         }
       }
 
       "return obligation data from the connector where one fulfilled return matches the period key" in new SetUp {
-        when(obligationDataConnector.getObligationDetails(appaId, Some(obligationFilter)))
+        when(obligationDataConnector.getObligationDetails(appaId, Some(obligationFilterOpen)))
           .thenReturn(EitherT.fromEither(Right(obligationDataSingleFulfilled)))
-        whenReady(service.getOpenObligations(appaId, periodKey, Some(obligationFilter)).value) {
+        whenReady(service.getOpenObligations(appaId, periodKey).value) {
           _ mustBe Right(adrObligationDetailsFulfilled)
         }
       }
 
       "return NOT_FOUND where no return matches the period key" in new SetUp {
-        when(obligationDataConnector.getObligationDetails(appaId, Some(obligationFilter)))
+        when(obligationDataConnector.getObligationDetails(appaId, Some(obligationFilterOpen)))
           .thenReturn(EitherT.fromEither(Right(obligationDataMultipleOpen)))
-        whenReady(service.getOpenObligations(appaId, periodKey4, Some(obligationFilter)).value) {
+        whenReady(service.getOpenObligations(appaId, periodKey4).value) {
           _ mustBe Left(ErrorResponse(NOT_FOUND, "Obligation details not found for period key 24AH"))
         }
       }
 
       "return an error if the connector is unable to obtain obligation data" in new SetUp {
         val error = ErrorResponse(INTERNAL_SERVER_ERROR, "An error occurred")
-        when(obligationDataConnector.getObligationDetails(appaId, Some(obligationFilter)))
+        when(obligationDataConnector.getObligationDetails(appaId, Some(obligationFilterOpen)))
           .thenReturn(EitherT.fromEither(Left(error)))
-        whenReady(service.getOpenObligations(appaId, periodKey, Some(obligationFilter)).value)(
+        whenReady(service.getOpenObligations(appaId, periodKey).value)(
           _ mustBe Left(error)
         )
       }

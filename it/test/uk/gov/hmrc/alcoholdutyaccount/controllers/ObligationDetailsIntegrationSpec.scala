@@ -20,8 +20,11 @@ import play.api.libs.json.Json
 import play.api.test.FakeRequest
 import uk.gov.hmrc.alcoholdutyaccount.base.ISpecBase
 import uk.gov.hmrc.alcoholdutyaccount.common.TestData
-import uk.gov.hmrc.alcoholdutyaccount.models.hods.Open
+import uk.gov.hmrc.alcoholdutyaccount.models.hods.{Fulfilled, Open}
+import uk.gov.hmrc.http.HeaderNames
 import uk.gov.hmrc.play.bootstrap.backend.http.ErrorResponse
+
+import java.time.{LocalDate, ZoneId}
 
 class ObligationDetailsIntegrationSpec extends ISpecBase {
   protected val endpointName = "obligation"
@@ -29,79 +32,83 @@ class ObligationDetailsIntegrationSpec extends ISpecBase {
   "the open obligation details endpoint should" should {
     "respond with OK if able to fetch data that matches the period key" in new SetUp {
       stubAuthorised()
-      stubGetWithParameters(url, expectedQueryParams, OK, Json.toJson(obligationDataSingleOpen).toString)
+      stubGetWithParameters(url, expectedQueryParamsOpen, OK, Json.toJson(obligationDataSingleOpen).toString)
 
       val response = callRoute(
         FakeRequest("GET", routes.AlcoholDutyController.openObligationDetails(appaId, periodKey).url)
           .withHeaders("Authorization" -> "Bearer 12345")
       )
 
-      status(response) shouldBe OK
+      status(response)        shouldBe OK
       contentAsJson(response) shouldBe Json.toJson(adrObligationDetails)
 
-      verifyGetWithParameters(url, expectedQueryParams)
+      verifyGetWithParametersAndHeaders(url, expectedQueryParamsOpen, expectedHeaders)
     }
 
     "respond with INTERNAL_SERVER_ERROR if the data retrieved cannot be parsed" in new SetUp {
       stubAuthorised()
-      stubGetWithParameters(url, expectedQueryParams, OK, "blah")
+      stubGetWithParameters(url, expectedQueryParamsOpen, OK, "blah")
 
       val response = callRoute(
         FakeRequest("GET", routes.AlcoholDutyController.openObligationDetails(appaId, periodKey).url)
           .withHeaders("Authorization" -> "Bearer 12345")
       )
 
-      status(response) shouldBe INTERNAL_SERVER_ERROR
-      contentAsJson(response) shouldBe Json.toJson(ErrorResponse(INTERNAL_SERVER_ERROR, "Unable to parse obligation data"))
+      status(response)        shouldBe INTERNAL_SERVER_ERROR
+      contentAsJson(response) shouldBe Json.toJson(
+        ErrorResponse(INTERNAL_SERVER_ERROR, "Unable to parse obligation data")
+      )
 
-      verifyGetWithParameters(url, expectedQueryParams)
+      verifyGetWithParametersAndHeaders(url, expectedQueryParamsOpen, expectedHeaders)
     }
 
     "respond with NOT_FOUND if no obligation data" in new SetUp {
       stubAuthorised()
-      stubGetWithParameters(url, expectedQueryParams, NOT_FOUND, notFoundErrorMessage)
+      stubGetWithParameters(url, expectedQueryParamsOpen, NOT_FOUND, notFoundErrorMessage)
 
       val response = callRoute(
         FakeRequest("GET", routes.AlcoholDutyController.openObligationDetails(appaId, periodKey).url)
           .withHeaders("Authorization" -> "Bearer 12345")
       )
 
-      status(response) shouldBe NOT_FOUND
+      status(response)        shouldBe NOT_FOUND
       contentAsJson(response) shouldBe Json.toJson(ErrorResponse(NOT_FOUND, "Obligation data not found"))
 
-      verifyGetWithParameters(url, expectedQueryParams)
+      verifyGetWithParametersAndHeaders(url, expectedQueryParamsOpen, expectedHeaders)
     }
 
     "respond with NOT_FOUND if the period key doesn't match any open obligation details" in new SetUp {
       val testPeriodKey = periodKey4
 
       stubAuthorised()
-      stubGetWithParameters(url, expectedQueryParams, OK, Json.toJson(obligationDataSingleOpen).toString)
+      stubGetWithParameters(url, expectedQueryParamsOpen, OK, Json.toJson(obligationDataSingleOpen).toString)
 
       val response = callRoute(
         FakeRequest("GET", routes.AlcoholDutyController.openObligationDetails(appaId, testPeriodKey).url)
           .withHeaders("Authorization" -> "Bearer 12345")
       )
 
-      status(response) shouldBe NOT_FOUND
-      contentAsJson(response) shouldBe Json.toJson(ErrorResponse(NOT_FOUND, s"Obligation details not found for period key $testPeriodKey"))
+      status(response)        shouldBe NOT_FOUND
+      contentAsJson(response) shouldBe Json.toJson(
+        ErrorResponse(NOT_FOUND, s"Obligation details not found for period key $testPeriodKey")
+      )
 
-      verifyGetWithParameters(url, expectedQueryParams)
+      verifyGetWithParametersAndHeaders(url, expectedQueryParamsOpen, expectedHeaders)
     }
 
     "respond with INTERNAL_SERVER_ERROR if error(s) returned from the obligation api call" in new SetUp {
       stubAuthorised()
-      stubGetWithParameters(url, expectedQueryParams, BAD_REQUEST, otherErrorMessage)
+      stubGetWithParameters(url, expectedQueryParamsOpen, BAD_REQUEST, otherErrorMessage)
 
       val response = callRoute(
         FakeRequest("GET", routes.AlcoholDutyController.openObligationDetails(appaId, periodKey).url)
           .withHeaders("Authorization" -> "Bearer 12345")
       )
 
-      status(response) shouldBe INTERNAL_SERVER_ERROR
+      status(response)        shouldBe INTERNAL_SERVER_ERROR
       contentAsJson(response) shouldBe Json.toJson(ErrorResponse(INTERNAL_SERVER_ERROR, "An error occurred"))
 
-      verifyGetWithParameters(url, expectedQueryParams)
+      verifyGetWithParametersAndHeaders(url, expectedQueryParamsOpen, expectedHeaders)
     }
   }
 
@@ -109,83 +116,105 @@ class ObligationDetailsIntegrationSpec extends ISpecBase {
     "respond with OK if able to fetch data" in new SetUp {
       stubAuthorised()
 
-      stubGet(url,OK,Json.toJson(obligationDataSingleOpen).toString)
+      stubGetWithParameters(url, expectedQueryParamsNoStatus, OK, Json.toJson(obligationDataSingleOpen).toString)
 
       val response = callRoute(
         FakeRequest("GET", routes.AlcoholDutyController.obligationDetails(appaId).url)
           .withHeaders("Authorization" -> "Bearer 12345")
       )
 
-      status(response) shouldBe OK
+      status(response)        shouldBe OK
       contentAsJson(response) shouldBe Json.toJson(Seq(adrObligationDetails))
-      verifyGet(url)
+      verifyGetWithParametersAndHeaders(url, expectedQueryParamsNoStatus, expectedHeaders)
     }
+
     "respond with OK if able to fetch open and fulfilled obligation data" in new SetUp {
       stubAuthorised()
-      stubGet(url, OK, Json.toJson(obligationDataMultipleOpenAndFulfilled).toString)
+      stubGetWithParameters(
+        url,
+        expectedQueryParamsNoStatus,
+        OK,
+        Json.toJson(obligationDataMultipleOpenAndFulfilled).toString
+      )
 
       val response = callRoute(
         FakeRequest("GET", routes.AlcoholDutyController.obligationDetails(appaId).url)
           .withHeaders("Authorization" -> "Bearer 12345")
       )
 
-      status(response) shouldBe OK
+      status(response)        shouldBe OK
       contentAsJson(response) shouldBe Json.toJson(adrMultipleOpenAndFulfilledData)
 
-      verifyGet(url)
+      verifyGetWithParametersAndHeaders(url, expectedQueryParamsNoStatus, expectedHeaders)
     }
 
     "respond with INTERNAL_SERVER_ERROR if the data retrieved cannot be parsed" in new SetUp {
       stubAuthorised()
-      stubGet(url, OK, "blah")
+      stubGetWithParameters(url, expectedQueryParamsNoStatus, OK, "blah")
 
       val response = callRoute(
         FakeRequest("GET", routes.AlcoholDutyController.obligationDetails(appaId).url)
           .withHeaders("Authorization" -> "Bearer 12345")
       )
 
-      status(response) shouldBe INTERNAL_SERVER_ERROR
-      contentAsJson(response) shouldBe Json.toJson(ErrorResponse(INTERNAL_SERVER_ERROR, "Unable to parse obligation data"))
+      status(response)        shouldBe INTERNAL_SERVER_ERROR
+      contentAsJson(response) shouldBe Json.toJson(
+        ErrorResponse(INTERNAL_SERVER_ERROR, "Unable to parse obligation data")
+      )
 
-      verifyGet(url)
+      verifyGetWithParametersAndHeaders(url, expectedQueryParamsNoStatus, expectedHeaders)
     }
 
     "respond with NOT_FOUND if no obligation data" in new SetUp {
       stubAuthorised()
-      stubGet(url, NOT_FOUND, notFoundErrorMessage)
+
+      stubGetWithParameters(url, expectedQueryParamsNoStatus, NOT_FOUND, notFoundErrorMessage)
 
       val response = callRoute(
         FakeRequest("GET", routes.AlcoholDutyController.obligationDetails(appaId).url)
           .withHeaders("Authorization" -> "Bearer 12345")
       )
 
-      status(response) shouldBe NOT_FOUND
+      status(response)        shouldBe NOT_FOUND
       contentAsJson(response) shouldBe Json.toJson(ErrorResponse(NOT_FOUND, "Obligation data not found"))
 
-      verifyGet(url)
+      verifyGetWithParametersAndHeaders(url, expectedQueryParamsNoStatus, expectedHeaders)
     }
 
     "respond with INTERNAL_SERVER_ERROR if error(s) returned from the obligation api call" in new SetUp {
       stubAuthorised()
-      stubGet(url, BAD_REQUEST, otherErrorMessage)
+      stubGetWithParameters(url, expectedQueryParamsNoStatus, BAD_REQUEST, otherErrorMessage)
 
       val response = callRoute(
         FakeRequest("GET", routes.AlcoholDutyController.obligationDetails(appaId).url)
           .withHeaders("Authorization" -> "Bearer 12345")
       )
 
-      status(response) shouldBe INTERNAL_SERVER_ERROR
+      status(response)        shouldBe INTERNAL_SERVER_ERROR
       contentAsJson(response) shouldBe Json.toJson(ErrorResponse(INTERNAL_SERVER_ERROR, "An error occurred"))
 
-      verifyGet(url)
+      verifyGetWithParametersAndHeaders(url, expectedQueryParamsNoStatus, expectedHeaders)
     }
   }
 
   class SetUp extends TestData {
 
-    val expectedQueryParams = Seq("status" -> Open.value)
+    val expectedQueryParamsOpen = Seq("status" -> Open.value)
 
-    val url                 =
+    val expectedHeaders = Seq(
+      HeaderNames.authorisation -> config.obligationDataToken,
+      "Environment" -> config.obligationDataEnv
+    )
+
+    private val dateFilterHeadersHeaders =
+      Seq("from" -> "2023-09-01", "to" -> LocalDate.now(ZoneId.of("Europe/London")).toString)
+
+    val expectedQueryParamsFulfilled     =
+      Seq("status" -> Fulfilled.value) ++ dateFilterHeadersHeaders
+
+    val expectedQueryParamsNoStatus      = dateFilterHeadersHeaders
+
+    val url =
       s"${config.obligationDataHost}/enterprise/obligation-data/${config.idType}/$appaId/${config.regime}"
 
     val notFoundErrorMessage = """{

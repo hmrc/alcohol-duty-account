@@ -59,7 +59,8 @@ trait TestData extends ModelGenerators {
   val periodKey3 = "24AG"
   val periodKey4 = "24AH"
 
-  val obligationFilter = Open
+  val obligationFilterOpen      = Open
+  val obligationFilterFulfilled = Fulfilled
 
   val obligationDetails = ObligationDetails(
     status = Open,

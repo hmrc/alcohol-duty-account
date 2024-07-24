@@ -23,7 +23,6 @@ import uk.gov.hmrc.alcoholdutyaccount.controllers.actions.AuthorisedAction
 import uk.gov.hmrc.alcoholdutyaccount.service.AlcoholDutyService
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 import uk.gov.hmrc.play.bootstrap.backend.http.ErrorResponse
-import uk.gov.hmrc.alcoholdutyaccount.models.hods.Open
 
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
@@ -54,7 +53,7 @@ class AlcoholDutyController @Inject() (
       periodKey match {
         case returnPeriodPattern(_) =>
           alcoholDutyService
-            .getOpenObligations(alcoholDutyReference, periodKey, Some(Open))
+            .getOpenObligations(alcoholDutyReference, periodKey)
             .fold(
               err => error(err),
               obligationDetails => Ok(Json.toJson(obligationDetails))
