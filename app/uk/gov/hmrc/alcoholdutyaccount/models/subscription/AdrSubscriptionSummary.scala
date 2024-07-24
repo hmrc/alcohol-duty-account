@@ -18,6 +18,7 @@ package uk.gov.hmrc.alcoholdutyaccount.models.subscription
 
 import play.api.libs.json.{Json, OWrites}
 import AlcoholRegime.{Beer, Cider, OtherFermentedProduct, Spirits, Wine}
+import play.api.http.Status.INTERNAL_SERVER_ERROR
 import uk.gov.hmrc.alcoholdutyaccount.models.hods.SubscriptionSummary
 import uk.gov.hmrc.alcoholdutyaccount.models.hods
 import uk.gov.hmrc.play.bootstrap.backend.http.ErrorResponse
@@ -35,7 +36,7 @@ object AdrSubscriptionSummary {
     val regimes = mapRegimes(subscriptionSummary.typeOfAlcoholApprovedFor)
 
     if (regimes.isEmpty) {
-      Left(ErrorResponse(500, "Expected at least one approved regime to be provided"))
+      Left(ErrorResponse(INTERNAL_SERVER_ERROR, "Expected at least one approved regime to be provided"))
     } else {
       Right(
         AdrSubscriptionSummary(

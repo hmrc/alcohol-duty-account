@@ -20,7 +20,6 @@ import org.scalatest.concurrent.ScalaFutures
 import play.api.libs.json.Json
 import uk.gov.hmrc.alcoholdutyaccount.base.{ConnectorTestHelpers, SpecBase}
 import uk.gov.hmrc.alcoholdutyaccount.common.TestData
-import uk.gov.hmrc.alcoholdutyaccount.models.hods.Open
 
 class FinancialDataConnectorSpec extends SpecBase with ScalaFutures with ConnectorTestHelpers {
   protected val endpointName = "financial"

@@ -176,6 +176,29 @@ class BTACardEndpointIntegrationSpec
         contentAsJson(response) shouldBe Json.toJson(expectedBTATileData)
       }
 
+      "subscription summary api call fails with exception" in {
+        stubAuthorised()
+        stubSubscriptionSummaryWithFault(appaId)
+
+        val expectedBTATileData = AlcoholDutyCardData(
+          alcoholDutyReference = appaId,
+          approvalStatus = None,
+          hasSubscriptionSummaryError = true,
+          hasReturnsError = false,
+          hasPaymentError = false,
+          returns = Returns(),
+          payments = Payments()
+        )
+
+        val response = callRoute(
+          FakeRequest("GET", routes.AlcoholDutyController.btaTileData(appaId).url)
+            .withHeaders("Authorization" -> "Bearer 12345")
+        )
+
+        status(response)        shouldBe OK
+        contentAsJson(response) shouldBe Json.toJson(expectedBTATileData)
+      }
+
       "obligation api call fails with an HTTP status" in {
         stubAuthorised()
         stubGetSubscriptionSummary(appaId, approvedSubscriptionSummary)
@@ -238,7 +261,7 @@ class BTACardEndpointIntegrationSpec
             .withHeaders("Authorization" -> "Bearer 12345")
         )
 
-        status(response) shouldBe OK
+        status(response)        shouldBe OK
         contentAsJson(response) shouldBe Json.toJson(expectedBTATileData)
       }
 
@@ -296,7 +319,7 @@ class BTACardEndpointIntegrationSpec
             .withHeaders("Authorization" -> "Bearer 12345")
         )
 
-        status(response) shouldBe OK
+        status(response)        shouldBe OK
         contentAsJson(response) shouldBe Json.toJson(expectedBTATileData)
       }
 
@@ -346,7 +369,7 @@ class BTACardEndpointIntegrationSpec
             .withHeaders("Authorization" -> "Bearer 12345")
         )
 
-        status(response) shouldBe OK
+        status(response)        shouldBe OK
         contentAsJson(response) shouldBe Json.toJson(expectedBTATileData)
       }
     }
