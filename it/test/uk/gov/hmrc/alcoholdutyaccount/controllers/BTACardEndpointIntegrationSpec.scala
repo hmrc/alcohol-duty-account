@@ -212,7 +212,7 @@ class BTACardEndpointIntegrationSpec
       "obligation api call fails with an exception" in {
         stubAuthorised()
         stubGetSubscriptionSummary(appaId, approvedSubscriptionSummary)
-        stubObligationsServiceWithFault(appaId)
+        stubObligationsWithFault(appaId)
         stubGetFinancialData(appaId, financialDocument)
 
         val expectedBTATileData = AlcoholDutyCardData(
@@ -271,6 +271,35 @@ class BTACardEndpointIntegrationSpec
         contentAsJson(response) shouldBe Json.toJson(expectedBTATileData)
       }
 
+      "financial data api call fails with an exception" in {
+        stubAuthorised()
+        stubGetSubscriptionSummary(appaId, approvedSubscriptionSummary)
+        stubGetObligations(appaId, obligationDataSingleOpen)
+        stubFinancialDataWithFault(appaId)
+
+        val expectedBTATileData = AlcoholDutyCardData(
+          alcoholDutyReference = appaId,
+          approvalStatus = Some(Approved),
+          hasSubscriptionSummaryError = false,
+          hasReturnsError = false,
+          hasPaymentError = true,
+          returns = Returns(
+            dueReturnExists = Some(false),
+            numberOfOverdueReturns = Some(1),
+            periodKey = Some("24AE")
+          ),
+          payments = Payments()
+        )
+
+        val response = callRoute(
+          FakeRequest("GET", routes.AlcoholDutyController.btaTileData(appaId).url)
+            .withHeaders("Authorization" -> "Bearer 12345")
+        )
+
+        status(response) shouldBe OK
+        contentAsJson(response) shouldBe Json.toJson(expectedBTATileData)
+      }
+
       "both obligation api and financial data api calls fail" in {
         stubAuthorised()
         stubGetSubscriptionSummary(appaId, approvedSubscriptionSummary)
@@ -293,6 +322,31 @@ class BTACardEndpointIntegrationSpec
         )
 
         status(response)        shouldBe OK
+        contentAsJson(response) shouldBe Json.toJson(expectedBTATileData)
+      }
+
+      "both obligation api and financial data api calls fail with exceptions" in {
+        stubAuthorised()
+        stubGetSubscriptionSummary(appaId, approvedSubscriptionSummary)
+        stubObligationsWithFault(appaId)
+        stubFinancialDataWithFault(appaId)
+
+        val expectedBTATileData = AlcoholDutyCardData(
+          alcoholDutyReference = appaId,
+          approvalStatus = Some(Approved),
+          hasSubscriptionSummaryError = false,
+          hasReturnsError = true,
+          hasPaymentError = true,
+          returns = Returns(),
+          payments = Payments()
+        )
+
+        val response = callRoute(
+          FakeRequest("GET", routes.AlcoholDutyController.btaTileData(appaId).url)
+            .withHeaders("Authorization" -> "Bearer 12345")
+        )
+
+        status(response) shouldBe OK
         contentAsJson(response) shouldBe Json.toJson(expectedBTATileData)
       }
     }

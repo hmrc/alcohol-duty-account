@@ -55,7 +55,7 @@ class ObligationDataConnector @Inject() (
       httpClient
         .GET[Either[UpstreamErrorResponse, HttpResponse]](
           url = url,
-          queryParams = getQueryParam(obligationStatusFilter),
+          queryParams = getQueryParams(obligationStatusFilter),
           headers = headers
         )
         .map {
@@ -81,7 +81,7 @@ class ObligationDataConnector @Inject() (
         }
     }
 
-  private def getQueryParam(obligationStatusFilter: Option[ObligationStatus]): Seq[(String, String)] = {
+  private def getQueryParams(obligationStatusFilter: Option[ObligationStatus]): Seq[(String, String)] = {
     // date filter headers should only be added if the status is not defined or is not Open (according to api specs)
     val dateFilterHeaders =
       Seq("from" -> config.obligationDataFilterStartDate, "to" -> LocalDate.now(ZoneId.of("Europe/London")).toString)

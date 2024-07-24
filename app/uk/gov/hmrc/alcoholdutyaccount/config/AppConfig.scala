@@ -32,7 +32,9 @@ class AppConfig @Inject() (config: Configuration, servicesConfig: ServicesConfig
   val obligationDataEnv: String             = getConfStringAndThrowIfNotFound("obligation.env")
   val obligationDataFilterStartDate: String = getConfStringAndThrowIfNotFound("obligation.filterStartDate")
 
-  val financialDataHost: String = servicesConfig.baseUrl("financial")
+  val financialDataHost: String  = servicesConfig.baseUrl("financial")
+  val financialDataToken: String = getConfStringAndThrowIfNotFound("obligation.token")
+  val financialDataEnv: String   = getConfStringAndThrowIfNotFound("obligation.env")
 
   private val subscriptionHost: String                  = servicesConfig.baseUrl("subscription")
   lazy val subscriptionClientId: String                 = getConfStringAndThrowIfNotFound("subscription.clientId")
