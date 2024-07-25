@@ -206,7 +206,7 @@ class AlcoholDutyServiceSpec extends SpecBase with TestData {
               items = Seq(
                 FinancialTransactionItem(
                   subItem = "001",
-                  paymentAmount = 50.00
+                  amount = 50.00
                 )
               )
             ),
@@ -220,7 +220,7 @@ class AlcoholDutyServiceSpec extends SpecBase with TestData {
               items = Seq(
                 FinancialTransactionItem(
                   subItem = "002",
-                  paymentAmount = 50.00
+                  amount = 50.00
                 )
               )
             ),
@@ -234,7 +234,7 @@ class AlcoholDutyServiceSpec extends SpecBase with TestData {
               items = Seq(
                 FinancialTransactionItem(
                   subItem = "003",
-                  paymentAmount = 50.00
+                  amount = 50.00
                 )
               )
             )

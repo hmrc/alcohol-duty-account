@@ -20,7 +20,7 @@ import play.api.libs.json.{Format, Json}
 
 case class FinancialTransactionItem(
   subItem: String,
-  paymentAmount: BigDecimal
+  amount: BigDecimal
 )
 
 object FinancialTransactionItem {

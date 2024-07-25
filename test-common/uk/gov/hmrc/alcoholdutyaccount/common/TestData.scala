@@ -134,7 +134,7 @@ trait TestData extends ModelGenerators {
         items = Seq(
           FinancialTransactionItem(
             subItem = "001",
-            paymentAmount = 50.00
+            amount = 50.00
           )
         )
       ),
@@ -148,7 +148,7 @@ trait TestData extends ModelGenerators {
         items = Seq(
           FinancialTransactionItem(
             subItem = "002",
-            paymentAmount = 100.00
+            amount = 100.00
           )
         )
       )
