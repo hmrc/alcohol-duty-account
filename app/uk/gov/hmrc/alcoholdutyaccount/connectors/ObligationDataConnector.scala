@@ -44,7 +44,7 @@ class ObligationDataConnector @Inject() (
     EitherT {
 
       val headers: Seq[(String, String)] = Seq(
-        HeaderNames.authorisation -> config.obligationDataToken,
+        HeaderNames.authorisation -> s"Bearer ${config.obligationDataToken}",
         "Environment"             -> config.obligationDataEnv
       )
 

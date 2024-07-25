@@ -38,7 +38,7 @@ class FinancialDataConnector @Inject() (config: AppConfig, implicit val httpClie
     OptionT {
 
       val headers: Seq[(String, String)] = Seq(
-        HeaderNames.authorisation -> config.obligationDataToken,
+        HeaderNames.authorisation -> s"Bearer ${config.obligationDataToken}",
         "Environment"             -> config.obligationDataEnv
       )
 

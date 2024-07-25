@@ -202,7 +202,7 @@ class ObligationDetailsIntegrationSpec extends ISpecBase {
     val expectedQueryParamsOpen = Seq("status" -> Open.value)
 
     val expectedHeaders = Seq(
-      HeaderNames.authorisation -> config.obligationDataToken,
+      HeaderNames.authorisation -> s"Bearer ${config.obligationDataToken}",
       "Environment" -> config.obligationDataEnv
     )
 
