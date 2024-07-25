@@ -19,6 +19,8 @@ package uk.gov.hmrc.alcoholdutyaccount.common
 import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock
 import com.github.tomakehurst.wiremock.client.WireMock.{aResponse, getRequestedFor, postRequestedFor, urlEqualTo}
+import com.github.tomakehurst.wiremock.http.Fault
+import com.github.tomakehurst.wiremock.matching.EqualToPattern
 
 trait WireMockHelper {
   val wireMockServer: WireMockServer
@@ -54,11 +56,30 @@ trait WireMockHelper {
       WireMock.get(urlEqualTo(stripToPath(url))).willReturn(aResponse().withStatus(status).withBody(body))
     )
 
+  def stubGetFault(
+    url: String,
+    fault: Fault = Fault.CONNECTION_RESET_BY_PEER
+  ): Unit =
+    wireMockServer.stubFor(
+      WireMock.get(urlEqualTo(stripToPath(url))).willReturn(aResponse().withFault(fault))
+    )
+
   def stubGetWithParameters(url: String, parameters: Seq[(String, String)], status: Int, body: String): Unit =
     wireMockServer.stubFor(
       WireMock
         .get(urlEqualTo(urlWithParameters(url, parameters)))
         .willReturn(aResponse().withStatus(status).withBody(body))
+    )
+
+  def stubGetFaultWithParameters(
+    url: String,
+    parameters: Seq[(String, String)],
+    fault: Fault = Fault.CONNECTION_RESET_BY_PEER
+  ): Unit =
+    wireMockServer.stubFor(
+      WireMock
+        .get(urlEqualTo(urlWithParameters(url, parameters)))
+        .willReturn(aResponse().withFault(fault))
     )
 
   def stubPost(url: String, status: Int, body: String): Unit =
@@ -71,6 +92,18 @@ trait WireMockHelper {
 
   def verifyGetWithParameters(url: String, parameters: Seq[(String, String)]): Unit =
     wireMockServer.verify(getRequestedFor(urlEqualTo(urlWithParameters(url, parameters))))
+
+  def verifyGetWithParametersAndHeaders(
+    url: String,
+    parameters: Seq[(String, String)] = Seq.empty,
+    headers: Seq[(String, String)] = Seq.empty
+  ): Unit = {
+    val requestPattern            = getRequestedFor(urlEqualTo(urlWithParameters(url, parameters)))
+    val requestPatternWithHeaders = headers.foldLeft(requestPattern) { (pattern, header) =>
+      pattern.withHeader(header._1, new EqualToPattern(header._2))
+    }
+    wireMockServer.verify(requestPatternWithHeaders)
+  }
 
   def verifyPost(url: String): Unit =
     wireMockServer.verify(postRequestedFor(urlEqualTo(stripToPath(url))))

@@ -28,7 +28,7 @@ trait ObligationDataStubs extends WireMockHelper with TestData { ISpecBase =>
   private def url(alcoholDutyReference:String):String =
     s"${config.obligationDataHost}/enterprise/obligation-data/${config.idType}/$alcoholDutyReference/${config.regime}"
 
-  val queryParams = Seq("status" -> Open.value)
+  private val queryParams = Seq("status" -> Open.value)
 
   val notFoundErrorMessage = """{
                                |    "code": "NOT_FOUND",
@@ -50,6 +50,9 @@ trait ObligationDataStubs extends WireMockHelper with TestData { ISpecBase =>
   def stubObligationsNotFound(alcoholDutyReference:String): Unit =
     stubGetWithParameters(url(alcoholDutyReference), queryParams, NOT_FOUND, notFoundErrorMessage)
 
-  def stubObligationsError(alcoholDutyReference:String): Unit =
+  def stubObligationsWithFault(alcoholDutyReference: String): Unit =
+    stubGetFaultWithParameters(url(alcoholDutyReference), queryParams)
+
+  def stubObligationsInternalServerError(alcoholDutyReference:String): Unit =
     stubGetWithParameters(url(alcoholDutyReference), queryParams, INTERNAL_SERVER_ERROR, "No obligation data found")
 }

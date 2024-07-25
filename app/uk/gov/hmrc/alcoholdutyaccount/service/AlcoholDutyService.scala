@@ -28,7 +28,7 @@ import uk.gov.hmrc.alcoholdutyaccount.models.subscription.{AdrSubscriptionSummar
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.bootstrap.backend.http.ErrorResponse
 
-import java.time.LocalDate
+import java.time.{LocalDate, ZoneId}
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -49,11 +49,10 @@ class AlcoholDutyService @Inject() (
 
   def getOpenObligations(
     alcoholDutyReference: String,
-    periodKey: String,
-    obligationStatusFilter: Option[ObligationStatus]
+    periodKey: String
   )(implicit hc: HeaderCarrier): EitherT[Future, ErrorResponse, AdrObligationData] =
     obligationDataConnector
-      .getObligationDetails(alcoholDutyReference, obligationStatusFilter)
+      .getObligationDetails(alcoholDutyReference, Some(Open))
       .map(findObligationDetailsForPeriod(_, periodKey))
       .subflatMap {
         case None                    =>
@@ -140,7 +139,7 @@ class AlcoholDutyService @Inject() (
     if (obligationDetails.isEmpty) {
       Returns()
     } else {
-      val now = LocalDate.now()
+      val now = LocalDate.now(ZoneId.of("Europe/London"))
 
       val dueReturnExists: Boolean    =
         obligationDetails.exists(_.inboundCorrespondenceDueDate.isAfter(now.minusDays(1)))

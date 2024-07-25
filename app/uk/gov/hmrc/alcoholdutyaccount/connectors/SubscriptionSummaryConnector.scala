@@ -64,6 +64,12 @@ class SubscriptionSummaryConnector @Inject() (
               }
           case Left(error)     => Left(processError(error, appaId))
         }
+        .recoverWith { case e: Exception =>
+          logger.warn(
+            s"An exception was returned while trying to fetch subscription summary appaId $appaId: ${e.getMessage}"
+          )
+          Future.successful(Left(ErrorResponse(INTERNAL_SERVER_ERROR, e.getMessage)))
+        }
     }
 
   private def processError(error: UpstreamErrorResponse, appaId: String): ErrorResponse =

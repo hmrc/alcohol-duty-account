@@ -35,14 +35,6 @@ class SubscriptionSummaryConnectorSpec extends SpecBase with ScalaFutures with C
       }
     }
 
-    "return INTERNAL_SERVER_ERROR if the data retrieved cannot be parsed" in new SetUp {
-      stubGet(url, OK, "blah")
-      whenReady(connector.getSubscriptionSummary(appaId).value) { result =>
-        result mustBe Left(ErrorResponse(INTERNAL_SERVER_ERROR, "Unable to parse subscription summary success"))
-        verifyGet(url)
-      }
-    }
-
     "return BAD_REQUEST if a bad request received" in new SetUp {
       stubGet(url, BAD_REQUEST, Json.toJson(badRequest).toString)
       whenReady(connector.getSubscriptionSummary(appaId).value) { result =>
@@ -59,11 +51,28 @@ class SubscriptionSummaryConnectorSpec extends SpecBase with ScalaFutures with C
       }
     }
 
-    "return INTERNAL_SERVER_ERROR error if an error other than BAD_REQUEST or NOT_FOUND is returned" in new SetUp {
-      stubGet(url, INTERNAL_SERVER_ERROR, Json.toJson(internalServerError).toString)
-      whenReady(connector.getSubscriptionSummary(appaId).value) { result =>
-        result mustBe Left(ErrorResponse(INTERNAL_SERVER_ERROR, "An error occurred"))
-        verifyGet(url)
+    "return INTERNAL_SERVER_ERROR error" - {
+      "if the data retrieved cannot be parsed" in new SetUp {
+        stubGet(url, OK, "blah")
+        whenReady(connector.getSubscriptionSummary(appaId).value) { result =>
+          result mustBe Left(ErrorResponse(INTERNAL_SERVER_ERROR, "Unable to parse subscription summary success"))
+          verifyGet(url)
+        }
+      }
+
+      "if an error other than BAD_REQUEST or NOT_FOUND is returned" in new SetUp {
+        stubGet(url, INTERNAL_SERVER_ERROR, Json.toJson(internalServerError).toString)
+        whenReady(connector.getSubscriptionSummary(appaId).value) { result =>
+          result mustBe Left(ErrorResponse(INTERNAL_SERVER_ERROR, "An error occurred"))
+          verifyGet(url)
+        }
+      }
+      "if an exception thrown when fetching subscription summary" in new SetUp {
+        stubGetFault(url)
+        whenReady(connector.getSubscriptionSummary(appaId).value) { result =>
+          result mustBe Left(ErrorResponse(INTERNAL_SERVER_ERROR, "Connection reset by peer"))
+          verifyGet(url)
+        }
       }
     }
   }

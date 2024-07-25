@@ -22,15 +22,33 @@ import uk.gov.hmrc.alcoholdutyaccount.common.{TestData, WireMockHelper}
 import uk.gov.hmrc.alcoholdutyaccount.config.AppConfig
 import uk.gov.hmrc.alcoholdutyaccount.models.hods.FinancialTransactionDocument
 
-trait FinancialDataStubs  extends WireMockHelper with TestData { ISpecBase =>
+trait FinancialDataStubs extends WireMockHelper with TestData { ISpecBase =>
   val config: AppConfig
 
-  private def url(alcoholDutyReference:String):String =
+  private val queryParams: Seq[(String, String)] = Seq(
+    "onlyOpenItems"              -> "true",
+    "includeLocks"               -> "false",
+    "calculateAccruedInterest"   -> "false",
+    "customerPaymentInformation" -> "false"
+  )
+
+  private def url(alcoholDutyReference: String): String =
     s"${config.financialDataHost}/enterprise/financial-data/${config.idType}/$alcoholDutyReference/${config.regime}"
 
-  def stubGetFinancialData(alcoholDutyReference:String, financialTransactionDocument: FinancialTransactionDocument): Unit =
-    stubGet(url(alcoholDutyReference), OK, Json.toJson(financialTransactionDocument).toString())
+  def stubGetFinancialData(
+    alcoholDutyReference: String,
+    financialTransactionDocument: FinancialTransactionDocument
+  ): Unit =
+    stubGetWithParameters(
+      url(alcoholDutyReference),
+      queryParams,
+      OK,
+      Json.toJson(financialTransactionDocument).toString()
+    )
 
-  def stubFinancialDataNotFound(alcoholDutyReference:String): Unit =
-    stubGet(url(alcoholDutyReference), NOT_FOUND, "No financial data found")
+  def stubFinancialDataNotFound(alcoholDutyReference: String): Unit =
+    stubGetWithParameters(url(alcoholDutyReference), queryParams, NOT_FOUND, "No financial data found")
+
+  def stubFinancialDataWithFault(alcoholDutyReference: String): Unit =
+    stubGetFaultWithParameters(url(alcoholDutyReference), queryParams)
 }

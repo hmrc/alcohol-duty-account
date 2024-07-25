@@ -27,12 +27,18 @@ class AppConfig @Inject() (config: Configuration, servicesConfig: ServicesConfig
 
   val appName: String = config.get[String]("appName")
 
-  private val subscriptionHost: String = servicesConfig.baseUrl("subscription")
-  val obligationDataHost: String       = servicesConfig.baseUrl("obligation")
-  val financialDataHost: String        = servicesConfig.baseUrl("financial")
+  val obligationDataHost: String            = servicesConfig.baseUrl("obligation")
+  val obligationDataToken: String           = getConfStringAndThrowIfNotFound("obligation.token")
+  val obligationDataEnv: String             = getConfStringAndThrowIfNotFound("obligation.env")
+  val obligationDataFilterStartDate: String = getConfStringAndThrowIfNotFound("obligation.filterStartDate")
 
-  lazy val subscriptionClientId                         = getConfStringAndThrowIfNotFound("subscription.clientId")
-  lazy val subscriptionSecret                           = getConfStringAndThrowIfNotFound("subscription.secret")
+  val financialDataHost: String  = servicesConfig.baseUrl("financial")
+  val financialDataToken: String = getConfStringAndThrowIfNotFound("obligation.token")
+  val financialDataEnv: String   = getConfStringAndThrowIfNotFound("obligation.env")
+
+  private val subscriptionHost: String                  = servicesConfig.baseUrl("subscription")
+  lazy val subscriptionClientId: String                 = getConfStringAndThrowIfNotFound("subscription.clientId")
+  lazy val subscriptionSecret: String                   = getConfStringAndThrowIfNotFound("subscription.secret")
   private lazy val subscriptionGetSubscriptionUrlFormat = new MessageFormat(
     getConfStringAndThrowIfNotFound("subscription.url.subscriptionSummary")
   )

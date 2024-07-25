@@ -34,4 +34,7 @@ trait SubscriptionSummaryStubs extends WireMockHelper with TestData { ISpecBase 
 
   def stubSubscriptionSummaryError(appaId: String): Unit =
     stubGet(url(appaId), INTERNAL_SERVER_ERROR, "An error occurred")
+
+  def stubSubscriptionSummaryWithFault(appaId: String): Unit =
+    stubGetFault(url(appaId))
 }
