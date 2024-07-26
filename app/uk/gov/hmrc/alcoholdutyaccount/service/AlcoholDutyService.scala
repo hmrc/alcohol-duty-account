@@ -128,12 +128,13 @@ class AlcoholDutyService @Inject() (
   )(implicit hc: HeaderCarrier): Future[Option[Returns]] =
     obligationDataConnector
       .getObligationDetails(alcoholDutyReference, Some(Open))
-      .toOption
-      .fold {
-        None: Option[Returns]
-      } { obligationData =>
-        Some(extractReturns(obligationData.obligations.flatMap(_.obligationDetails)))
-      }
+      .fold(
+        {
+          case ErrorResponse(NOT_FOUND, _, _, _) => Some(Returns())
+          case _                                 => None
+        },
+        obligationData => Some(extractReturns(obligationData.obligations.flatMap(_.obligationDetails)))
+      )
 
   private[service] def extractReturns(obligationDetails: Seq[ObligationDetails]): Returns =
     if (obligationDetails.isEmpty) {

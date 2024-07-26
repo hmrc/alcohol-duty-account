@@ -17,6 +17,7 @@
 package uk.gov.hmrc.alcoholdutyaccount.connectors
 
 import cats.data.OptionT
+import play.api.http.Status.NOT_FOUND
 import play.api.{Logger, Logging}
 import uk.gov.hmrc.alcoholdutyaccount.config.AppConfig
 import uk.gov.hmrc.alcoholdutyaccount.models.hods.FinancialTransactionDocument
@@ -70,11 +71,7 @@ class FinancialDataConnector @Inject() (config: AppConfig, implicit val httpClie
                 None
             }
           case Left(error)     =>
-            logger.warn(
-              s"An error was returned while trying to fetch financial transaction document appaId $alcoholDutyReference",
-              error
-            )
-            None
+            processErrors(alcoholDutyReference, error)
         }
         .recoverWith { case e: Exception =>
           logger.warn(
@@ -83,6 +80,19 @@ class FinancialDataConnector @Inject() (config: AppConfig, implicit val httpClie
           )
           Future.successful(None)
         }
+    }
+
+  private def processErrors(alcoholDutyReference: String, error: UpstreamErrorResponse) =
+    error.statusCode match {
+      case NOT_FOUND =>
+        logger.info(s"No financial data found for appaId $alcoholDutyReference")
+        Some(FinancialTransactionDocument(Seq.empty))
+      case _         =>
+        logger.warn(
+          s"An error was returned while trying to fetch financial transaction document appaId $alcoholDutyReference",
+          error
+        )
+        None
     }
 
   private def getQueryParams: Seq[(String, String)] =

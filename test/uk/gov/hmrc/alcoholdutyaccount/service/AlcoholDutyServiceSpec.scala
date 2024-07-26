@@ -412,7 +412,7 @@ class AlcoholDutyServiceSpec extends SpecBase with TestData {
         subscriptionSummaryConnector.getSubscriptionSummary(*)(*) returnsF subscriptionSummary
 
         when(obligationDataConnector.getObligationDetails(*, *)(*))
-          .thenReturn(EitherT.fromEither(Left(ErrorResponse(NOT_FOUND, ""))))
+          .thenReturn(EitherT.fromEither(Left(ErrorResponse(BAD_REQUEST, ""))))
 
         financialDataConnector.getFinancialData(*)(*) returnsF financialDocument
 
@@ -424,6 +424,35 @@ class AlcoholDutyServiceSpec extends SpecBase with TestData {
               false,
               true,
               false,
+              Returns(),
+              Payments(Some(Balance(BigDecimal(100), false, Some("X1234567890"))))
+            )
+          )
+        }
+      }
+
+      "return data with  empty Return object if the obligationDataConnector returns an NOT_FOUND" in new SetUp {
+        val subscriptionSummary = SubscriptionSummary(
+          typeOfAlcoholApprovedFor = Set(Beer),
+          smallciderFlag = false,
+          approvalStatus = hods.Approved,
+          insolvencyFlag = false
+        )
+        subscriptionSummaryConnector.getSubscriptionSummary(*)(*) returnsF subscriptionSummary
+
+        when(obligationDataConnector.getObligationDetails(*, *)(*))
+          .thenReturn(EitherT.fromEither(Left(ErrorResponse(NOT_FOUND, ""))))
+
+        financialDataConnector.getFinancialData(*)(*) returnsF financialDocument
+
+        whenReady(service.getAlcoholDutyCardData(appaId).value) { result =>
+          result mustBe Right(
+            AlcoholDutyCardData(
+              appaId,
+              Some(Approved),
+              hasSubscriptionSummaryError = false,
+              hasReturnsError = false,
+              hasPaymentError = false,
               Returns(),
               Payments(Some(Balance(BigDecimal(100), false, Some("X1234567890"))))
             )
@@ -487,7 +516,7 @@ class AlcoholDutyServiceSpec extends SpecBase with TestData {
           subscriptionSummaryConnector.getSubscriptionSummary(*)(*) returnsF subscriptionSummary
 
           when(obligationDataConnector.getObligationDetails(*, *)(*))
-            .thenReturn(EitherT.fromEither(Left(ErrorResponse(NOT_FOUND, ""))))
+            .thenReturn(EitherT.fromEither(Left(ErrorResponse(BAD_REQUEST, ""))))
 
           financialDataConnector.getFinancialData(*)(*) returns OptionT.none[Future, FinancialTransactionDocument]
 
@@ -496,9 +525,9 @@ class AlcoholDutyServiceSpec extends SpecBase with TestData {
               AlcoholDutyCardData(
                 appaId,
                 Some(Approved),
-                false,
-                true,
-                true,
+                hasSubscriptionSummaryError = false,
+                hasReturnsError = true,
+                hasPaymentError = true,
                 Returns(),
                 Payments()
               )

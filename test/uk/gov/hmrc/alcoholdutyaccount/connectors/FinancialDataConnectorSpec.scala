@@ -43,7 +43,7 @@ class FinancialDataConnectorSpec extends SpecBase with ScalaFutures with Connect
       "if the financial transaction document cannot be found" in new SetUp {
         stubGetWithParameters(url, expectedQueryParams, NOT_FOUND, "")
         whenReady(connector.getFinancialData(appaId).value) { result =>
-          result mustBe None
+          result mustBe Some(emptyFinancialDocument)
           verifyGetWithParameters(url, expectedQueryParams)
         }
       }

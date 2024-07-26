@@ -120,6 +120,10 @@ trait TestData extends ModelGenerators {
     )
   )
 
+  val obligationDataEmpty = ObligationData(
+    obligations = Seq.empty
+  )
+
   val emptyFinancialDocument = FinancialTransactionDocument(financialTransactions = Seq.empty)
 
   val financialDocument = FinancialTransactionDocument(
