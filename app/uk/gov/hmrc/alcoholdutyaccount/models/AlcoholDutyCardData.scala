@@ -52,7 +52,7 @@ object RestrictedCardData {
     approvalStatus = Some(approvalStatus),
     hasSubscriptionSummaryError = false,
     hasReturnsError = false,
-    hasPaymentError = false,
+    hasPaymentsError = false,
     returns = Returns(),
     payments = Payments()
   )
@@ -63,7 +63,7 @@ case class AlcoholDutyCardData(
   approvalStatus: Option[ApprovalStatus],
   hasSubscriptionSummaryError: Boolean,
   hasReturnsError: Boolean,
-  hasPaymentError: Boolean,
+  hasPaymentsError: Boolean,
   returns: Returns,
   payments: Payments
 )

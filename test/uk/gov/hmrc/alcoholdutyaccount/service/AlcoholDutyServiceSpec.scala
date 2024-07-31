@@ -618,7 +618,7 @@ class AlcoholDutyServiceSpec extends SpecBase with TestData {
               Some(Approved),
               hasSubscriptionSummaryError = false,
               hasReturnsError = false,
-              hasPaymentError = false,
+              hasPaymentsError = false,
               Returns(),
               Payments(Some(Balance(BigDecimal(100), false, Some("X1234567890"))))
             )
@@ -626,7 +626,7 @@ class AlcoholDutyServiceSpec extends SpecBase with TestData {
         }
       }
 
-      "return data with hasPaymentError set and empty Payment object if the financialDataConnector returns an error" in new SetUp {
+      "return data with hasPaymentsError set and empty Payment object if the financialDataConnector returns an error" in new SetUp {
         val subscriptionSummary = SubscriptionSummary(
           typeOfAlcoholApprovedFor = Set(Beer),
           smallciderFlag = false,
@@ -671,7 +671,7 @@ class AlcoholDutyServiceSpec extends SpecBase with TestData {
         }
       }
 
-      "return data with hasReturnError and hasPaymentError set and empty Return and Payment objects " +
+      "return data with hasReturnsError and hasPaymentsError set and empty Return and Payment objects " +
         "if both obligationDataConnector and financialDataConnector return errors" in new SetUp {
           val subscriptionSummary = SubscriptionSummary(
             typeOfAlcoholApprovedFor = Set(Beer),
@@ -693,7 +693,7 @@ class AlcoholDutyServiceSpec extends SpecBase with TestData {
                 Some(Approved),
                 hasSubscriptionSummaryError = false,
                 hasReturnsError = true,
-                hasPaymentError = true,
+                hasPaymentsError = true,
                 Returns(),
                 Payments()
               )

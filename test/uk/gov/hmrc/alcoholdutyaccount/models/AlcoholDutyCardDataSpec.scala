@@ -31,7 +31,7 @@ class AlcoholDutyCardDataSpec extends SpecBase {
           approvalStatus = Some(Approved),
           hasSubscriptionSummaryError = false,
           hasReturnsError = false,
-          hasPaymentError = false,
+          hasPaymentsError = false,
           returns = Returns(
             dueReturnExists = Some(true),
             numberOfOverdueReturns = Some(1)
@@ -56,7 +56,7 @@ class AlcoholDutyCardDataSpec extends SpecBase {
             |  "approvalStatus":"Approved",
             |  "hasSubscriptionSummaryError":false,
             |  "hasReturnsError":false,
-            |  "hasPaymentError":false,
+            |  "hasPaymentsError":false,
             |  "returns": {
             |    "dueReturnExists":true,
             |    "numberOfOverdueReturns":1
@@ -80,7 +80,7 @@ class AlcoholDutyCardDataSpec extends SpecBase {
             approvalStatus = Some(approvalStatus),
             hasSubscriptionSummaryError = false,
             hasReturnsError = false,
-            hasPaymentError = false,
+            hasPaymentsError = false,
             returns = Returns(),
             payments = Payments()
           )
@@ -94,7 +94,7 @@ class AlcoholDutyCardDataSpec extends SpecBase {
                |  "approvalStatus":"$approvalStatus",
                |  "hasSubscriptionSummaryError":false,
                |  "hasReturnsError":false,
-               |  "hasPaymentError":false,
+               |  "hasPaymentsError":false,
                |  "returns": {},
                |  "payments": {}
                |}""".stripMargin
@@ -108,7 +108,7 @@ class AlcoholDutyCardDataSpec extends SpecBase {
           approvalStatus = None,
           hasSubscriptionSummaryError = true,
           hasReturnsError = false,
-          hasPaymentError = false,
+          hasPaymentsError = false,
           returns = Returns(),
           payments = Payments()
         )
@@ -121,7 +121,7 @@ class AlcoholDutyCardDataSpec extends SpecBase {
             |  "alcoholDutyReference":"REF01",
             |  "hasSubscriptionSummaryError":true,
             |  "hasReturnsError":false,
-            |  "hasPaymentError":false,
+            |  "hasPaymentsError":false,
             |  "returns": {},
             |  "payments": {}
             |}""".stripMargin
