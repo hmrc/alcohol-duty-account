@@ -176,81 +176,247 @@ class AlcoholDutyServiceSpec extends SpecBase with TestData {
 
     "extractPayments should" - {
       "return an empty Payments object if there are no financial transactions" in new SetUp {
-        val result = service.extractPayments(emptyFinancialDocument)
+        val result = service.extractPayments(financialDocument_Empty)
         result mustBe Payments()
       }
 
-      "return a Payments object with a charging reference for a single financial transaction" in new SetUp {
-        val result = service.extractPayments(financialDocument)
-        result mustBe Payments(
-          balance = Some(
-            Balance(
-              totalPaymentAmount = 100.00,
-              isMultiplePaymentDue = false,
-              chargeReference = Some("X1234567890")
+      "return a Payments object with a charge reference " - {
+        "for a single financial transaction with charge reference" in new SetUp {
+          val financialTransactionDocument = FinancialTransactionDocument(
+            financialTransactions = Seq(
+              financialTransaction
             )
           )
-        )
+          val result                       = service.extractPayments(financialTransactionDocument)
+          result mustBe
+            Payments(
+              balance = Some(
+                Balance(
+                  totalPaymentAmount = 50.00,
+                  isMultiplePaymentDue = false,
+                  chargeReference = Some("X1234567890")
+                )
+              )
+            )
+        }
+
+        "for multiple financial transactions with the same sap document no and same charge reference" in new SetUp {
+          val financialTransactionDocument = FinancialTransactionDocument(
+            financialTransactions = Seq(
+              financialTransaction,
+              financialTransaction
+            )
+          )
+
+          val result = service.extractPayments(financialTransactionDocument)
+          result mustBe
+            Payments(
+              balance = Some(
+                Balance(
+                  totalPaymentAmount = 100.00,
+                  isMultiplePaymentDue = false,
+                  chargeReference = Some("X1234567890")
+                )
+              )
+            )
+        }
       }
 
-      "return a Payments object without a charging reference for multiple financial transactions" in new SetUp {
-        val financialDocumentMultipleTransactions = FinancialTransactionDocument(
-          financialTransactions = Seq(
-            FinancialTransaction(
-              periodKey = "18AA",
-              chargeReference = "XM002610011594",
-              originalAmount = 1000.00,
-              outstandingAmount = 50.00,
-              mainTransaction = "1001",
-              subTransaction = "1111",
-              items = Seq(
-                FinancialTransactionItem(
-                  subItem = "001",
-                  amount = 50.00
+      "return a Payments object without a charge reference and set the isMultiplePaymentDue to true" - {
+        "for a single financial transaction without charge reference" in new SetUp {
+          val financialTransactionDocument = FinancialTransactionDocument(
+            financialTransactions = Seq(
+              financialTransaction.copy(chargeReference = None)
+            )
+          )
+
+          val result = service.extractPayments(financialTransactionDocument)
+          result mustBe
+            Payments(
+              balance = Some(
+                Balance(
+                  totalPaymentAmount = 50.00,
+                  isMultiplePaymentDue = true,
+                  chargeReference = None
                 )
               )
-            ),
-            FinancialTransaction(
-              periodKey = "18AB",
-              chargeReference = "XM002610011595",
-              originalAmount = 2000.00,
-              outstandingAmount = 100.00,
-              mainTransaction = "1001",
-              subTransaction = "1112",
-              items = Seq(
-                FinancialTransactionItem(
-                  subItem = "002",
-                  amount = 50.00
+            )
+        }
+
+        "for multiple financial transactions with the same sap document no but without charge reference" in new SetUp {
+          val financialTransactionDocument = FinancialTransactionDocument(
+            financialTransactions = Seq(
+              financialTransaction.copy(chargeReference = None),
+              financialTransaction.copy(chargeReference = None)
+            )
+          )
+
+          val result =
+            service.extractPayments(financialTransactionDocument)
+
+          result mustBe
+            Payments(
+              balance = Some(
+                Balance(
+                  totalPaymentAmount = 100.00,
+                  isMultiplePaymentDue = true,
+                  chargeReference = None
                 )
               )
-            ),
-            FinancialTransaction(
-              periodKey = "18AA",
-              chargeReference = "XM002610011594",
-              originalAmount = 3000.00,
-              outstandingAmount = 200.00,
-              mainTransaction = "1001",
-              subTransaction = "1112",
-              items = Seq(
-                FinancialTransactionItem(
-                  subItem = "003",
-                  amount = 50.00
+            )
+        }
+
+        "for multiple financial transactions with the same sap document no but some without charge reference (shouldn't happen in real life)" in new SetUp {
+          val financialTransactionDocument = FinancialTransactionDocument(
+            financialTransactions = Seq(
+              financialTransaction,
+              financialTransaction.copy(chargeReference = None)
+            )
+          )
+
+          val result =
+            service.extractPayments(financialTransactionDocument)
+
+          result mustBe
+            Payments(
+              balance = Some(
+                Balance(
+                  totalPaymentAmount = 100.00,
+                  isMultiplePaymentDue = true,
+                  chargeReference = None
+                )
+              )
+            )
+        }
+
+        "for multiple financial transactions with different SAP numbers and and different charge references" in new SetUp {
+          val financialDocumentMultipleTransactions = FinancialTransactionDocument(
+            financialTransactions = Seq(
+              FinancialTransaction(
+                sapDocumentNumber = "123456",
+                periodKey = Some("18AA"),
+                chargeReference = Some("XM002610011594"),
+                originalAmount = 1000.00,
+                outstandingAmount = Some(50.00),
+                mainTransaction = "1001",
+                subTransaction = "1111",
+                items = Seq(
+                  FinancialTransactionItem(
+                    subItem = "001",
+                    amount = 50.00
+                  )
+                )
+              ),
+              FinancialTransaction(
+                sapDocumentNumber = "123457",
+                periodKey = Some("18AB"),
+                chargeReference = Some("XM002610011595"),
+                originalAmount = 2000.00,
+                outstandingAmount = Some(100.00),
+                mainTransaction = "1001",
+                subTransaction = "1112",
+                items = Seq(
+                  FinancialTransactionItem(
+                    subItem = "002",
+                    amount = 50.00
+                  )
+                )
+              ),
+              FinancialTransaction(
+                sapDocumentNumber = "123456",
+                periodKey = Some("18AA"),
+                chargeReference = Some("XM002610011594"),
+                originalAmount = 3000.00,
+                outstandingAmount = Some(200.00),
+                mainTransaction = "1001",
+                subTransaction = "1112",
+                items = Seq(
+                  FinancialTransactionItem(
+                    subItem = "003",
+                    amount = 50.00
+                  )
                 )
               )
             )
           )
-        )
-        val result                                = service.extractPayments(financialDocumentMultipleTransactions)
-        result mustBe Payments(
-          balance = Some(
-            Balance(
-              totalPaymentAmount = 350.00,
-              isMultiplePaymentDue = true,
-              chargeReference = None
+          val result                                = service.extractPayments(financialDocumentMultipleTransactions)
+          result mustBe
+            Payments(
+              balance = Some(
+                Balance(
+                  totalPaymentAmount = 350.00,
+                  isMultiplePaymentDue = true,
+                  chargeReference = None
+                )
+              )
             )
-          )
-        )
+        }
+
+        "for multiple financial transactions with different SAP numbers and and different charge references " +
+          "with some of them not having charge reference" in new SetUp {
+            val financialDocumentMultipleTransactions = FinancialTransactionDocument(
+              financialTransactions = Seq(
+                FinancialTransaction(
+                  sapDocumentNumber = "123456",
+                  periodKey = Some("18AA"),
+                  chargeReference = Some("XM002610011594"),
+                  originalAmount = 1000.00,
+                  outstandingAmount = Some(50.00),
+                  mainTransaction = "1001",
+                  subTransaction = "1111",
+                  items = Seq(
+                    FinancialTransactionItem(
+                      subItem = "001",
+                      amount = 50.00
+                    )
+                  )
+                ),
+                FinancialTransaction(
+                  sapDocumentNumber = "123457",
+                  periodKey = Some("18AB"),
+                  chargeReference = None,
+                  originalAmount = 2000.00,
+                  outstandingAmount = Some(100.00),
+                  mainTransaction = "1001",
+                  subTransaction = "1112",
+                  items = Seq(
+                    FinancialTransactionItem(
+                      subItem = "002",
+                      amount = 50.00
+                    )
+                  )
+                ),
+                FinancialTransaction(
+                  sapDocumentNumber = "123456",
+                  periodKey = Some("18AA"),
+                  chargeReference = Some("XM002610011594"),
+                  originalAmount = 3000.00,
+                  outstandingAmount = Some(200.00),
+                  mainTransaction = "1001",
+                  subTransaction = "1112",
+                  items = Seq(
+                    FinancialTransactionItem(
+                      subItem = "003",
+                      amount = 50.00
+                    )
+                  )
+                )
+              )
+            )
+            val result                                = service.extractPayments(financialDocumentMultipleTransactions)
+            result mustBe
+              Payments(
+                balance = Some(
+                  Balance(
+                    totalPaymentAmount = 350.00,
+                    isMultiplePaymentDue = true,
+                    chargeReference = None
+                  )
+                )
+              )
+          }
       }
+
     }
 
     "getReturnDetails should" - {
@@ -289,7 +455,7 @@ class AlcoholDutyServiceSpec extends SpecBase with TestData {
       }
 
       "return a empty Payments object if the financialDataConnector returns an empty Document" in new SetUp {
-        financialDataConnector.getFinancialData(*)(*) returnsF emptyFinancialDocument
+        financialDataConnector.getFinancialData(*)(*) returnsF financialDocument_Empty
 
         service.getPaymentInformation(appaId).onComplete { result =>
           result mustBe Success(Some(Payments()))
@@ -327,7 +493,7 @@ class AlcoholDutyServiceSpec extends SpecBase with TestData {
           when(obligationDataConnector.getObligationDetails(*, *)(*))
             .thenReturn(EitherT.fromEither(Right(obligationDataOneDue)))
 
-          financialDataConnector.getFinancialData(*)(*) returnsF financialDocument
+          financialDataConnector.getFinancialData(*)(*) returnsF financialDocumentWithSingleSapDocumentNo
 
           whenReady(service.getAlcoholDutyCardData(appaId).value) { result =>
             result mustBe Right(
@@ -371,7 +537,7 @@ class AlcoholDutyServiceSpec extends SpecBase with TestData {
           when(obligationDataConnector.getObligationDetails(*, *)(*))
             .thenReturn(EitherT.fromEither(Right(obligationDataOneDue)))
 
-          financialDataConnector.getFinancialData(*)(*) returnsF financialDocument
+          financialDataConnector.getFinancialData(*)(*) returnsF financialDocumentWithSingleSapDocumentNo
 
           whenReady(service.getAlcoholDutyCardData(appaId).value) { result =>
             result mustBe Right(
@@ -414,7 +580,7 @@ class AlcoholDutyServiceSpec extends SpecBase with TestData {
         when(obligationDataConnector.getObligationDetails(*, *)(*))
           .thenReturn(EitherT.fromEither(Left(ErrorResponse(BAD_REQUEST, ""))))
 
-        financialDataConnector.getFinancialData(*)(*) returnsF financialDocument
+        financialDataConnector.getFinancialData(*)(*) returnsF financialDocumentWithSingleSapDocumentNo
 
         whenReady(service.getAlcoholDutyCardData(appaId).value) { result =>
           result mustBe Right(
@@ -443,7 +609,7 @@ class AlcoholDutyServiceSpec extends SpecBase with TestData {
         when(obligationDataConnector.getObligationDetails(*, *)(*))
           .thenReturn(EitherT.fromEither(Left(ErrorResponse(NOT_FOUND, ""))))
 
-        financialDataConnector.getFinancialData(*)(*) returnsF financialDocument
+        financialDataConnector.getFinancialData(*)(*) returnsF financialDocumentWithSingleSapDocumentNo
 
         whenReady(service.getAlcoholDutyCardData(appaId).value) { result =>
           result mustBe Right(

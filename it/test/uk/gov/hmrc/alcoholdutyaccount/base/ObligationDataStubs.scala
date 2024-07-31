@@ -36,14 +36,6 @@ trait ObligationDataStubs extends WireMockHelper with TestData { ISpecBase =>
                                |}
                                |""".stripMargin
 
-  private val otherErrorMessage: String =
-    """
-        |{
-        |    "code": "SERVICE_ERROR",
-        |    "reason": "An error occurred"
-        |}
-        |""".stripMargin
-
   private val badRequestErrorMessage: String =
     """
       |{

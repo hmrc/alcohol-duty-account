@@ -34,7 +34,7 @@ class BTACardEndpointIntegrationSpec
         stubAuthorised()
         stubGetSubscriptionSummary(appaId, approvedSubscriptionSummary)
         stubGetObligations(appaId, obligationDataSingleOpen)
-        stubGetFinancialData(appaId, financialDocument)
+        stubGetFinancialData(appaId, financialDocumentWithSingleSapDocumentNo)
 
         val expectedBTATileData = AlcoholDutyCardData(
           alcoholDutyReference = appaId,
@@ -96,7 +96,7 @@ class BTACardEndpointIntegrationSpec
         stubAuthorised()
         stubGetSubscriptionSummary(appaId, insolventSubscriptionSummary)
         stubGetObligations(appaId, obligationDataSingleOpen)
-        stubGetFinancialData(appaId, financialDocument)
+        stubGetFinancialData(appaId, financialDocumentWithSingleSapDocumentNo)
 
         val expectedBTATileData = AlcoholDutyCardData(
           alcoholDutyReference = appaId,
@@ -228,7 +228,7 @@ class BTACardEndpointIntegrationSpec
         stubAuthorised()
         stubGetSubscriptionSummary(appaId, approvedSubscriptionSummary)
         stubObligationsBadRequest(appaId)
-        stubGetFinancialData(appaId, financialDocument)
+        stubGetFinancialData(appaId, financialDocumentWithSingleSapDocumentNo)
 
         val expectedBTATileData = AlcoholDutyCardData(
           alcoholDutyReference = appaId,
@@ -261,7 +261,7 @@ class BTACardEndpointIntegrationSpec
         stubAuthorised()
         stubGetSubscriptionSummary(appaId, approvedSubscriptionSummary)
         stubObligationsMultipleErrorsBadRequest(appaId)
-        stubGetFinancialData(appaId, financialDocument)
+        stubGetFinancialData(appaId, financialDocumentWithSingleSapDocumentNo)
 
         val expectedBTATileData = AlcoholDutyCardData(
           alcoholDutyReference = appaId,
@@ -294,7 +294,7 @@ class BTACardEndpointIntegrationSpec
         stubAuthorised()
         stubGetSubscriptionSummary(appaId, approvedSubscriptionSummary)
         stubObligationsInternalServerError(appaId)
-        stubGetFinancialData(appaId, financialDocument)
+        stubGetFinancialData(appaId, financialDocumentWithSingleSapDocumentNo)
 
         val expectedBTATileData = AlcoholDutyCardData(
           alcoholDutyReference = appaId,
@@ -327,7 +327,7 @@ class BTACardEndpointIntegrationSpec
         stubAuthorised()
         stubGetSubscriptionSummary(appaId, approvedSubscriptionSummary)
         stubObligationsWithFault(appaId)
-        stubGetFinancialData(appaId, financialDocument)
+        stubGetFinancialData(appaId, financialDocumentWithSingleSapDocumentNo)
 
         val expectedBTATileData = AlcoholDutyCardData(
           alcoholDutyReference = appaId,
