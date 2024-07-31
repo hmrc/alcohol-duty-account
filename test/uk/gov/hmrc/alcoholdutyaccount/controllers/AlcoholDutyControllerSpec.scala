@@ -139,7 +139,7 @@ class AlcoholDutyControllerSpec extends SpecBase {
       approvalStatus = Some(Approved),
       hasSubscriptionSummaryError = false,
       hasReturnsError = false,
-      hasPaymentError = false,
+      hasPaymentsError = false,
       returns = Returns(dueReturnExists = Some(true), numberOfOverdueReturns = Some(0)),
       payments =
         Payments(balance = Some(Balance(isMultiplePaymentDue = true, totalPaymentAmount = 2, chargeReference = None)))

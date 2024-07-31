@@ -41,7 +41,7 @@ class BTACardEndpointIntegrationSpec
           approvalStatus = Some(Approved),
           hasSubscriptionSummaryError = false,
           hasReturnsError = false,
-          hasPaymentError = false,
+          hasPaymentsError = false,
           returns = Returns(
             dueReturnExists = Some(false),
             numberOfOverdueReturns = Some(1),
@@ -78,7 +78,7 @@ class BTACardEndpointIntegrationSpec
           approvalStatus = Some(Approved),
           hasSubscriptionSummaryError = false,
           hasReturnsError = false,
-          hasPaymentError = false,
+          hasPaymentsError = false,
           returns = Returns(),
           payments = Payments()
         )
@@ -103,7 +103,7 @@ class BTACardEndpointIntegrationSpec
           approvalStatus = Some(Insolvent),
           hasSubscriptionSummaryError = false,
           hasReturnsError = false,
-          hasPaymentError = false,
+          hasPaymentsError = false,
           returns = Returns(
             dueReturnExists = Some(false),
             numberOfOverdueReturns = Some(1),
@@ -187,7 +187,7 @@ class BTACardEndpointIntegrationSpec
           approvalStatus = None,
           hasSubscriptionSummaryError = true,
           hasReturnsError = false,
-          hasPaymentError = false,
+          hasPaymentsError = false,
           returns = Returns(),
           payments = Payments()
         )
@@ -210,7 +210,7 @@ class BTACardEndpointIntegrationSpec
           approvalStatus = None,
           hasSubscriptionSummaryError = true,
           hasReturnsError = false,
-          hasPaymentError = false,
+          hasPaymentsError = false,
           returns = Returns(),
           payments = Payments()
         )
@@ -235,7 +235,7 @@ class BTACardEndpointIntegrationSpec
           approvalStatus = Some(Approved),
           hasSubscriptionSummaryError = false,
           hasReturnsError = true,
-          hasPaymentError = false,
+          hasPaymentsError = false,
           returns = Returns(),
           payments = Payments(
             balance = Some(
@@ -268,7 +268,7 @@ class BTACardEndpointIntegrationSpec
           approvalStatus = Some(Approved),
           hasSubscriptionSummaryError = false,
           hasReturnsError = true,
-          hasPaymentError = false,
+          hasPaymentsError = false,
           returns = Returns(),
           payments = Payments(
             balance = Some(
@@ -301,7 +301,7 @@ class BTACardEndpointIntegrationSpec
           approvalStatus = Some(Approved),
           hasSubscriptionSummaryError = false,
           hasReturnsError = true,
-          hasPaymentError = false,
+          hasPaymentsError = false,
           returns = Returns(),
           payments = Payments(
             balance = Some(
@@ -334,7 +334,7 @@ class BTACardEndpointIntegrationSpec
           approvalStatus = Some(Approved),
           hasSubscriptionSummaryError = false,
           hasReturnsError = true,
-          hasPaymentError = false,
+          hasPaymentsError = false,
           returns = Returns(),
           payments = Payments(
             balance = Some(
@@ -367,7 +367,7 @@ class BTACardEndpointIntegrationSpec
           approvalStatus = Some(Approved),
           hasSubscriptionSummaryError = false,
           hasReturnsError = false,
-          hasPaymentError = true,
+          hasPaymentsError = true,
           returns = Returns(
             dueReturnExists = Some(false),
             numberOfOverdueReturns = Some(1),
@@ -396,7 +396,7 @@ class BTACardEndpointIntegrationSpec
           approvalStatus = Some(Approved),
           hasSubscriptionSummaryError = false,
           hasReturnsError = false,
-          hasPaymentError = true,
+          hasPaymentsError = true,
           returns = Returns(
             dueReturnExists = Some(false),
             numberOfOverdueReturns = Some(1),
@@ -425,7 +425,7 @@ class BTACardEndpointIntegrationSpec
           approvalStatus = Some(Approved),
           hasSubscriptionSummaryError = false,
           hasReturnsError = false,
-          hasPaymentError = true,
+          hasPaymentsError = true,
           returns = Returns(
             dueReturnExists = Some(false),
             numberOfOverdueReturns = Some(1),
@@ -454,7 +454,7 @@ class BTACardEndpointIntegrationSpec
           approvalStatus = Some(Approved),
           hasSubscriptionSummaryError = false,
           hasReturnsError = false,
-          hasPaymentError = true,
+          hasPaymentsError = true,
           returns = Returns(
             dueReturnExists = Some(false),
             numberOfOverdueReturns = Some(1),
@@ -483,7 +483,7 @@ class BTACardEndpointIntegrationSpec
           approvalStatus = Some(Approved),
           hasSubscriptionSummaryError = false,
           hasReturnsError = true,
-          hasPaymentError = true,
+          hasPaymentsError = true,
           returns = Returns(),
           payments = Payments()
         )
@@ -508,7 +508,7 @@ class BTACardEndpointIntegrationSpec
           approvalStatus = Some(Approved),
           hasSubscriptionSummaryError = false,
           hasReturnsError = true,
-          hasPaymentError = true,
+          hasPaymentsError = true,
           returns = Returns(),
           payments = Payments()
         )

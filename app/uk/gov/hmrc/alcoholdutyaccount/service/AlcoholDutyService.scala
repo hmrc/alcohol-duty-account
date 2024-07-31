@@ -98,7 +98,7 @@ class AlcoholDutyService @Inject() (
           approvalStatus = None,
           hasSubscriptionSummaryError = true,
           hasReturnsError = false,
-          hasPaymentError = false,
+          hasPaymentsError = false,
           returns = Returns(),
           payments = Payments()
         )
@@ -117,7 +117,7 @@ class AlcoholDutyService @Inject() (
       approvalStatus = Some(approvalStatus),
       hasSubscriptionSummaryError = false,
       hasReturnsError = obData.isEmpty,
-      hasPaymentError = fData.isEmpty,
+      hasPaymentsError = fData.isEmpty,
       returns = obData.getOrElse(Returns()),
       payments = fData.getOrElse(Payments())
     ).asRight
