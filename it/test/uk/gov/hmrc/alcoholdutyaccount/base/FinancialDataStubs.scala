@@ -16,7 +16,7 @@
 
 package uk.gov.hmrc.alcoholdutyaccount.base
 
-import play.api.http.Status.{NOT_FOUND, OK}
+import play.api.http.Status.{BAD_REQUEST, NOT_FOUND, OK, UNPROCESSABLE_ENTITY}
 import play.api.libs.json.Json
 import uk.gov.hmrc.alcoholdutyaccount.common.{TestData, WireMockHelper}
 import uk.gov.hmrc.alcoholdutyaccount.config.AppConfig
@@ -31,6 +31,48 @@ trait FinancialDataStubs extends WireMockHelper with TestData { ISpecBase =>
     "calculateAccruedInterest"   -> "false",
     "customerPaymentInformation" -> "false"
   )
+
+  private val notFoundErrorMessage: String =
+    """
+      |{
+      |     "code": "NOT_FOUND",
+      |     "reason": "The remote endpoint has indicated that no data can be found."
+      |}
+      |""".stripMargin
+
+
+  private val unprocessableEntityErrorMessage: String =
+    """
+      |{
+      |     "code": "INVALID_DATA",
+      |     "reason": "The remote endpoint has indicated that the request contains invalid data"
+      |}
+      |""".stripMargin
+
+  private val badRequestErrorMessage: String =
+    """
+      |{
+      |     "code": "INVALID_ONLYOPENITEMS",
+      |     "reason": "Submission has not passed validation. Invalid parameter onlyOpenItems."
+      |}
+      |""".stripMargin
+
+  private val multipleBadRequestErrorMessages: String =
+    """
+      |{
+      |     "failures": [
+      |       {
+      |         "code": "INVALID_DATEFROM",
+      |         "reason": "Submission has not passed validation. Invalid parameter dateFrom."
+      |       },
+      |       {
+      |         "code": "INVALID_DATETO",
+      |         "reason": "Submission has not passed validation. Invalid parameter dateTo."
+      |       }
+      |     ]
+      |}
+      |""".stripMargin
+
 
   private def url(alcoholDutyReference: String): String =
     s"${config.financialDataHost}/enterprise/financial-data/${config.idType}/$alcoholDutyReference/${config.regime}"
@@ -47,7 +89,16 @@ trait FinancialDataStubs extends WireMockHelper with TestData { ISpecBase =>
     )
 
   def stubFinancialDataNotFound(alcoholDutyReference: String): Unit =
-    stubGetWithParameters(url(alcoholDutyReference), queryParams, NOT_FOUND, "No financial data found")
+    stubGetWithParameters(url(alcoholDutyReference), queryParams, NOT_FOUND, notFoundErrorMessage)
+
+  def stubFinancialDataUnprocessableEntity(alcoholDutyReference: String): Unit =
+    stubGetWithParameters(url(alcoholDutyReference), queryParams, UNPROCESSABLE_ENTITY, unprocessableEntityErrorMessage)
+
+  def stubFinancialDataBadRequest(alcoholDutyReference: String): Unit =
+    stubGetWithParameters(url(alcoholDutyReference), queryParams, BAD_REQUEST, badRequestErrorMessage)
+
+  def stubFinancialDataMultipleErrorsBadRequest(alcoholDutyReference: String): Unit =
+    stubGetWithParameters(url(alcoholDutyReference), queryParams, BAD_REQUEST, multipleBadRequestErrorMessages)
 
   def stubFinancialDataWithFault(alcoholDutyReference: String): Unit =
     stubGetFaultWithParameters(url(alcoholDutyReference), queryParams)

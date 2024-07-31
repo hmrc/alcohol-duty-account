@@ -120,35 +120,111 @@ trait TestData extends ModelGenerators {
     )
   )
 
-  val emptyFinancialDocument = FinancialTransactionDocument(financialTransactions = Seq.empty)
+  val obligationDataEmpty = ObligationData(
+    obligations = Seq.empty
+  )
 
-  val financialDocument = FinancialTransactionDocument(
+  val financialTransaction    = FinancialTransaction(
+    sapDocumentNumber = "123456",
+    periodKey = Some("18AA"),
+    chargeReference = Some("X1234567890"),
+    originalAmount = 1000.00,
+    outstandingAmount = Some(50.00),
+    mainTransaction = "1001",
+    subTransaction = "1111",
+    items = Seq(
+      FinancialTransactionItem(
+        subItem = "001",
+        amount = 50.00
+      )
+    )
+  )
+  val financialDocument_Empty = FinancialTransactionDocument(financialTransactions = Seq.empty)
+
+  val financialDocumentWithSingleSapDocumentNo = FinancialTransactionDocument(
     financialTransactions = Seq(
       FinancialTransaction(
-        periodKey = "18AA",
-        chargeReference = "X1234567890",
+        sapDocumentNumber = "123456",
+        periodKey = Some("18AA"),
+        chargeReference = Some("X1234567890"),
         originalAmount = 1000.00,
-        outstandingAmount = 50.00,
+        outstandingAmount = Some(50.00),
         mainTransaction = "1001",
         subTransaction = "1111",
         items = Seq(
           FinancialTransactionItem(
             subItem = "001",
-            paymentAmount = 50.00
+            amount = 50.00
           )
         )
       ),
       FinancialTransaction(
-        periodKey = "18AA",
-        chargeReference = "X1234567890",
+        sapDocumentNumber = "123456",
+        periodKey = Some("18AA"),
+        chargeReference = Some("X1234567890"),
         originalAmount = 1000.00,
-        outstandingAmount = 50.00,
+        outstandingAmount = Some(50.00),
         mainTransaction = "1001",
         subTransaction = "2222",
         items = Seq(
           FinancialTransactionItem(
             subItem = "002",
-            paymentAmount = 100.00
+            amount = 100.00
+          )
+        )
+      )
+    )
+  )
+
+  val financialDocumentWithMultipleSapDocumentNumbers = FinancialTransactionDocument(
+    financialTransactions = Seq(
+      FinancialTransaction(
+        sapDocumentNumber = "123456",
+        periodKey = Some("18AA"),
+        chargeReference = Some("X1234567890"),
+        originalAmount = 1000.00,
+        outstandingAmount = Some(50.00),
+        mainTransaction = "1001",
+        subTransaction = "1111",
+        items = Seq(
+          FinancialTransactionItem(
+            subItem = "001",
+            amount = 50.00
+          )
+        )
+      ),
+      FinancialTransaction(
+        sapDocumentNumber = "123457",
+        periodKey = Some("18AA"),
+        chargeReference = Some("X1234567891"),
+        originalAmount = 1000.00,
+        outstandingAmount = Some(50.00),
+        mainTransaction = "1001",
+        subTransaction = "2222",
+        items = Seq(
+          FinancialTransactionItem(
+            subItem = "002",
+            amount = 100.00
+          )
+        )
+      )
+    )
+  )
+
+  val financialDocumentMinimal = FinancialTransactionDocument(
+    financialTransactions = Seq(
+      FinancialTransaction(
+        sapDocumentNumber = "123456",
+        periodKey = None,
+        chargeReference = None,
+        originalAmount = 1000.00,
+        outstandingAmount = Some(50.00),
+        mainTransaction = "1001",
+        subTransaction = "2222",
+        items = Seq(
+          FinancialTransactionItem(
+            subItem = "001",
+            amount = 1000.00
           )
         )
       )

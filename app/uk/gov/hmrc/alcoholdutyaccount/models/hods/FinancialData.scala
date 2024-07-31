@@ -20,7 +20,7 @@ import play.api.libs.json.{Format, Json}
 
 case class FinancialTransactionItem(
   subItem: String,
-  paymentAmount: BigDecimal
+  amount: BigDecimal
 )
 
 object FinancialTransactionItem {
@@ -28,12 +28,13 @@ object FinancialTransactionItem {
 }
 
 case class FinancialTransaction(
-  periodKey: String,
-  chargeReference: String,
+  sapDocumentNumber: String,
+  periodKey: Option[String],
+  chargeReference: Option[String],
+  originalAmount: BigDecimal,
   mainTransaction: String,
   subTransaction: String,
-  originalAmount: BigDecimal,
-  outstandingAmount: BigDecimal,
+  outstandingAmount: Option[BigDecimal],
   items: Seq[FinancialTransactionItem]
 )
 

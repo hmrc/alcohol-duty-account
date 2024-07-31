@@ -27,7 +27,7 @@ import uk.gov.hmrc.play.bootstrap.backend.http.ErrorResponse
 import java.time.{LocalDate, ZoneId}
 import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.Try
+import scala.util.{Failure, Success, Try}
 
 class ObligationDataConnector @Inject() (
   config: AppConfig,
@@ -62,20 +62,21 @@ class ObligationDataConnector @Inject() (
           case Right(response) =>
             Try {
               response.json
-                .asOpt[ObligationData]
-            }.toOption.flatten
-              .fold[Either[ErrorResponse, ObligationData]] {
-                logger.warn(s"Unable to parse obligation data for appaId $alcoholDutyReference")
-                Left(ErrorResponse(INTERNAL_SERVER_ERROR, "Unable to parse obligation data"))
-              } {
+                .as[ObligationData]
+            } match {
+              case Success(doc)       =>
                 logger.info(s"Retrieved open obligation data for appaId $alcoholDutyReference")
-                Right(_)
-              }
+                Right(doc)
+              case Failure(exception) =>
+                logger.warn(s"Unable to parse obligation data for appaId $alcoholDutyReference", exception)
+                Left(ErrorResponse(INTERNAL_SERVER_ERROR, "Unable to parse obligation data"))
+            }
           case Left(error)     => Left(processError(error, alcoholDutyReference))
         }
         .recoverWith { case e: Exception =>
           logger.warn(
-            s"An exception was returned while trying to fetch obligation data appaId $alcoholDutyReference: ${e.getMessage}"
+            s"An exception was returned while trying to fetch obligation data appaId $alcoholDutyReference",
+            e
           )
           Future.successful(Left(ErrorResponse(INTERNAL_SERVER_ERROR, e.getMessage)))
         }
@@ -99,7 +100,8 @@ class ObligationDataConnector @Inject() (
         ErrorResponse(NOT_FOUND, "Obligation data not found")
       case _         =>
         logger.warn(
-          s"An error was returned while trying to fetch obligation data appaId $alcoholDutyReference: ${error.message}"
+          s"An error was returned while trying to fetch obligation data appaId $alcoholDutyReference",
+          error
         )
         ErrorResponse(INTERNAL_SERVER_ERROR, "An error occurred")
     }

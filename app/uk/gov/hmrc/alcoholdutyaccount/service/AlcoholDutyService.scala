@@ -23,7 +23,7 @@ import play.api.http.Status.NOT_FOUND
 import uk.gov.hmrc.alcoholdutyaccount.connectors.{FinancialDataConnector, ObligationDataConnector, SubscriptionSummaryConnector}
 import uk.gov.hmrc.alcoholdutyaccount.models.subscription.ApprovalStatus.{DeRegistered, Revoked, SmallCiderProducer}
 import uk.gov.hmrc.alcoholdutyaccount.models._
-import uk.gov.hmrc.alcoholdutyaccount.models.hods.{FinancialTransactionDocument, ObligationData, ObligationDetails, ObligationStatus, Open, SubscriptionSummary}
+import uk.gov.hmrc.alcoholdutyaccount.models.hods.{FinancialTransaction, FinancialTransactionDocument, ObligationData, ObligationDetails, ObligationStatus, Open, SubscriptionSummary}
 import uk.gov.hmrc.alcoholdutyaccount.models.subscription.{AdrSubscriptionSummary, ApprovalStatus}
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.bootstrap.backend.http.ErrorResponse
@@ -128,12 +128,13 @@ class AlcoholDutyService @Inject() (
   )(implicit hc: HeaderCarrier): Future[Option[Returns]] =
     obligationDataConnector
       .getObligationDetails(alcoholDutyReference, Some(Open))
-      .toOption
-      .fold {
-        None: Option[Returns]
-      } { obligationData =>
-        Some(extractReturns(obligationData.obligations.flatMap(_.obligationDetails)))
-      }
+      .fold(
+        {
+          case ErrorResponse(NOT_FOUND, _, _, _) => Some(Returns())
+          case _                                 => None
+        },
+        obligationData => Some(extractReturns(obligationData.obligations.flatMap(_.obligationDetails)))
+      )
 
   private[service] def extractReturns(obligationDetails: Seq[ObligationDetails]): Returns =
     if (obligationDetails.isEmpty) {
@@ -165,25 +166,42 @@ class AlcoholDutyService @Inject() (
       }
 
   private[service] def extractPayments(financialDocument: FinancialTransactionDocument): Payments = {
-    val payments = financialDocument.financialTransactions.groupBy(_.chargeReference)
-    payments.size match {
+    val transactionsBySapDocumentNumber: Map[String, Seq[FinancialTransaction]] =
+      financialDocument.financialTransactions.groupBy(_.sapDocumentNumber)
+    val totalPaymentAmount: BigDecimal                                          = financialDocument.financialTransactions.flatMap(_.outstandingAmount).sum
+
+    transactionsBySapDocumentNumber.size match {
       case 0 => Payments()
       case 1 =>
-        val (chargingReference, transaction) = payments.head
+        val transactions: Seq[FinancialTransaction] = transactionsBySapDocumentNumber.head._2
+
+        val chargeReferences: Seq[Option[String]] = transactions.map(_.chargeReference).distinct
+
+        /*
+            If there is one group of transactions by sapDocumentNumber but those group of transactions don't have a charge reference or the same charge references,
+            we still return isMultiplePaymentDue = true because we'd want the user to pay with appaid in that case (as there is no charge ref found for payment)
+         */
+        val (chargeReferenceToUse: Option[String], isMultiplePaymentsDue: Boolean) =
+          if (chargeReferences.size == 1 && chargeReferences.head.isDefined) {
+            (chargeReferences.head, false)
+          } else {
+            (None, true)
+          }
         Payments(
           balance = Some(
             Balance(
-              totalPaymentAmount = transaction.map(_.outstandingAmount).sum,
-              isMultiplePaymentDue = false,
-              chargeReference = Some(chargingReference)
+              totalPaymentAmount = totalPaymentAmount,
+              isMultiplePaymentDue = isMultiplePaymentsDue,
+              chargeReference = chargeReferenceToUse
             )
           )
         )
+
       case _ =>
         Payments(
           balance = Some(
             Balance(
-              totalPaymentAmount = financialDocument.financialTransactions.map(_.outstandingAmount).sum,
+              totalPaymentAmount = totalPaymentAmount,
               isMultiplePaymentDue = true,
               chargeReference = None
             )

@@ -27,7 +27,7 @@ import uk.gov.hmrc.play.bootstrap.backend.http.ErrorResponse
 
 import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.Try
+import scala.util.{Failure, Success, Try}
 
 class SubscriptionSummaryConnector @Inject() (
   config: AppConfig,
@@ -53,20 +53,21 @@ class SubscriptionSummaryConnector @Inject() (
           case Right(response) =>
             Try {
               response.json
-                .asOpt[SubscriptionSummarySuccess]
-            }.toOption.flatten
-              .fold[Either[ErrorResponse, SubscriptionSummary]] {
-                logger.warn(s"Unable to parse subscription summary success for appaId $appaId")
-                Left(ErrorResponse(INTERNAL_SERVER_ERROR, "Unable to parse subscription summary success"))
-              } { subscriptionSummarySuccess =>
+                .as[SubscriptionSummarySuccess]
+            } match {
+              case Success(doc)       =>
                 logger.info(s"Retrieved subscription summary success for appaId $appaId")
-                Right(subscriptionSummarySuccess.success)
-              }
+                Right(doc.success)
+              case Failure(exception) =>
+                logger.warn(s"Unable to parse subscription summary success for appaId $appaId", exception)
+                Left(ErrorResponse(INTERNAL_SERVER_ERROR, "Unable to parse subscription summary success"))
+            }
           case Left(error)     => Left(processError(error, appaId))
         }
         .recoverWith { case e: Exception =>
           logger.warn(
-            s"An exception was returned while trying to fetch subscription summary appaId $appaId: ${e.getMessage}"
+            s"An exception was returned while trying to fetch subscription summary appaId $appaId",
+            e
           )
           Future.successful(Left(ErrorResponse(INTERNAL_SERVER_ERROR, e.getMessage)))
         }
@@ -75,14 +76,15 @@ class SubscriptionSummaryConnector @Inject() (
   private def processError(error: UpstreamErrorResponse, appaId: String): ErrorResponse =
     error.statusCode match {
       case BAD_REQUEST =>
-        logger.info(s"Bad request sent to get subscription for appaId $appaId: ${error.message}")
+        logger.info(s"Bad request sent to get subscription for appaId $appaId", error)
         ErrorResponse(BAD_REQUEST, "Bad request")
       case NOT_FOUND   =>
         logger.info(s"No subscription summary found for appaId $appaId")
         ErrorResponse(NOT_FOUND, "Subscription summary not found")
       case _           =>
         logger.warn(
-          s"An error was returned while trying to fetch subscription summary appaId $appaId: ${error.message}"
+          s"An error was returned while trying to fetch subscription summary appaId $appaId",
+          error
         )
         ErrorResponse(INTERNAL_SERVER_ERROR, "An error occurred")
     }

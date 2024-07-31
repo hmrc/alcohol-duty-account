@@ -17,6 +17,7 @@
 package uk.gov.hmrc.alcoholdutyaccount.connectors
 
 import cats.data.OptionT
+import play.api.http.Status.NOT_FOUND
 import play.api.{Logger, Logging}
 import uk.gov.hmrc.alcoholdutyaccount.config.AppConfig
 import uk.gov.hmrc.alcoholdutyaccount.models.hods.FinancialTransactionDocument
@@ -24,7 +25,7 @@ import uk.gov.hmrc.http.{HeaderCarrier, HeaderNames, HttpClient, HttpReadsInstan
 
 import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.Try
+import scala.util.{Failure, Success, Try}
 
 class FinancialDataConnector @Inject() (config: AppConfig, implicit val httpClient: HttpClient)(implicit
   ec: ExecutionContext
@@ -50,37 +51,51 @@ class FinancialDataConnector @Inject() (config: AppConfig, implicit val httpClie
       httpClient
         .GET[Either[UpstreamErrorResponse, HttpResponse]](
           url = url,
-          queryParams = getQueryParams(),
+          queryParams = getQueryParams,
           headers = headers
         )
         .map {
           case Right(response) =>
             Try {
               response.json
-                .asOpt[FinancialTransactionDocument]
-            }.toOption.flatten
-              .fold[Option[FinancialTransactionDocument]] {
-                logger.warn(s"Unable to parse financial transaction document for appaId $alcoholDutyReference")
-                None
-              } {
+                .as[FinancialTransactionDocument]
+            } match {
+              case Success(doc)       =>
                 logger.info(s"Retrieved financial transaction document for appaId $alcoholDutyReference")
-                Some(_)
-              }
+                Some(doc)
+              case Failure(exception) =>
+                logger.warn(
+                  s"Parsing failed for financial transaction document with appaId $alcoholDutyReference",
+                  exception
+                )
+                None
+            }
           case Left(error)     =>
-            logger.warn(
-              s"An error was returned while trying to fetch financial transaction document appaId $alcoholDutyReference: ${error.message}"
-            )
-            None
+            processErrors(alcoholDutyReference, error)
         }
         .recoverWith { case e: Exception =>
           logger.warn(
-            s"An exception was returned while trying to fetch financial data appaId $alcoholDutyReference: ${e.getMessage}"
+            s"An exception was returned while trying to fetch financial data appaId $alcoholDutyReference",
+            e
           )
           Future.successful(None)
         }
     }
 
-  private def getQueryParams(): Seq[(String, String)] =
+  private def processErrors(alcoholDutyReference: String, error: UpstreamErrorResponse) =
+    error.statusCode match {
+      case NOT_FOUND =>
+        logger.info(s"No financial data found for appaId $alcoholDutyReference")
+        Some(FinancialTransactionDocument(Seq.empty))
+      case _         =>
+        logger.warn(
+          s"An error was returned while trying to fetch financial transaction document appaId $alcoholDutyReference",
+          error
+        )
+        None
+    }
+
+  private def getQueryParams: Seq[(String, String)] =
     Seq(
       "onlyOpenItems"              -> true.toString,
       "includeLocks"               -> false.toString,

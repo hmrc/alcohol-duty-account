@@ -34,7 +34,7 @@ class BTACardEndpointIntegrationSpec
         stubAuthorised()
         stubGetSubscriptionSummary(appaId, approvedSubscriptionSummary)
         stubGetObligations(appaId, obligationDataSingleOpen)
-        stubGetFinancialData(appaId, financialDocument)
+        stubGetFinancialData(appaId, financialDocumentWithSingleSapDocumentNo)
 
         val expectedBTATileData = AlcoholDutyCardData(
           alcoholDutyReference = appaId,
@@ -67,11 +67,36 @@ class BTACardEndpointIntegrationSpec
         contentAsJson(response) shouldBe Json.toJson(expectedBTATileData)
       }
 
+      "the status is approved with empty obligations and financial data" in {
+        stubAuthorised()
+        stubGetSubscriptionSummary(appaId, approvedSubscriptionSummary)
+        stubObligationsNotFound(appaId)
+        stubFinancialDataNotFound(appaId)
+
+        val expectedBTATileData = AlcoholDutyCardData(
+          alcoholDutyReference = appaId,
+          approvalStatus = Some(Approved),
+          hasSubscriptionSummaryError = false,
+          hasReturnsError = false,
+          hasPaymentError = false,
+          returns = Returns(),
+          payments = Payments()
+        )
+
+        val response = callRoute(
+          FakeRequest("GET", routes.AlcoholDutyController.btaTileData(appaId).url)
+            .withHeaders("Authorization" -> "Bearer 12345")
+        )
+
+        status(response)        shouldBe OK
+        contentAsJson(response) shouldBe Json.toJson(expectedBTATileData)
+      }
+
       "the insolvent flag is on" in {
         stubAuthorised()
         stubGetSubscriptionSummary(appaId, insolventSubscriptionSummary)
         stubGetObligations(appaId, obligationDataSingleOpen)
-        stubGetFinancialData(appaId, financialDocument)
+        stubGetFinancialData(appaId, financialDocumentWithSingleSapDocumentNo)
 
         val expectedBTATileData = AlcoholDutyCardData(
           alcoholDutyReference = appaId,
@@ -199,11 +224,77 @@ class BTACardEndpointIntegrationSpec
         contentAsJson(response) shouldBe Json.toJson(expectedBTATileData)
       }
 
-      "obligation api call fails with an HTTP status" in {
+      "obligation api call fails with a Bad Request" in {
         stubAuthorised()
         stubGetSubscriptionSummary(appaId, approvedSubscriptionSummary)
-        stubObligationsNotFound(appaId)
-        stubGetFinancialData(appaId, financialDocument)
+        stubObligationsBadRequest(appaId)
+        stubGetFinancialData(appaId, financialDocumentWithSingleSapDocumentNo)
+
+        val expectedBTATileData = AlcoholDutyCardData(
+          alcoholDutyReference = appaId,
+          approvalStatus = Some(Approved),
+          hasSubscriptionSummaryError = false,
+          hasReturnsError = true,
+          hasPaymentError = false,
+          returns = Returns(),
+          payments = Payments(
+            balance = Some(
+              Balance(
+                totalPaymentAmount = 100,
+                isMultiplePaymentDue = false,
+                chargeReference = Some("X1234567890")
+              )
+            )
+          )
+        )
+
+        val response = callRoute(
+          FakeRequest("GET", routes.AlcoholDutyController.btaTileData(appaId).url)
+            .withHeaders("Authorization" -> "Bearer 12345")
+        )
+
+        status(response)        shouldBe OK
+        contentAsJson(response) shouldBe Json.toJson(expectedBTATileData)
+      }
+
+      "obligation api call fails with a Bad Request with multiple errors" in {
+        stubAuthorised()
+        stubGetSubscriptionSummary(appaId, approvedSubscriptionSummary)
+        stubObligationsMultipleErrorsBadRequest(appaId)
+        stubGetFinancialData(appaId, financialDocumentWithSingleSapDocumentNo)
+
+        val expectedBTATileData = AlcoholDutyCardData(
+          alcoholDutyReference = appaId,
+          approvalStatus = Some(Approved),
+          hasSubscriptionSummaryError = false,
+          hasReturnsError = true,
+          hasPaymentError = false,
+          returns = Returns(),
+          payments = Payments(
+            balance = Some(
+              Balance(
+                totalPaymentAmount = 100,
+                isMultiplePaymentDue = false,
+                chargeReference = Some("X1234567890")
+              )
+            )
+          )
+        )
+
+        val response = callRoute(
+          FakeRequest("GET", routes.AlcoholDutyController.btaTileData(appaId).url)
+            .withHeaders("Authorization" -> "Bearer 12345")
+        )
+
+        status(response)        shouldBe OK
+        contentAsJson(response) shouldBe Json.toJson(expectedBTATileData)
+      }
+
+      "obligation api call fails with an Internal Server error" in {
+        stubAuthorised()
+        stubGetSubscriptionSummary(appaId, approvedSubscriptionSummary)
+        stubObligationsInternalServerError(appaId)
+        stubGetFinancialData(appaId, financialDocumentWithSingleSapDocumentNo)
 
         val expectedBTATileData = AlcoholDutyCardData(
           alcoholDutyReference = appaId,
@@ -236,7 +327,7 @@ class BTACardEndpointIntegrationSpec
         stubAuthorised()
         stubGetSubscriptionSummary(appaId, approvedSubscriptionSummary)
         stubObligationsWithFault(appaId)
-        stubGetFinancialData(appaId, financialDocument)
+        stubGetFinancialData(appaId, financialDocumentWithSingleSapDocumentNo)
 
         val expectedBTATileData = AlcoholDutyCardData(
           alcoholDutyReference = appaId,
@@ -265,11 +356,69 @@ class BTACardEndpointIntegrationSpec
         contentAsJson(response) shouldBe Json.toJson(expectedBTATileData)
       }
 
-      "financial data api call fails" in {
+      "financial data api call fails with Bad Request" in {
         stubAuthorised()
         stubGetSubscriptionSummary(appaId, approvedSubscriptionSummary)
         stubGetObligations(appaId, obligationDataSingleOpen)
-        stubFinancialDataNotFound(appaId)
+        stubFinancialDataBadRequest(appaId)
+
+        val expectedBTATileData = AlcoholDutyCardData(
+          alcoholDutyReference = appaId,
+          approvalStatus = Some(Approved),
+          hasSubscriptionSummaryError = false,
+          hasReturnsError = false,
+          hasPaymentError = true,
+          returns = Returns(
+            dueReturnExists = Some(false),
+            numberOfOverdueReturns = Some(1),
+            periodKey = Some("24AE")
+          ),
+          payments = Payments()
+        )
+
+        val response = callRoute(
+          FakeRequest("GET", routes.AlcoholDutyController.btaTileData(appaId).url)
+            .withHeaders("Authorization" -> "Bearer 12345")
+        )
+
+        status(response)        shouldBe OK
+        contentAsJson(response) shouldBe Json.toJson(expectedBTATileData)
+      }
+
+      "financial data api call fails with Bad Request with multiple errors" in {
+        stubAuthorised()
+        stubGetSubscriptionSummary(appaId, approvedSubscriptionSummary)
+        stubGetObligations(appaId, obligationDataSingleOpen)
+        stubFinancialDataMultipleErrorsBadRequest(appaId)
+
+        val expectedBTATileData = AlcoholDutyCardData(
+          alcoholDutyReference = appaId,
+          approvalStatus = Some(Approved),
+          hasSubscriptionSummaryError = false,
+          hasReturnsError = false,
+          hasPaymentError = true,
+          returns = Returns(
+            dueReturnExists = Some(false),
+            numberOfOverdueReturns = Some(1),
+            periodKey = Some("24AE")
+          ),
+          payments = Payments()
+        )
+
+        val response = callRoute(
+          FakeRequest("GET", routes.AlcoholDutyController.btaTileData(appaId).url)
+            .withHeaders("Authorization" -> "Bearer 12345")
+        )
+
+        status(response)        shouldBe OK
+        contentAsJson(response) shouldBe Json.toJson(expectedBTATileData)
+      }
+
+      "financial data api call fails with Unprocessable Entity" in {
+        stubAuthorised()
+        stubGetSubscriptionSummary(appaId, approvedSubscriptionSummary)
+        stubGetObligations(appaId, obligationDataSingleOpen)
+        stubFinancialDataUnprocessableEntity(appaId)
 
         val expectedBTATileData = AlcoholDutyCardData(
           alcoholDutyReference = appaId,
@@ -326,8 +475,8 @@ class BTACardEndpointIntegrationSpec
       "both obligation api and financial data api calls fail" in {
         stubAuthorised()
         stubGetSubscriptionSummary(appaId, approvedSubscriptionSummary)
-        stubObligationsNotFound(appaId)
-        stubFinancialDataNotFound(appaId)
+        stubObligationsBadRequest(appaId)
+        stubFinancialDataBadRequest(appaId)
 
         val expectedBTATileData = AlcoholDutyCardData(
           alcoholDutyReference = appaId,

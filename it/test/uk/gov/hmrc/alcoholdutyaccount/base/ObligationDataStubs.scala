@@ -16,7 +16,7 @@
 
 package uk.gov.hmrc.alcoholdutyaccount.base
 
-import play.api.http.Status.{INTERNAL_SERVER_ERROR, NOT_FOUND, OK}
+import play.api.http.Status.{BAD_REQUEST, INTERNAL_SERVER_ERROR, NOT_FOUND, OK}
 import play.api.libs.json.Json
 import uk.gov.hmrc.alcoholdutyaccount.common.{TestData, WireMockHelper}
 import uk.gov.hmrc.alcoholdutyaccount.config.AppConfig
@@ -25,34 +25,56 @@ import uk.gov.hmrc.alcoholdutyaccount.models.hods.{ObligationData, Open}
 trait ObligationDataStubs extends WireMockHelper with TestData { ISpecBase =>
   val config: AppConfig
 
-  private def url(alcoholDutyReference:String):String =
+  private def url(alcoholDutyReference: String): String =
     s"${config.obligationDataHost}/enterprise/obligation-data/${config.idType}/$alcoholDutyReference/${config.regime}"
 
   private val queryParams = Seq("status" -> Open.value)
 
-  val notFoundErrorMessage = """{
+  private val notFoundErrorMessage: String = """{
                                |    "code": "NOT_FOUND",
                                |    "reason": "The remote endpoint has indicated that no associated data found."
                                |}
                                |""".stripMargin
 
-    val otherErrorMessage =
-      """
-        |{
-        |    "code": "SERVICE_ERROR",
-        |    "reason": "An error occurred"
-        |}
-        |""".stripMargin
+  private val badRequestErrorMessage: String =
+    """
+      |{
+      |     "code": "INVALID_DATE_RANGE",
+      |     "reason": "The remote endpoint has indicated that an Invalid Date Range has been provided."
+      |}
+      |""".stripMargin
 
-  def stubGetObligations(alcoholDutyReference:String, obligationData: ObligationData): Unit =
+  private val multipleBadRequestErrorMessages: String =
+    """
+      |{
+      |     "failures": [
+      |       {
+      |         "code": "INVALID_DATE_FROM",
+      |         "reason": "Submission has not passed validation. Invalid parameter from."
+      |       },
+      |       {
+      |         "code": "INVALID_DATE_TO",
+      |         "reason": "Submission has not passed validation. Invalid parameter to."
+      |       }
+      |     ]
+      |}
+      |""".stripMargin
+
+  def stubGetObligations(alcoholDutyReference: String, obligationData: ObligationData): Unit =
     stubGetWithParameters(url(alcoholDutyReference), queryParams, OK, Json.toJson(obligationData).toString())
 
-  def stubObligationsNotFound(alcoholDutyReference:String): Unit =
+  def stubObligationsNotFound(alcoholDutyReference: String): Unit =
     stubGetWithParameters(url(alcoholDutyReference), queryParams, NOT_FOUND, notFoundErrorMessage)
+
+  def stubObligationsBadRequest(alcoholDutyReference: String): Unit =
+    stubGetWithParameters(url(alcoholDutyReference), queryParams, BAD_REQUEST, badRequestErrorMessage)
+
+  def stubObligationsMultipleErrorsBadRequest(alcoholDutyReference: String): Unit =
+    stubGetWithParameters(url(alcoholDutyReference), queryParams, BAD_REQUEST, multipleBadRequestErrorMessages)
 
   def stubObligationsWithFault(alcoholDutyReference: String): Unit =
     stubGetFaultWithParameters(url(alcoholDutyReference), queryParams)
 
-  def stubObligationsInternalServerError(alcoholDutyReference:String): Unit =
+  def stubObligationsInternalServerError(alcoholDutyReference: String): Unit =
     stubGetWithParameters(url(alcoholDutyReference), queryParams, INTERNAL_SERVER_ERROR, "No obligation data found")
 }
