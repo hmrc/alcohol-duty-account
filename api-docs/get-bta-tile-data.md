@@ -56,6 +56,25 @@ Calls to this API must be made by an authenticated and authorised user with an A
 }
 ```
 
+***Where no return is due / no payment is due (due items sum to zero):***
+
+```json
+{
+  "alcoholDutyReference": "AP0000000001",
+  "approvalStatus": "Approved",
+  "hasSubscriptionSummaryError": false,
+  "hasReturnsError": false,
+  "hasPaymentsError": false,
+  "returns": {},
+  "payments": {
+    "balance": {
+      "totalPaymentAmount": 0,
+      "isMultiplePaymentDue": false(can be true as well),
+    }
+  }
+}
+```
+
 ***Where latest return is due / payment is due:***
 
 ```json
