@@ -19,7 +19,7 @@ package uk.gov.hmrc.alcoholdutyaccount.controllers
 import cats.data.EitherT
 import org.mockito.ArgumentMatchersSugar.{*, eqTo}
 
-import play.api.test.{FakeRequest, Helpers}
+import play.api.test.Helpers
 import org.mockito.cats.IdiomaticMockitoCats.StubbingOpsCats
 import play.api.libs.json.Json
 import play.api.mvc.Result
@@ -39,7 +39,7 @@ class AlcoholDutyControllerSpec extends SpecBase {
     "return OK when is called with a valid appaId" in new SetUp {
       alcoholDutyService.getSubscriptionSummary(eqTo(appaId))(*) returnsF approvedAdrSubscriptionSummary
 
-      val result: Future[Result] = controller.subscriptionSummary(appaId)(FakeRequest())
+      val result: Future[Result] = controller.subscriptionSummary(appaId)(fakeRequest)
       status(result) mustBe OK
       contentAsJson(result) mustBe Json.toJson(approvedAdrSubscriptionSummary)
     }
@@ -48,7 +48,7 @@ class AlcoholDutyControllerSpec extends SpecBase {
       when(alcoholDutyService.getSubscriptionSummary(*)(*))
         .thenReturn(EitherT.fromEither(Left(ErrorResponse(INTERNAL_SERVER_ERROR, "An error occurred"))))
 
-      val result: Future[Result] = controller.subscriptionSummary(appaId)(FakeRequest())
+      val result: Future[Result] = controller.subscriptionSummary(appaId)(fakeRequest)
       status(result) mustBe INTERNAL_SERVER_ERROR
 
       verify(alcoholDutyService, times(1)).getSubscriptionSummary(*)(*)
@@ -61,7 +61,7 @@ class AlcoholDutyControllerSpec extends SpecBase {
         *
       ) returnsF adrObligationDetails
 
-      val result: Future[Result] = controller.openObligationDetails(appaId, periodKey)(FakeRequest())
+      val result: Future[Result] = controller.openObligationDetails(appaId, periodKey)(fakeRequest)
       status(result) mustBe OK
       contentAsJson(result) mustBe Json.toJson(adrObligationDetails)
     }
@@ -69,7 +69,7 @@ class AlcoholDutyControllerSpec extends SpecBase {
     "return BAD_REQUEST when periodKey is invalid" in new SetUp {
       alcoholDutyService.getOpenObligations(*, *)(*) returnsF adrObligationDetails
 
-      val result: Future[Result] = controller.openObligationDetails(appaId, badPeriodKey)(FakeRequest())
+      val result: Future[Result] = controller.openObligationDetails(appaId, badPeriodKey)(fakeRequest)
       status(result) mustBe BAD_REQUEST
 
       verify(alcoholDutyService, never).getOpenObligations(*, *)(*)
@@ -79,7 +79,7 @@ class AlcoholDutyControllerSpec extends SpecBase {
       when(alcoholDutyService.getOpenObligations(*, *)(*))
         .thenReturn(EitherT.fromEither(Left(ErrorResponse(INTERNAL_SERVER_ERROR, "An error occurred"))))
 
-      val result: Future[Result] = controller.openObligationDetails(appaId, periodKey)(FakeRequest())
+      val result: Future[Result] = controller.openObligationDetails(appaId, periodKey)(fakeRequest)
       status(result) mustBe INTERNAL_SERVER_ERROR
 
       verify(alcoholDutyService, times(1)).getOpenObligations(*, *)(*)
@@ -91,7 +91,7 @@ class AlcoholDutyControllerSpec extends SpecBase {
         *
       ) returnsF adrMultipleOpenAndFulfilledData
 
-      val result: Future[Result] = controller.obligationDetails(appaId)(FakeRequest())
+      val result: Future[Result] = controller.obligationDetails(appaId)(fakeRequest)
       status(result) mustBe OK
       contentAsJson(result) mustBe Json.toJson(adrMultipleOpenAndFulfilledData)
     }
@@ -100,7 +100,7 @@ class AlcoholDutyControllerSpec extends SpecBase {
       when(alcoholDutyService.getObligations(*, *)(*))
         .thenReturn(EitherT.fromEither(Left(ErrorResponse(INTERNAL_SERVER_ERROR, "An error occurred"))))
 
-      val result: Future[Result] = controller.obligationDetails(appaId)(FakeRequest())
+      val result: Future[Result] = controller.obligationDetails(appaId)(fakeRequest)
       status(result) mustBe INTERNAL_SERVER_ERROR
 
       verify(alcoholDutyService, times(1)).getObligations(*, *)(*)
@@ -111,7 +111,7 @@ class AlcoholDutyControllerSpec extends SpecBase {
     "return 200 when is called with a valid appaId" in new SetUp {
       alcoholDutyService.getAlcoholDutyCardData(*)(*) returnsF cardData
 
-      val result: Future[Result] = controller.btaTileData(appaId)(FakeRequest())
+      val result: Future[Result] = controller.btaTileData(appaId)(fakeRequest)
       status(result) mustBe OK
       contentAsJson(result) mustBe Json.toJson(cardData)
     }
@@ -121,7 +121,7 @@ class AlcoholDutyControllerSpec extends SpecBase {
 
       when(alcoholDutyService.getAlcoholDutyCardData(*)(*)).thenReturn(EitherT.fromEither(Left(expectedError)))
 
-      val result: Future[Result] = controller.btaTileData(appaId)(FakeRequest())
+      val result: Future[Result] = controller.btaTileData(appaId)(fakeRequest)
       status(result) mustBe BAD_REQUEST
       contentAsJson(result) mustBe Json.toJson(expectedError)
     }

@@ -158,7 +158,7 @@ class AlcoholDutyService @Inject() (
     alcoholDutyReference: String
   )(implicit hc: HeaderCarrier): Future[Option[Payments]] =
     financialDataConnector
-      .getFinancialData(alcoholDutyReference)
+      .getFinancialDataForBtaTile(alcoholDutyReference)
       .fold {
         Option.empty[Payments]
       } { financialData =>

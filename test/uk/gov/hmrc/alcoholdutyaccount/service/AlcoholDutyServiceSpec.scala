@@ -176,7 +176,7 @@ class AlcoholDutyServiceSpec extends SpecBase with TestData {
 
     "extractPayments should" - {
       "return an empty Payments object if there are no financial transactions" in new SetUp {
-        val result = service.extractPayments(financialDocument_Empty)
+        val result = service.extractPayments(emptyFinancialDocument)
         result mustBe Payments()
       }
 
@@ -303,6 +303,7 @@ class AlcoholDutyServiceSpec extends SpecBase with TestData {
                 items = Seq(
                   FinancialTransactionItem(
                     subItem = "001",
+                    dueDate = None,
                     amount = 50.00
                   )
                 )
@@ -318,6 +319,7 @@ class AlcoholDutyServiceSpec extends SpecBase with TestData {
                 items = Seq(
                   FinancialTransactionItem(
                     subItem = "002",
+                    dueDate = None,
                     amount = 50.00
                   )
                 )
@@ -333,6 +335,7 @@ class AlcoholDutyServiceSpec extends SpecBase with TestData {
                 items = Seq(
                   FinancialTransactionItem(
                     subItem = "003",
+                    dueDate = None,
                     amount = 50.00
                   )
                 )
@@ -367,6 +370,7 @@ class AlcoholDutyServiceSpec extends SpecBase with TestData {
                   items = Seq(
                     FinancialTransactionItem(
                       subItem = "001",
+                      dueDate = None,
                       amount = 50.00
                     )
                   )
@@ -382,6 +386,7 @@ class AlcoholDutyServiceSpec extends SpecBase with TestData {
                   items = Seq(
                     FinancialTransactionItem(
                       subItem = "002",
+                      dueDate = None,
                       amount = 50.00
                     )
                   )
@@ -397,6 +402,7 @@ class AlcoholDutyServiceSpec extends SpecBase with TestData {
                   items = Seq(
                     FinancialTransactionItem(
                       subItem = "003",
+                      dueDate = None,
                       amount = 50.00
                     )
                   )
@@ -444,7 +450,7 @@ class AlcoholDutyServiceSpec extends SpecBase with TestData {
 
     "getPaymentInformation should" - {
       "return None if the financialDataConnector returns None" in new SetUp {
-        when(financialDataConnector.getFinancialData(*)(*))
+        when(financialDataConnector.getFinancialDataForBtaTile(*)(*))
           .thenReturn(OptionT.none[Future, FinancialTransactionDocument])
 
         val result = service.getPaymentInformation(appaId)
@@ -455,7 +461,7 @@ class AlcoholDutyServiceSpec extends SpecBase with TestData {
       }
 
       "return a empty Payments object if the financialDataConnector returns an empty Document" in new SetUp {
-        financialDataConnector.getFinancialData(*)(*) returnsF financialDocument_Empty
+        financialDataConnector.getFinancialDataForBtaTile(*)(*) returnsF emptyFinancialDocument
 
         service.getPaymentInformation(appaId).onComplete { result =>
           result mustBe Success(Some(Payments()))
@@ -493,7 +499,7 @@ class AlcoholDutyServiceSpec extends SpecBase with TestData {
           when(obligationDataConnector.getObligationDetails(*, *)(*))
             .thenReturn(EitherT.fromEither(Right(obligationDataOneDue)))
 
-          financialDataConnector.getFinancialData(*)(*) returnsF financialDocumentWithSingleSapDocumentNo
+          financialDataConnector.getFinancialDataForBtaTile(*)(*) returnsF financialDocumentWithSingleSapDocumentNo
 
           whenReady(service.getAlcoholDutyCardData(appaId).value) { result =>
             result mustBe Right(
@@ -537,7 +543,7 @@ class AlcoholDutyServiceSpec extends SpecBase with TestData {
           when(obligationDataConnector.getObligationDetails(*, *)(*))
             .thenReturn(EitherT.fromEither(Right(obligationDataOneDue)))
 
-          financialDataConnector.getFinancialData(*)(*) returnsF financialDocumentWithSingleSapDocumentNo
+          financialDataConnector.getFinancialDataForBtaTile(*)(*) returnsF financialDocumentWithSingleSapDocumentNo
 
           whenReady(service.getAlcoholDutyCardData(appaId).value) { result =>
             result mustBe Right(
@@ -580,7 +586,7 @@ class AlcoholDutyServiceSpec extends SpecBase with TestData {
         when(obligationDataConnector.getObligationDetails(*, *)(*))
           .thenReturn(EitherT.fromEither(Left(ErrorResponse(BAD_REQUEST, ""))))
 
-        financialDataConnector.getFinancialData(*)(*) returnsF financialDocumentWithSingleSapDocumentNo
+        financialDataConnector.getFinancialDataForBtaTile(*)(*) returnsF financialDocumentWithSingleSapDocumentNo
 
         whenReady(service.getAlcoholDutyCardData(appaId).value) { result =>
           result mustBe Right(
@@ -609,7 +615,7 @@ class AlcoholDutyServiceSpec extends SpecBase with TestData {
         when(obligationDataConnector.getObligationDetails(*, *)(*))
           .thenReturn(EitherT.fromEither(Left(ErrorResponse(NOT_FOUND, ""))))
 
-        financialDataConnector.getFinancialData(*)(*) returnsF financialDocumentWithSingleSapDocumentNo
+        financialDataConnector.getFinancialDataForBtaTile(*)(*) returnsF financialDocumentWithSingleSapDocumentNo
 
         whenReady(service.getAlcoholDutyCardData(appaId).value) { result =>
           result mustBe Right(
@@ -654,7 +660,8 @@ class AlcoholDutyServiceSpec extends SpecBase with TestData {
         when(obligationDataConnector.getObligationDetails(*, *)(*))
           .thenReturn(EitherT.fromEither(Right(obligationDataOneDue)))
 
-        financialDataConnector.getFinancialData(*)(*) returns OptionT.none[Future, FinancialTransactionDocument]
+        financialDataConnector.getFinancialDataForBtaTile(*)(*) returns OptionT
+          .none[Future, FinancialTransactionDocument]
 
         whenReady(service.getAlcoholDutyCardData(appaId).value) { result =>
           result mustBe Right(
@@ -684,7 +691,8 @@ class AlcoholDutyServiceSpec extends SpecBase with TestData {
           when(obligationDataConnector.getObligationDetails(*, *)(*))
             .thenReturn(EitherT.fromEither(Left(ErrorResponse(BAD_REQUEST, ""))))
 
-          financialDataConnector.getFinancialData(*)(*) returns OptionT.none[Future, FinancialTransactionDocument]
+          financialDataConnector.getFinancialDataForBtaTile(*)(*) returns OptionT
+            .none[Future, FinancialTransactionDocument]
 
           whenReady(service.getAlcoholDutyCardData(appaId).value) { result =>
             result mustBe Right(

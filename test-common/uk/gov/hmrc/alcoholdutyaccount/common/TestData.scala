@@ -21,6 +21,7 @@ import play.api.libs.json.{Json, OFormat}
 import uk.gov.hmrc.alcoholdutyaccount.common.generators.ModelGenerators
 import uk.gov.hmrc.alcoholdutyaccount.models.{AdrObligationData, ObligationStatus}
 import uk.gov.hmrc.alcoholdutyaccount.models.hods._
+import uk.gov.hmrc.alcoholdutyaccount.models.payments.OpenPayments
 import uk.gov.hmrc.alcoholdutyaccount.models.subscription.{AdrSubscriptionSummary, AlcoholRegime, ApprovalStatus}
 
 import java.time.{Clock, Instant, LocalDate, ZoneId}
@@ -124,7 +125,7 @@ trait TestData extends ModelGenerators {
     obligations = Seq.empty
   )
 
-  val financialTransaction    = FinancialTransaction(
+  val financialTransaction = FinancialTransaction(
     sapDocumentNumber = "123456",
     periodKey = Some("18AA"),
     chargeReference = Some("X1234567890"),
@@ -135,11 +136,13 @@ trait TestData extends ModelGenerators {
     items = Seq(
       FinancialTransactionItem(
         subItem = "001",
+        dueDate = None,
         amount = 50.00
       )
     )
   )
-  val financialDocument_Empty = FinancialTransactionDocument(financialTransactions = Seq.empty)
+
+  val emptyFinancialDocument = FinancialTransactionDocument(financialTransactions = Seq.empty)
 
   val financialDocumentWithSingleSapDocumentNo = FinancialTransactionDocument(
     financialTransactions = Seq(
@@ -154,6 +157,7 @@ trait TestData extends ModelGenerators {
         items = Seq(
           FinancialTransactionItem(
             subItem = "001",
+            dueDate = None,
             amount = 50.00
           )
         )
@@ -169,6 +173,7 @@ trait TestData extends ModelGenerators {
         items = Seq(
           FinancialTransactionItem(
             subItem = "002",
+            dueDate = None,
             amount = 100.00
           )
         )
@@ -189,6 +194,7 @@ trait TestData extends ModelGenerators {
         items = Seq(
           FinancialTransactionItem(
             subItem = "001",
+            dueDate = None,
             amount = 50.00
           )
         )
@@ -204,6 +210,7 @@ trait TestData extends ModelGenerators {
         items = Seq(
           FinancialTransactionItem(
             subItem = "002",
+            dueDate = None,
             amount = 100.00
           )
         )
@@ -224,6 +231,7 @@ trait TestData extends ModelGenerators {
         items = Seq(
           FinancialTransactionItem(
             subItem = "001",
+            dueDate = None,
             amount = 1000.00
           )
         )
@@ -269,6 +277,8 @@ trait TestData extends ModelGenerators {
 
   val adrMultipleOpenData =
     Seq(adrObligationDetails, adrObligationDetailsOpen2)
+
+  val openPayments = OpenPayments(Seq.empty, Seq.empty, BigDecimal(0))
 
   case class DownstreamErrorDetails(code: String, message: String, logID: String)
 

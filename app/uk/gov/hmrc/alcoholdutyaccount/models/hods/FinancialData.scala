@@ -18,8 +18,11 @@ package uk.gov.hmrc.alcoholdutyaccount.models.hods
 
 import play.api.libs.json.{Format, Json}
 
+import java.time.LocalDate
+
 case class FinancialTransactionItem(
   subItem: String,
+  dueDate: Option[LocalDate],
   amount: BigDecimal
 )
 
