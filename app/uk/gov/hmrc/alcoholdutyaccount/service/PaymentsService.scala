@@ -41,6 +41,12 @@ class PaymentsService @Inject() (
     maybeChargeReference: Option[String]
   )
 
+  private case class PaymentTotals(
+    totalOutstandingPayments: BigDecimal,
+    totalUnallocatedPayments: BigDecimal,
+    totalOpenPaymentsAmount: BigDecimal
+  )
+
   private def validateAndGetDueDateFromFirstTransaction(
     sapDocumentNumber: String,
     firstFinancialTransaction: FinancialTransaction
@@ -138,28 +144,18 @@ class PaymentsService @Inject() (
       Left(ErrorResponse(INTERNAL_SERVER_ERROR, errorMessage))
   }
 
-  /**
-    * Sum the outstanding amount of outstanding payments. - call it totalOutstandingPayments
-    * Sum payment on accounts outstanding (not the original as that has probably been allocated) - call it totalUnallocatedPayments
-    * If totalOutstandingPayments > totalUnallocatedPayments - show balance as minus (totalOutstandingPayments - totalUnallocatedPayments) i.e. is in debt (i.e. what you need to top up)
-    * If totalUnallocatedPayments is 0 and totalOutstandingPayments is 0 - show balance as 0
-    * If totalOutstandingPayments = totalUnallocatedPayments - show balance as totalUnallocatedPayments in credit
-    * If totalOutstandingPayments < totalUnallocatedPayments - show balance as totalUnallocatedPayments in credit
-    */
   private def calculatedTotalBalance(
     outstandingPayments: Seq[OutstandingPayment],
     unallocatedPayments: Seq[UnallocatedPayment]
-  ): BigDecimal = {
+  ): PaymentTotals = {
     val totalOutstandingPayments = outstandingPayments.map(_.remainingAmount).sum
-    val totalUnallocatedPayments = unallocatedPayments.map(_.amount).sum.abs
+    val totalUnallocatedPayments = unallocatedPayments.map(_.unallocatedAmount).sum
 
-    if (totalOutstandingPayments > totalUnallocatedPayments) {
-      -(totalOutstandingPayments - totalUnallocatedPayments)
-    } else if (totalOutstandingPayments == totalUnallocatedPayments && totalOutstandingPayments == 0)
-      BigDecimal(0)
-    else {
-      totalUnallocatedPayments
-    }
+    PaymentTotals(
+      totalOutstandingPayments = totalOutstandingPayments,
+      totalUnallocatedPayments = totalUnallocatedPayments,
+      totalOpenPaymentsAmount = totalOutstandingPayments + totalUnallocatedPayments
+    )
   }
 
   private def processFinancialData(
@@ -186,7 +182,7 @@ class PaymentsService @Inject() (
                 if (transactionType == PaymentOnAccount) {
                   UnallocatedPayment(
                     paymentDate = financialTransactionData.dueDate,
-                    amount = outstanding
+                    unallocatedAmount = outstanding
                   )
                 } else {
                   OutstandingPayment(
@@ -213,12 +209,14 @@ class PaymentsService @Inject() (
                   }
               }
 
-            val totalBalance = calculatedTotalBalance(outstandingPayments, unallocatedPayments)
+            val paymentTotals = calculatedTotalBalance(outstandingPayments, unallocatedPayments)
 
             OpenPayments(
               outstandingPayments = outstandingPayments,
+              totalOutstandingPayments = paymentTotals.totalOutstandingPayments,
               unallocatedPayments = unallocatedPayments,
-              totalBalance = totalBalance
+              totalUnallocatedPayments = paymentTotals.totalUnallocatedPayments,
+              totalOpenPaymentsAmount = paymentTotals.totalOpenPaymentsAmount
             )
           }
       )

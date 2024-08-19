@@ -278,7 +278,7 @@ trait TestData extends ModelGenerators {
   val adrMultipleOpenData =
     Seq(adrObligationDetails, adrObligationDetailsOpen2)
 
-  val openPayments = OpenPayments(Seq.empty, Seq.empty, BigDecimal(0))
+  val openPayments = OpenPayments(Seq.empty, BigDecimal(0), Seq.empty, BigDecimal(0), BigDecimal(0))
 
   case class DownstreamErrorDetails(code: String, message: String, logID: String)
 

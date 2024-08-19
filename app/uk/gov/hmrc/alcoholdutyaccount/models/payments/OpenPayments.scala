@@ -56,7 +56,7 @@ object OutstandingPayment {
 
 case class UnallocatedPayment(
   paymentDate: LocalDate,
-  amount: BigDecimal
+  unallocatedAmount: BigDecimal
 ) extends OpenPayment
 
 object UnallocatedPayment {
@@ -65,8 +65,10 @@ object UnallocatedPayment {
 
 case class OpenPayments(
   outstandingPayments: Seq[OutstandingPayment],
+  totalOutstandingPayments: BigDecimal,
   unallocatedPayments: Seq[UnallocatedPayment],
-  totalBalance: BigDecimal
+  totalUnallocatedPayments: BigDecimal,
+  totalOpenPaymentsAmount: BigDecimal
 )
 
 object OpenPayments {
