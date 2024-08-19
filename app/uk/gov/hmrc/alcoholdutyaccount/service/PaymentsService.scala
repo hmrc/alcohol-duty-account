@@ -138,6 +138,30 @@ class PaymentsService @Inject() (
       Left(ErrorResponse(INTERNAL_SERVER_ERROR, errorMessage))
   }
 
+  /**
+    * Sum the outstanding amount of outstanding payments. - call it totalOutstandingPayments
+    * Sum payment on accounts outstanding (not the original as that has probably been allocated) - call it totalUnallocatedPayments
+    * If totalOutstandingPayments > totalUnallocatedPayments - show balance as minus (totalOutstandingPayments - totalUnallocatedPayments) i.e. is in debt (i.e. what you need to top up)
+    * If totalUnallocatedPayments is 0 and totalOutstandingPayments is 0 - show balance as 0
+    * If totalOutstandingPayments = totalUnallocatedPayments - show balance as totalUnallocatedPayments in credit
+    * If totalOutstandingPayments < totalUnallocatedPayments - show balance as totalUnallocatedPayments in credit
+    */
+  private def calculatedTotalBalance(
+    outstandingPayments: Seq[OutstandingPayment],
+    unallocatedPayments: Seq[UnallocatedPayment]
+  ): BigDecimal = {
+    val totalOutstandingPayments = outstandingPayments.map(_.remainingAmount).sum
+    val totalUnallocatedPayments = unallocatedPayments.map(_.amount).sum.abs
+
+    if (totalOutstandingPayments > totalUnallocatedPayments) {
+      -(totalOutstandingPayments - totalUnallocatedPayments)
+    } else if (totalOutstandingPayments == totalUnallocatedPayments && totalOutstandingPayments == 0)
+      BigDecimal(0)
+    else {
+      totalUnallocatedPayments
+    }
+  }
+
   private def processFinancialData(
     financialTransactionDocument: FinancialTransactionDocument
   ): EitherT[Future, ErrorResponse, OpenPayments] =
@@ -162,7 +186,7 @@ class PaymentsService @Inject() (
                 if (transactionType == PaymentOnAccount) {
                   UnallocatedPayment(
                     paymentDate = financialTransactionData.dueDate,
-                    amount = outstanding.abs
+                    amount = outstanding
                   )
                 } else {
                   OutstandingPayment(
@@ -189,10 +213,12 @@ class PaymentsService @Inject() (
                   }
               }
 
+            val totalBalance = calculatedTotalBalance(outstandingPayments, unallocatedPayments)
+
             OpenPayments(
               outstandingPayments = outstandingPayments,
               unallocatedPayments = unallocatedPayments,
-              totalBalance = outstandingPayments.map(_.remainingAmount).sum
+              totalBalance = totalBalance
             )
           }
       )
