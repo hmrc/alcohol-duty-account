@@ -74,32 +74,31 @@ trait FinancialDataStubs extends WireMockHelper with TestData { ISpecBase =>
       |""".stripMargin
 
 
-  private def url(alcoholDutyReference: String): String =
-    s"${config.financialDataHost}/enterprise/financial-data/${config.idType}/$alcoholDutyReference/${config.regime}"
+  private def url(appaId: String): String = config.financialDataUrl(appaId)
 
   def stubGetFinancialData(
-    alcoholDutyReference: String,
-    financialTransactionDocument: FinancialTransactionDocument
+                            appaId: String,
+                            financialTransactionDocument: FinancialTransactionDocument
   ): Unit =
     stubGetWithParameters(
-      url(alcoholDutyReference),
+      url(appaId),
       queryParams,
       OK,
       Json.toJson(financialTransactionDocument).toString()
     )
 
-  def stubFinancialDataNotFound(alcoholDutyReference: String): Unit =
-    stubGetWithParameters(url(alcoholDutyReference), queryParams, NOT_FOUND, notFoundErrorMessage)
+  def stubFinancialDataNotFound(appaId: String): Unit =
+    stubGetWithParameters(url(appaId), queryParams, NOT_FOUND, notFoundErrorMessage)
 
-  def stubFinancialDataUnprocessableEntity(alcoholDutyReference: String): Unit =
-    stubGetWithParameters(url(alcoholDutyReference), queryParams, UNPROCESSABLE_ENTITY, unprocessableEntityErrorMessage)
+  def stubFinancialDataUnprocessableEntity(appaId: String): Unit =
+    stubGetWithParameters(url(appaId), queryParams, UNPROCESSABLE_ENTITY, unprocessableEntityErrorMessage)
 
-  def stubFinancialDataBadRequest(alcoholDutyReference: String): Unit =
-    stubGetWithParameters(url(alcoholDutyReference), queryParams, BAD_REQUEST, badRequestErrorMessage)
+  def stubFinancialDataBadRequest(appaId: String): Unit =
+    stubGetWithParameters(url(appaId), queryParams, BAD_REQUEST, badRequestErrorMessage)
 
-  def stubFinancialDataMultipleErrorsBadRequest(alcoholDutyReference: String): Unit =
-    stubGetWithParameters(url(alcoholDutyReference), queryParams, BAD_REQUEST, multipleBadRequestErrorMessages)
+  def stubFinancialDataMultipleErrorsBadRequest(appaId: String): Unit =
+    stubGetWithParameters(url(appaId), queryParams, BAD_REQUEST, multipleBadRequestErrorMessages)
 
-  def stubFinancialDataWithFault(alcoholDutyReference: String): Unit =
-    stubGetFaultWithParameters(url(alcoholDutyReference), queryParams)
+  def stubFinancialDataWithFault(appaId: String): Unit =
+    stubGetFaultWithParameters(url(appaId), queryParams)
 }

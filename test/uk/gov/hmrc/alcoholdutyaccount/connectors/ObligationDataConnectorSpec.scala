@@ -101,8 +101,7 @@ class ObligationDataConnectorSpec extends SpecBase with ScalaFutures with Connec
 
     val expectedQueryParamsNoStatus  = dateFilterHeadersHeaders
 
-    val url =
-      s"${config.obligationDataHost}/enterprise/obligation-data/${config.idType}/$appaId/${config.regime}"
+    val url = appConfig.obligationDataUrl(appaId)
 
     val notFoundErrorMessage = """{
                                  |    "code": "NOT_FOUND",

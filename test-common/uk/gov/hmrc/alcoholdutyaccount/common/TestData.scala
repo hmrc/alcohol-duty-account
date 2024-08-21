@@ -517,6 +517,50 @@ trait TestData extends ModelGenerators {
       )
     )
 
+  val singleFullyOutstandingLPI: FinancialTransactionDocument =
+    FinancialTransactionDocument(
+      financialTransactions = Seq(
+        FinancialTransaction(
+          sapDocumentNumber = sapDocumentNumberGen.sample.get,
+          periodKey = None,
+          chargeReference = None,
+          originalAmount = BigDecimal("50"),
+          mainTransaction = TransactionType.toMainTransactionType(TransactionType.LPI),
+          subTransaction = "6132",
+          outstandingAmount = Some(BigDecimal("50")),
+          items = Seq(
+            FinancialTransactionItem(
+              subItem = "000",
+              dueDate = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).periodFromDate()),
+              amount = BigDecimal("50")
+            )
+          )
+        )
+      )
+    )
+
+  val singleRPI: FinancialTransactionDocument =
+    FinancialTransactionDocument(
+      financialTransactions = Seq(
+        FinancialTransaction(
+          sapDocumentNumber = sapDocumentNumberGen.sample.get,
+          periodKey = None,
+          chargeReference = None,
+          originalAmount = BigDecimal("-50"),
+          mainTransaction = TransactionType.toMainTransactionType(TransactionType.RPI),
+          subTransaction = "6132",
+          outstandingAmount = Some(BigDecimal("-50")),
+          items = Seq(
+            FinancialTransactionItem(
+              subItem = "000",
+              dueDate = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).periodFromDate()),
+              amount = BigDecimal("-50")
+            )
+          )
+        )
+      )
+    )
+
   val approvedAdrSubscriptionSummary = new AdrSubscriptionSummary(
     approvalStatus = ApprovalStatus.Approved,
     regimes = Set(

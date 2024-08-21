@@ -245,6 +245,56 @@ class PaymentsServiceSpec extends SpecBase {
             )
           }
         }
+
+        "when processing a single fully outstanding LPI" in new SetUp {
+          when(mockFinancialDataConnector.getFinancialData(appaId))
+            .thenReturn(EitherT.pure[Future, ErrorResponse](singleFullyOutstandingLPI))
+
+          whenReady(paymentsService.getOpenPayments(appaId).value) { result =>
+            result mustBe Right(
+              OpenPayments(
+                outstandingPayments = Seq(
+                  OutstandingPayment(
+                    transactionType = TransactionType.LPI,
+                    dueDate = singleFullyOutstandingLPI.financialTransactions.head.items.head.dueDate.get,
+                    chargeReference = None,
+                    totalAmount = BigDecimal("50"),
+                    remainingAmount = BigDecimal("50")
+                  )
+                ),
+                totalOutstandingPayments = BigDecimal("50"),
+                unallocatedPayments = Seq.empty,
+                totalUnallocatedPayments = BigDecimal("0"),
+                totalOpenPaymentsAmount = BigDecimal("50")
+              )
+            )
+          }
+        }
+
+        "when processing a single fully outstanding RPI" in new SetUp { // This shouldn't appear as an open payment
+          when(mockFinancialDataConnector.getFinancialData(appaId))
+            .thenReturn(EitherT.pure[Future, ErrorResponse](singleRPI))
+
+          whenReady(paymentsService.getOpenPayments(appaId).value) { result =>
+            result mustBe Right(
+              OpenPayments(
+                outstandingPayments = Seq(
+                  OutstandingPayment(
+                    transactionType = TransactionType.RPI,
+                    dueDate = singleRPI.financialTransactions.head.items.head.dueDate.get,
+                    chargeReference = None,
+                    totalAmount = BigDecimal("-50"),
+                    remainingAmount = BigDecimal("-50")
+                  )
+                ),
+                totalOutstandingPayments = BigDecimal("-50"),
+                unallocatedPayments = Seq.empty,
+                totalUnallocatedPayments = BigDecimal("0"),
+                totalOpenPaymentsAmount = BigDecimal("-50")
+              )
+            )
+          }
+        }
       }
 
       "an error should be returned" - {

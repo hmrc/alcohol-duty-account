@@ -27,14 +27,20 @@ class AppConfig @Inject() (config: Configuration, servicesConfig: ServicesConfig
 
   val appName: String = config.get[String]("appName")
 
-  val obligationDataHost: String            = servicesConfig.baseUrl("obligation")
+  private val obligationDataHost: String    = servicesConfig.baseUrl("obligation")
   val obligationDataToken: String           = getConfStringAndThrowIfNotFound("obligation.token")
   val obligationDataEnv: String             = getConfStringAndThrowIfNotFound("obligation.env")
+  private lazy val obligationDataUrlFormat  = new MessageFormat(
+    getConfStringAndThrowIfNotFound("obligation.url.obligationData")
+  )
   val obligationDataFilterStartDate: String = getConfStringAndThrowIfNotFound("obligation.filterStartDate")
 
-  val financialDataHost: String  = servicesConfig.baseUrl("financial")
-  val financialDataToken: String = getConfStringAndThrowIfNotFound("obligation.token")
-  val financialDataEnv: String   = getConfStringAndThrowIfNotFound("obligation.env")
+  private val financialDataHost: String   = servicesConfig.baseUrl("financial")
+  val financialDataToken: String          = getConfStringAndThrowIfNotFound("financial.token")
+  val financialDataEnv: String            = getConfStringAndThrowIfNotFound("financial.env")
+  private lazy val financialDataUrlFormat = new MessageFormat(
+    getConfStringAndThrowIfNotFound("financial.url.financialData")
+  )
 
   private val subscriptionHost: String                  = servicesConfig.baseUrl("subscription")
   lazy val subscriptionClientId: String                 = getConfStringAndThrowIfNotFound("subscription.clientId")
@@ -53,6 +59,16 @@ class AppConfig @Inject() (config: Configuration, servicesConfig: ServicesConfig
     s"$subscriptionHost$url"
   }
 
-  private def getConfStringAndThrowIfNotFound(key: String) =
+  def financialDataUrl(appaId: String): String = {
+    val url = financialDataUrlFormat.format(Array(idType, appaId, regime))
+    s"$financialDataHost$url"
+  }
+
+  def obligationDataUrl(appaId: String): String = {
+    val url = obligationDataUrlFormat.format(Array(idType, appaId, regime))
+    s"$obligationDataHost$url"
+  }
+
+  private[config] def getConfStringAndThrowIfNotFound(key: String) =
     servicesConfig.getConfString(key, throw new RuntimeException(s"Could not find services config key '$key'"))
 }

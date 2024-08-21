@@ -214,8 +214,7 @@ class ObligationDetailsIntegrationSpec extends ISpecBase {
 
     val expectedQueryParamsNoStatus      = dateFilterHeadersHeaders
 
-    val url =
-      s"${config.obligationDataHost}/enterprise/obligation-data/${config.idType}/$appaId/${config.regime}"
+    val url = config.obligationDataUrl(appaId)
 
     val notFoundErrorMessage = """{
                                  |    "code": "NOT_FOUND",

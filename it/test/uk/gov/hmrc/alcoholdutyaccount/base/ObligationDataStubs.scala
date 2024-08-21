@@ -25,8 +25,7 @@ import uk.gov.hmrc.alcoholdutyaccount.models.hods.{ObligationData, Open}
 trait ObligationDataStubs extends WireMockHelper with TestData { ISpecBase =>
   val config: AppConfig
 
-  private def url(alcoholDutyReference: String): String =
-    s"${config.obligationDataHost}/enterprise/obligation-data/${config.idType}/$alcoholDutyReference/${config.regime}"
+  private def url(appaId: String): String = config.obligationDataUrl(appaId)
 
   private val queryParams = Seq("status" -> Open.value)
 
@@ -60,21 +59,21 @@ trait ObligationDataStubs extends WireMockHelper with TestData { ISpecBase =>
       |}
       |""".stripMargin
 
-  def stubGetObligations(alcoholDutyReference: String, obligationData: ObligationData): Unit =
-    stubGetWithParameters(url(alcoholDutyReference), queryParams, OK, Json.toJson(obligationData).toString())
+  def stubGetObligations(appaId: String, obligationData: ObligationData): Unit =
+    stubGetWithParameters(url(appaId), queryParams, OK, Json.toJson(obligationData).toString())
 
-  def stubObligationsNotFound(alcoholDutyReference: String): Unit =
-    stubGetWithParameters(url(alcoholDutyReference), queryParams, NOT_FOUND, notFoundErrorMessage)
+  def stubObligationsNotFound(appaId: String): Unit =
+    stubGetWithParameters(url(appaId), queryParams, NOT_FOUND, notFoundErrorMessage)
 
-  def stubObligationsBadRequest(alcoholDutyReference: String): Unit =
-    stubGetWithParameters(url(alcoholDutyReference), queryParams, BAD_REQUEST, badRequestErrorMessage)
+  def stubObligationsBadRequest(appaId: String): Unit =
+    stubGetWithParameters(url(appaId), queryParams, BAD_REQUEST, badRequestErrorMessage)
 
-  def stubObligationsMultipleErrorsBadRequest(alcoholDutyReference: String): Unit =
-    stubGetWithParameters(url(alcoholDutyReference), queryParams, BAD_REQUEST, multipleBadRequestErrorMessages)
+  def stubObligationsMultipleErrorsBadRequest(appaId: String): Unit =
+    stubGetWithParameters(url(appaId), queryParams, BAD_REQUEST, multipleBadRequestErrorMessages)
 
-  def stubObligationsWithFault(alcoholDutyReference: String): Unit =
-    stubGetFaultWithParameters(url(alcoholDutyReference), queryParams)
+  def stubObligationsWithFault(appaId: String): Unit =
+    stubGetFaultWithParameters(url(appaId), queryParams)
 
-  def stubObligationsInternalServerError(alcoholDutyReference: String): Unit =
-    stubGetWithParameters(url(alcoholDutyReference), queryParams, INTERNAL_SERVER_ERROR, "No obligation data found")
+  def stubObligationsInternalServerError(appaId: String): Unit =
+    stubGetWithParameters(url(appaId), queryParams, INTERNAL_SERVER_ERROR, "No obligation data found")
 }

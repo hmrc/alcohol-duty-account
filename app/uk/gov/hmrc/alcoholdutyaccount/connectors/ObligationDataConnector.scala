@@ -38,7 +38,7 @@ class ObligationDataConnector @Inject() (
   override protected val logger: Logger = Logger(this.getClass)
 
   def getObligationDetails(
-    alcoholDutyReference: String,
+    appaId: String,
     obligationStatusFilter: Option[ObligationStatus]
   )(implicit hc: HeaderCarrier): EitherT[Future, ErrorResponse, ObligationData] =
     EitherT {
@@ -48,13 +48,11 @@ class ObligationDataConnector @Inject() (
         "Environment"             -> config.obligationDataEnv
       )
 
-      val url =
-        s"${config.obligationDataHost}/enterprise/obligation-data/${config.idType}/$alcoholDutyReference/${config.regime}"
-      logger.info(s"Fetching all open obligation data for appaId $alcoholDutyReference")
+      logger.info(s"Fetching all open obligation data for appaId $appaId")
 
       httpClient
         .GET[Either[UpstreamErrorResponse, HttpResponse]](
-          url = url,
+          url = config.obligationDataUrl(appaId),
           queryParams = getQueryParams(obligationStatusFilter),
           headers = headers
         )
@@ -65,17 +63,17 @@ class ObligationDataConnector @Inject() (
                 .as[ObligationData]
             } match {
               case Success(doc)       =>
-                logger.info(s"Retrieved open obligation data for appaId $alcoholDutyReference")
+                logger.info(s"Retrieved open obligation data for appaId $appaId")
                 Right(doc)
               case Failure(exception) =>
-                logger.warn(s"Unable to parse obligation data for appaId $alcoholDutyReference", exception)
+                logger.warn(s"Unable to parse obligation data for appaId $appaId", exception)
                 Left(ErrorResponse(INTERNAL_SERVER_ERROR, "Unable to parse obligation data"))
             }
-          case Left(error)     => Left(processError(error, alcoholDutyReference))
+          case Left(error)     => Left(processError(error, appaId))
         }
         .recoverWith { case e: Exception =>
           logger.warn(
-            s"An exception was returned while trying to fetch obligation data appaId $alcoholDutyReference",
+            s"An exception was returned while trying to fetch obligation data appaId $appaId",
             e
           )
           Future.successful(Left(ErrorResponse(INTERNAL_SERVER_ERROR, e.getMessage)))

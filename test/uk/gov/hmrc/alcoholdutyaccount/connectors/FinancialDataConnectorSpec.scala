@@ -162,8 +162,7 @@ class FinancialDataConnectorSpec extends SpecBase with ScalaFutures with Connect
 
   class SetUp extends ConnectorFixture with TestData {
     val connector                                  = new FinancialDataConnector(config = config, httpClient = httpClient)
-    val url                                        =
-      s"${config.financialDataHost}/enterprise/financial-data/${config.idType}/$appaId/${config.regime}"
+    val url                                        = appConfig.financialDataUrl(appaId)
     val expectedQueryParams: Seq[(String, String)] = Seq(
       "onlyOpenItems"              -> "true",
       "includeLocks"               -> "false",

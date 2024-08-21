@@ -71,7 +71,7 @@ class SubscriptionSummaryIntegrationSpec extends ISpecBase with ConnectorTestHel
       verifyGet(url)
     }
 
-    "respond with NOT_FOUND if subscription summary found" in new SetUp {
+    "respond with NOT_FOUND if subscription summary not found" in new SetUp {
       stubAuthorised()
       stubGet(url, NOT_FOUND, "")
 

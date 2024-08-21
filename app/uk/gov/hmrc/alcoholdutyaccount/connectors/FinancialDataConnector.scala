@@ -43,14 +43,11 @@ class FinancialDataConnector @Inject() (config: AppConfig, implicit val httpClie
         "Environment"             -> config.financialDataEnv
       )
 
-      val url =
-        s"${config.financialDataHost}/enterprise/financial-data/${config.idType}/$appaId/${config.regime}"
-
       logger.info(s"Fetching financial transaction document for appaId $appaId")
 
       httpClient
         .GET[Either[UpstreamErrorResponse, HttpResponse]](
-          url = url,
+          url = config.financialDataUrl(appaId),
           queryParams = getQueryParams,
           headers = headers
         )
