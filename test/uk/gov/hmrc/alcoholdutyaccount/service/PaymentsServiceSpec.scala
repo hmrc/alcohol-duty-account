@@ -42,7 +42,6 @@ class PaymentsServiceSpec extends SpecBase {
                     transactionType = TransactionType.Return,
                     dueDate = singleFullyOutstandingReturn.financialTransactions.head.items.head.dueDate.get,
                     chargeReference = singleFullyOutstandingReturn.financialTransactions.head.chargeReference,
-                    totalAmount = BigDecimal("9000"),
                     remainingAmount = BigDecimal("9000")
                   )
                 ),
@@ -67,7 +66,6 @@ class PaymentsServiceSpec extends SpecBase {
                     transactionType = TransactionType.Return,
                     dueDate = singlePartiallyOutstandingReturn.financialTransactions.head.items.head.dueDate.get,
                     chargeReference = singlePartiallyOutstandingReturn.financialTransactions.head.chargeReference,
-                    totalAmount = BigDecimal("9000"),
                     remainingAmount = BigDecimal("5000")
                   )
                 ),
@@ -92,7 +90,6 @@ class PaymentsServiceSpec extends SpecBase {
                     transactionType = TransactionType.Return,
                     dueDate = twoLineItemPartiallyOutstandingReturn.financialTransactions.head.items.head.dueDate.get,
                     chargeReference = twoLineItemPartiallyOutstandingReturn.financialTransactions.head.chargeReference,
-                    totalAmount = BigDecimal("11000"),
                     remainingAmount = BigDecimal("7000")
                   )
                 ),
@@ -117,14 +114,12 @@ class PaymentsServiceSpec extends SpecBase {
                   transactionType = TransactionType.Return,
                   dueDate = twoSeparateReturnsOneOutstanding.financialTransactions(0).items.head.dueDate.get,
                   chargeReference = twoSeparateReturnsOneOutstanding.financialTransactions(0).chargeReference,
-                  totalAmount = BigDecimal("9000"),
                   remainingAmount = BigDecimal("5000")
                 ),
                 OutstandingPayment(
                   transactionType = TransactionType.Return,
                   dueDate = twoSeparateReturnsOneOutstanding.financialTransactions(1).items.head.dueDate.get,
                   chargeReference = twoSeparateReturnsOneOutstanding.financialTransactions(1).chargeReference,
-                  totalAmount = BigDecimal("2000"),
                   remainingAmount = BigDecimal("2000")
                 )
               )
@@ -223,7 +218,6 @@ class PaymentsServiceSpec extends SpecBase {
                       onePartiallyPaidReturnLineItemAndOnePartiallyAllocatedPaymentOnAccount.financialTransactions.head.items.head.dueDate.get,
                     chargeReference =
                       onePartiallyPaidReturnLineItemAndOnePartiallyAllocatedPaymentOnAccount.financialTransactions.head.chargeReference,
-                    totalAmount = BigDecimal("9000"),
                     remainingAmount = BigDecimal("5000")
                   )
                 ),
@@ -258,7 +252,6 @@ class PaymentsServiceSpec extends SpecBase {
                     transactionType = TransactionType.LPI,
                     dueDate = singleFullyOutstandingLPI.financialTransactions.head.items.head.dueDate.get,
                     chargeReference = None,
-                    totalAmount = BigDecimal("50"),
                     remainingAmount = BigDecimal("50")
                   )
                 ),
@@ -283,7 +276,6 @@ class PaymentsServiceSpec extends SpecBase {
                     transactionType = TransactionType.RPI,
                     dueDate = singleRPI.financialTransactions.head.items.head.dueDate.get,
                     chargeReference = None,
-                    totalAmount = BigDecimal("-50"),
                     remainingAmount = BigDecimal("-50")
                   )
                 ),
@@ -560,6 +552,19 @@ class PaymentsServiceSpec extends SpecBase {
 
         whenReady(paymentsService.getOpenPayments(appaId).value) { result =>
           result mustBe Left(errorResponse)
+        }
+      }
+    }
+
+    "when calling calculateOutstandingAmount" - {
+      "and outstanding amount is missing for some reason" - {
+        "the total can be calculated by assuming it is 0 (coverage)" in new SetUp {
+          paymentsService.calculateOutstandingAmount(
+            Seq(
+              twoLineItemPartiallyOutstandingReturn.financialTransactions(0).copy(outstandingAmount = None),
+              twoLineItemPartiallyOutstandingReturn.financialTransactions(1)
+            )
+          ) mustBe BigDecimal("2000")
         }
       }
     }

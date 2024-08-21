@@ -158,33 +158,28 @@ class PaymentsService @Inject() (
     )
   }
 
+  private[service] def calculateOutstandingAmount(
+    financialTransactionsForDocument: Seq[FinancialTransaction]
+  ): BigDecimal =
+    financialTransactionsForDocument.map(_.outstandingAmount.getOrElse(BigDecimal(0))).sum
+
   private def buildOpenPayment(
     financialTransactionData: FinancialTransactionData,
-    financialTransactionsForDocument: Seq[FinancialTransaction]
+    outstandingAmount: BigDecimal
   ): OpenPayment = {
-    // For part-paid one entry will appear (any breakdown in the items) so can sum totals and outstanding safely
-    val (total, outstanding) = financialTransactionsForDocument.foldLeft((BigDecimal(0), BigDecimal(0))) {
-      case ((total, outstanding), transaction) =>
-        (
-          total + transaction.originalAmount,
-          outstanding + transaction.outstandingAmount.getOrElse(BigDecimal(0))
-        )
-    }
-
     val transactionType = financialTransactionData.transactionType
 
     if (transactionType == PaymentOnAccount) {
       UnallocatedPayment(
         paymentDate = financialTransactionData.dueDate,
-        unallocatedAmount = outstanding
+        unallocatedAmount = outstandingAmount
       )
     } else {
       OutstandingPayment(
         transactionType = transactionType,
         dueDate = financialTransactionData.dueDate,
         chargeReference = financialTransactionData.maybeChargeReference,
-        totalAmount = total,
-        remainingAmount = outstanding
+        remainingAmount = outstandingAmount
       )
     }
   }
@@ -198,7 +193,10 @@ class PaymentsService @Inject() (
           .groupBy(_.sapDocumentNumber)
           .map { case (sapDocumentNumber, financialTransactionsForDocument) =>
             validateAndGetCommonData(sapDocumentNumber, financialTransactionsForDocument)
-              .map(buildOpenPayment(_, financialTransactionsForDocument))
+              .map {
+                val outstandingAmount = calculateOutstandingAmount(financialTransactionsForDocument)
+                buildOpenPayment(_, outstandingAmount)
+              }
           }
           .toList
           .sequence
@@ -210,9 +208,9 @@ class PaymentsService @Inject() (
       openPayments.foldLeft((List.empty[OutstandingPayment], List.empty[UnallocatedPayment])) {
         case ((outstandingPayments, unallocatedPayments), openPayment) =>
           openPayment match {
-            case outstandingPayment @ OutstandingPayment(_, _, _, _, _) =>
+            case outstandingPayment @ OutstandingPayment(_, _, _, _) =>
               (outstandingPayment :: outstandingPayments, unallocatedPayments)
-            case unallocatedPayment @ UnallocatedPayment(_, _)          =>
+            case unallocatedPayment @ UnallocatedPayment(_, _)       =>
               (outstandingPayments, unallocatedPayment :: unallocatedPayments)
           }
       }
