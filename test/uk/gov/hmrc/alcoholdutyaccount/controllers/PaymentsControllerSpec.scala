@@ -34,11 +34,11 @@ class PaymentsControllerSpec extends SpecBase {
   "PaymentsController" - {
     "when calling outstandingPayments" - {
       "return OK when the service returns success" in new SetUp {
-        mockPaymentsService.getOpenPayments(eqTo(appaId))(*) returnsF openPayments
+        mockPaymentsService.getOpenPayments(eqTo(appaId))(*) returnsF noOpenPayments
 
         val result: Future[Result] = controller.openPayments(appaId)(fakeRequest)
         status(result) mustBe OK
-        contentAsJson(result) mustBe Json.toJson(openPayments)
+        contentAsJson(result) mustBe Json.toJson(noOpenPayments)
       }
 
       "return any error returned from the service" in new SetUp {

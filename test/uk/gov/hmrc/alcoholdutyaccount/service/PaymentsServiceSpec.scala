@@ -152,31 +152,9 @@ class PaymentsServiceSpec extends SpecBase {
           }
         }
 
-        "when processing a single partially allocated payment on account" in new SetUp {
+        "when processing two separate payments on account" in new SetUp { // This probably won't happen, but check it can be handled
           when(mockFinancialDataConnector.getFinancialData(appaId))
-            .thenReturn(EitherT.pure[Future, ErrorResponse](singlePartiallyAllocatedPayment))
-
-          whenReady(paymentsService.getOpenPayments(appaId).value) { result =>
-            result mustBe Right(
-              OpenPayments(
-                outstandingPayments = Seq.empty,
-                totalOutstandingPayments = BigDecimal("0"),
-                unallocatedPayments = Seq(
-                  UnallocatedPayment(
-                    paymentDate = singlePartiallyAllocatedPayment.financialTransactions.head.items.head.dueDate.get,
-                    unallocatedAmount = BigDecimal("-5000")
-                  )
-                ),
-                totalUnallocatedPayments = BigDecimal("-5000"),
-                totalOpenPaymentsAmount = BigDecimal("-5000")
-              )
-            )
-          }
-        }
-
-        "when processing two payments on account, one partially allocated" in new SetUp {
-          when(mockFinancialDataConnector.getFinancialData(appaId))
-            .thenReturn(EitherT.pure[Future, ErrorResponse](twoSeparatePaymentsOnePartiallyAllocated))
+            .thenReturn(EitherT.pure[Future, ErrorResponse](twoSeparatePayments))
 
           whenReady(paymentsService.getOpenPayments(appaId).value) {
             case Left(_)             => fail()
@@ -185,13 +163,11 @@ class PaymentsServiceSpec extends SpecBase {
               openPayments.totalOutstandingPayments mustBe BigDecimal("0")
               openPayments.unallocatedPayments must contain theSameElementsAs Seq(
                 UnallocatedPayment(
-                  paymentDate =
-                    twoSeparatePaymentsOnePartiallyAllocated.financialTransactions(0).items.head.dueDate.get,
+                  paymentDate = twoSeparatePayments.financialTransactions(0).items.head.dueDate.get,
                   unallocatedAmount = BigDecimal("-5000")
                 ),
                 UnallocatedPayment(
-                  paymentDate =
-                    twoSeparatePaymentsOnePartiallyAllocated.financialTransactions(1).items.head.dueDate.get,
+                  paymentDate = twoSeparatePayments.financialTransactions(1).items.head.dueDate.get,
                   unallocatedAmount = BigDecimal("-2000")
                 )
               )

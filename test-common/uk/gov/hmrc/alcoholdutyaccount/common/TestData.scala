@@ -399,14 +399,14 @@ trait TestData extends ModelGenerators {
       )
     )
 
-  val singlePartiallyAllocatedPayment: FinancialTransactionDocument =
+  val twoSeparatePayments: FinancialTransactionDocument =
     FinancialTransactionDocument(
       financialTransactions = Seq(
         FinancialTransaction(
           sapDocumentNumber = sapDocumentNumberGen.sample.get,
           periodKey = None,
           chargeReference = None,
-          originalAmount = BigDecimal("-9000"),
+          originalAmount = BigDecimal("-5000"),
           mainTransaction = TransactionType.toMainTransactionType(TransactionType.PaymentOnAccount),
           subTransaction = "6132",
           outstandingAmount = Some(BigDecimal("-5000")),
@@ -415,38 +415,6 @@ trait TestData extends ModelGenerators {
               subItem = "000",
               dueDate = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).dueDate()),
               amount = BigDecimal("-5000")
-            ),
-            FinancialTransactionItem(
-              subItem = "001",
-              dueDate = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).dueDate()),
-              amount = BigDecimal("-4000")
-            )
-          )
-        )
-      )
-    )
-
-  val twoSeparatePaymentsOnePartiallyAllocated: FinancialTransactionDocument =
-    FinancialTransactionDocument(
-      financialTransactions = Seq(
-        FinancialTransaction(
-          sapDocumentNumber = sapDocumentNumberGen.sample.get,
-          periodKey = None,
-          chargeReference = None,
-          originalAmount = BigDecimal("-9000"),
-          mainTransaction = TransactionType.toMainTransactionType(TransactionType.PaymentOnAccount),
-          subTransaction = "6132",
-          outstandingAmount = Some(BigDecimal("-5000")),
-          items = Seq(
-            FinancialTransactionItem(
-              subItem = "000",
-              dueDate = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).dueDate()),
-              amount = BigDecimal("-5000")
-            ),
-            FinancialTransactionItem(
-              subItem = "001",
-              dueDate = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).dueDate()),
-              amount = BigDecimal("-4000")
             )
           )
         ),
@@ -484,12 +452,12 @@ trait TestData extends ModelGenerators {
             FinancialTransactionItem(
               subItem = "000",
               dueDate = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).dueDate()),
-              amount = BigDecimal("-5000")
+              amount = BigDecimal("5000")
             ),
             FinancialTransactionItem(
               subItem = "001",
               dueDate = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).dueDate()),
-              amount = BigDecimal("-4000")
+              amount = BigDecimal("4000")
             )
           )
         ),
@@ -497,20 +465,15 @@ trait TestData extends ModelGenerators {
           sapDocumentNumber = sapDocumentNumberGen.sample.get,
           periodKey = None,
           chargeReference = None,
-          originalAmount = BigDecimal("-3000"),
+          originalAmount = BigDecimal("-2000"),
           mainTransaction = TransactionType.toMainTransactionType(TransactionType.PaymentOnAccount),
           subTransaction = "6132",
           outstandingAmount = Some(BigDecimal("-2000")),
           items = Seq(
             FinancialTransactionItem(
               subItem = "000",
-              dueDate = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).dueDate()),
+              dueDate = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).periodFromDate()),
               amount = BigDecimal("-2000")
-            ),
-            FinancialTransactionItem(
-              subItem = "001",
-              dueDate = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).dueDate()),
-              amount = BigDecimal("-1000")
             )
           )
         )
@@ -572,20 +535,22 @@ trait TestData extends ModelGenerators {
     )
   )
 
-  val adrObligationDetails          = new AdrObligationData(
+  val adrObligationDetails = new AdrObligationData(
     status = ObligationStatus.Open,
     fromDate = LocalDate.of(2024, 1, 1),
     toDate = LocalDate.of(2024, 1, 1),
     dueDate = LocalDate.of(2024, 1, 1),
     periodKey
   )
-  val adrObligationDetailsOpen2     = new AdrObligationData(
+
+  val adrObligationDetailsOpen2 = new AdrObligationData(
     status = ObligationStatus.Open,
     fromDate = LocalDate.of(2024, 1, 1),
     toDate = LocalDate.of(2024, 1, 1),
     dueDate = LocalDate.of(2024, 1, 1),
     periodKey2
   )
+
   val adrObligationDetailsFulfilled = new AdrObligationData(
     ObligationStatus.Fulfilled,
     fromDate = LocalDate.of(2024, 1, 1),
@@ -600,7 +565,13 @@ trait TestData extends ModelGenerators {
   val adrMultipleOpenData =
     Seq(adrObligationDetails, adrObligationDetailsOpen2)
 
-  val openPayments = OpenPayments(Seq.empty, BigDecimal(0), Seq.empty, BigDecimal(0), BigDecimal(0))
+  val noOpenPayments = OpenPayments(
+    outstandingPayments = Seq.empty,
+    totalOutstandingPayments = BigDecimal(0),
+    unallocatedPayments = Seq.empty,
+    totalUnallocatedPayments = BigDecimal(0),
+    totalOpenPaymentsAmount = BigDecimal(0)
+  )
 
   case class DownstreamErrorDetails(code: String, message: String, logID: String)
 

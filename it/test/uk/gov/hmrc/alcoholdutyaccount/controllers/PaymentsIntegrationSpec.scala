@@ -96,7 +96,6 @@ class PaymentsIntegrationSpec extends ISpecBase with ConnectorTestHelpers {
       "customerPaymentInformation" -> false.toString
     )
 
-
     val financialDataStubJson =
       """{
         |  "idType": "ZAD",
@@ -323,22 +322,13 @@ class PaymentsIntegrationSpec extends ISpecBase with ConnectorTestHelpers {
         |      "sapDocumentNumberItem": "0001",
         |      "mainTransaction": "0060",
         |      "subTransaction": "6132",
-        |      "originalAmount": -1500,
+        |      "originalAmount": -500,
         |      "outstandingAmount": -500,
-        |      "clearedAmount": -1000,
         |      "items": [
         |        {
         |          "subItem": "000",
         |          "dueDate": "2024-08-01",
         |          "amount": -500
-        |        },
-        |        {
-        |          "subItem": "001",
-        |          "dueDate": "2024-08-01",
-        |          "amount": -1000,
-        |          "clearingDate": "2024-08-01",
-        |          "clearingReason": "Incoming Payment",
-        |          "clearingSAPDocument": "625466783031"
         |        }
         |      ]
         |    }
