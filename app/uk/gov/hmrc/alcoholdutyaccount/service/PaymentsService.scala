@@ -19,11 +19,11 @@ package uk.gov.hmrc.alcoholdutyaccount.service
 import cats.data.EitherT
 import cats.implicits._
 import play.api.Logging
-import play.api.http.Status.{INTERNAL_SERVER_ERROR, UNPROCESSABLE_ENTITY}
+import play.api.http.Status.INTERNAL_SERVER_ERROR
 import uk.gov.hmrc.alcoholdutyaccount.connectors.FinancialDataConnector
 import uk.gov.hmrc.alcoholdutyaccount.models.hods.{FinancialTransaction, FinancialTransactionDocument}
 import uk.gov.hmrc.alcoholdutyaccount.models.payments.TransactionType.{PaymentOnAccount, RPI}
-import uk.gov.hmrc.alcoholdutyaccount.models.payments.{OpenPayments, OutstandingPayment, TransactionType, UnallocatedPayment}
+import uk.gov.hmrc.alcoholdutyaccount.models.payments.{OpenPayment, OpenPayments, OutstandingPayment, TransactionType, UnallocatedPayment}
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.bootstrap.backend.http.ErrorResponse
 
@@ -35,7 +35,7 @@ class PaymentsService @Inject() (
   financialDataConnector: FinancialDataConnector
 )(implicit ec: ExecutionContext)
     extends Logging {
-  private case class FinancialTransactionData(
+  private[service] case class FinancialTransactionData(
     transactionType: TransactionType,
     dueDate: LocalDate,
     maybeChargeReference: Option[String]
@@ -56,14 +56,14 @@ class PaymentsService @Inject() (
         val errorMessage =
           s"Due date not found on first item of first entry of financial transaction $sapDocumentNumber."
         logger.warn(errorMessage)
-        Left(ErrorResponse(UNPROCESSABLE_ENTITY, errorMessage))
+        Left(ErrorResponse(INTERNAL_SERVER_ERROR, errorMessage))
       } { dueDate =>
         val hasErrors = subsequentItems.map(_.dueDate.fold(true)(!dueDate.isEqual(_))).exists(identity)
 
         if (hasErrors) {
           val errorMessage = s"Not all dueDates matched for first entry of financial transaction $sapDocumentNumber."
           logger.warn(errorMessage)
-          Left(ErrorResponse(UNPROCESSABLE_ENTITY, errorMessage))
+          Left(ErrorResponse(INTERNAL_SERVER_ERROR, errorMessage))
         } else {
           Right(dueDate)
         }
@@ -71,7 +71,7 @@ class PaymentsService @Inject() (
     case _                            =>
       val errorMessage = s"Expected at least one item for financial transaction $sapDocumentNumber."
       logger.warn(errorMessage)
-      Left(ErrorResponse(UNPROCESSABLE_ENTITY, errorMessage))
+      Left(ErrorResponse(INTERNAL_SERVER_ERROR, errorMessage))
   }
 
   private def validateAndGetFinancialTransactionData(
@@ -95,7 +95,7 @@ class PaymentsService @Inject() (
       val errorMessage =
         s"Not all chargeReferences, mainTransactions and/or dueDates matched against the first entry of financial transaction $sapDocumentNumber."
       logger.warn(errorMessage)
-      Left(ErrorResponse(UNPROCESSABLE_ENTITY, errorMessage))
+      Left(ErrorResponse(INTERNAL_SERVER_ERROR, errorMessage))
     } else {
       TransactionType
         .fromMainTransactionType(mainTransactionType)
@@ -122,7 +122,7 @@ class PaymentsService @Inject() (
     }
   }
 
-  private def validateAndGetCommonData(
+  private[service] def validateAndGetCommonData(
     sapDocumentNumber: String,
     financialTransactionsForDocument: Seq[FinancialTransaction]
   ): Either[ErrorResponse, FinancialTransactionData] = financialTransactionsForDocument.toList match {
@@ -158,75 +158,81 @@ class PaymentsService @Inject() (
     )
   }
 
-  private def processFinancialData(
+  private def buildOpenPayment(
+    financialTransactionData: FinancialTransactionData,
+    financialTransactionsForDocument: Seq[FinancialTransaction]
+  ): OpenPayment = {
+    // For part-paid one entry will appear (any breakdown in the items) so can sum totals and outstanding safely
+    val (total, outstanding) = financialTransactionsForDocument.foldLeft((BigDecimal(0), BigDecimal(0))) {
+      case ((total, outstanding), transaction) =>
+        (
+          total + transaction.originalAmount,
+          outstanding + transaction.outstandingAmount.getOrElse(BigDecimal(0))
+        )
+    }
+
+    val transactionType = financialTransactionData.transactionType
+
+    if (transactionType == PaymentOnAccount) {
+      UnallocatedPayment(
+        paymentDate = financialTransactionData.dueDate,
+        unallocatedAmount = outstanding
+      )
+    } else {
+      OutstandingPayment(
+        transactionType = transactionType,
+        dueDate = financialTransactionData.dueDate,
+        chargeReference = financialTransactionData.maybeChargeReference,
+        totalAmount = total,
+        remainingAmount = outstanding
+      )
+    }
+  }
+
+  private def extractOpenPayments(
     financialTransactionDocument: FinancialTransactionDocument
-  ): EitherT[Future, ErrorResponse, OpenPayments] =
+  ): EitherT[Future, ErrorResponse, List[OpenPayment]] =
     EitherT {
       Future.successful(
         financialTransactionDocument.financialTransactions
           .groupBy(_.sapDocumentNumber)
-          .map { case (sapDocumentNumber, financialTransactionForDocument) =>
-            validateAndGetCommonData(sapDocumentNumber, financialTransactionForDocument).map {
-              financialTransactionData =>
-                // For part-paid one entry will appear (any breakdown in the items) so can sum totals and outstanding safely
-                val (total, outstanding) = financialTransactionForDocument.foldLeft((BigDecimal(0), BigDecimal(0))) {
-                  case ((total, outstanding), transaction) =>
-                    (
-                      total + transaction.originalAmount,
-                      outstanding + transaction.outstandingAmount.getOrElse(BigDecimal(0))
-                    )
-                }
-
-                val transactionType = financialTransactionData.transactionType
-
-                if (transactionType == PaymentOnAccount) {
-                  UnallocatedPayment(
-                    paymentDate = financialTransactionData.dueDate,
-                    unallocatedAmount = outstanding
-                  )
-                } else {
-                  OutstandingPayment(
-                    transactionType = transactionType,
-                    dueDate = financialTransactionData.dueDate,
-                    chargeReference = financialTransactionData.maybeChargeReference,
-                    totalAmount = total,
-                    remainingAmount = outstanding
-                  )
-                }
-            }
+          .map { case (sapDocumentNumber, financialTransactionsForDocument) =>
+            validateAndGetCommonData(sapDocumentNumber, financialTransactionsForDocument)
+              .map(buildOpenPayment(_, financialTransactionsForDocument))
           }
           .toList
           .sequence
-          .map { openPayments =>
-            val (outstandingPayments, unallocatedPayments) =
-              openPayments.foldLeft((List.empty[OutstandingPayment], List.empty[UnallocatedPayment])) {
-                case ((outstandingPayments, unallocatedPayments), openPayment) =>
-                  openPayment match {
-                    case outstandingPayment @ OutstandingPayment(_, _, _, _, _) =>
-                      (outstandingPayment :: outstandingPayments, unallocatedPayments)
-                    case unallocatedPayment @ UnallocatedPayment(_, _)          =>
-                      (outstandingPayments, unallocatedPayment :: unallocatedPayments)
-                  }
-              }
-
-            val paymentTotals = calculatedTotalBalance(outstandingPayments, unallocatedPayments)
-
-            OpenPayments(
-              outstandingPayments = outstandingPayments,
-              totalOutstandingPayments = paymentTotals.totalOutstandingPayments,
-              unallocatedPayments = unallocatedPayments,
-              totalUnallocatedPayments = paymentTotals.totalUnallocatedPayments,
-              totalOpenPaymentsAmount = paymentTotals.totalOpenPaymentsAmount
-            )
-          }
       )
     }
+
+  private def buildOpenPaymentsPayload(openPayments: List[OpenPayment]): OpenPayments = {
+    val (outstandingPayments, unallocatedPayments) =
+      openPayments.foldLeft((List.empty[OutstandingPayment], List.empty[UnallocatedPayment])) {
+        case ((outstandingPayments, unallocatedPayments), openPayment) =>
+          openPayment match {
+            case outstandingPayment @ OutstandingPayment(_, _, _, _, _) =>
+              (outstandingPayment :: outstandingPayments, unallocatedPayments)
+            case unallocatedPayment @ UnallocatedPayment(_, _)          =>
+              (outstandingPayments, unallocatedPayment :: unallocatedPayments)
+          }
+      }
+
+    val paymentTotals = calculatedTotalBalance(outstandingPayments, unallocatedPayments)
+
+    OpenPayments(
+      outstandingPayments = outstandingPayments,
+      totalOutstandingPayments = paymentTotals.totalOutstandingPayments,
+      unallocatedPayments = unallocatedPayments,
+      totalUnallocatedPayments = paymentTotals.totalUnallocatedPayments,
+      totalOpenPaymentsAmount = paymentTotals.totalOpenPaymentsAmount
+    )
+  }
 
   def getOpenPayments(
     appaId: String
   )(implicit hc: HeaderCarrier): EitherT[Future, ErrorResponse, OpenPayments] =
     for {
-      ftd                 <- financialDataConnector.getFinancialData(appaId)
-      outstandingPayments <- processFinancialData(ftd)
-    } yield outstandingPayments
+      financialTransactionDocument <- financialDataConnector.getFinancialData(appaId)
+      openPayments                 <- extractOpenPayments(financialTransactionDocument)
+    } yield buildOpenPaymentsPayload(openPayments)
 }

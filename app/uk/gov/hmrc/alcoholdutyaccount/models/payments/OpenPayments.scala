@@ -38,6 +38,13 @@ object TransactionType extends Enum[TransactionType] with PlayJsonEnum[Transacti
     case "6076" => Some(RPI)
     case _      => None
   }
+
+  def toMainTransactionType(transactionType: TransactionType): String = transactionType match {
+    case Return           => "6074"
+    case PaymentOnAccount => "0060"
+    case LPI              => "6075"
+    case RPI              => "6076"
+  }
 }
 
 sealed trait OpenPayment
