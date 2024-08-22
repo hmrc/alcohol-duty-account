@@ -48,4 +48,17 @@ class PaymentsController @Inject() (
           openPayments => Ok(Json.toJson(openPayments))
         )
     }
+
+  def historicPayments(appaId: String, year: Int): Action[AnyContent] =
+    authorise.async { implicit request =>
+      paymentsService
+        .getHistoricPayments(appaId, year)
+        .fold(
+          errorResponse => {
+            logger.warn(s"Unable to get historic payments for $appaId: $errorResponse")
+            error(ErrorCodes.sanitiseError(errorResponse))
+          },
+          historicPayments => Ok(Json.toJson(historicPayments))
+        )
+    }
 }

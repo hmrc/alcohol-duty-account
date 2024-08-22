@@ -23,7 +23,7 @@ import play.api.http.Status.INTERNAL_SERVER_ERROR
 import uk.gov.hmrc.alcoholdutyaccount.connectors.FinancialDataConnector
 import uk.gov.hmrc.alcoholdutyaccount.models.hods.{FinancialTransaction, FinancialTransactionDocument}
 import uk.gov.hmrc.alcoholdutyaccount.models.payments.TransactionType.{PaymentOnAccount, RPI}
-import uk.gov.hmrc.alcoholdutyaccount.models.payments.{OpenPayment, OpenPayments, OutstandingPayment, TransactionType, UnallocatedPayment}
+import uk.gov.hmrc.alcoholdutyaccount.models.payments.{HistoricPayment, HistoricPayments, OpenPayment, OpenPayments, OutstandingPayment, TransactionType, UnallocatedPayment}
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.bootstrap.backend.http.ErrorResponse
 
@@ -233,4 +233,18 @@ class PaymentsService @Inject() (
       financialTransactionDocument <- financialDataConnector.getFinancialData(appaId)
       openPayments                 <- extractOpenPayments(financialTransactionDocument)
     } yield buildOpenPaymentsPayload(openPayments)
+
+  def extractHistoricPayments(
+    financialTransactionDocument: FinancialTransactionDocument
+  ): EitherT[Future, ErrorResponse, Seq[HistoricPayment]] =
+    EitherT.pure(Seq.empty)
+
+  def getHistoricPayments(
+    appaId: String,
+    year: Int
+  )(implicit hc: HeaderCarrier): EitherT[Future, ErrorResponse, HistoricPayments] =
+    for {
+      financialTransactionDocument <- financialDataConnector.getFinancialData(appaId)
+      historicPayments             <- extractHistoricPayments(financialTransactionDocument)
+    } yield HistoricPayments(year, historicPayments)
 }

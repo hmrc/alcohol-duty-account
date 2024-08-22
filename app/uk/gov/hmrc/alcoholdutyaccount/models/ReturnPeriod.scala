@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.alcoholdutyaccount.common
+package uk.gov.hmrc.alcoholdutyaccount.models
 
 import play.api.libs.json.{Format, JsResult, JsString, JsValue}
 
