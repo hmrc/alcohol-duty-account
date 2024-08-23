@@ -18,10 +18,10 @@ package uk.gov.hmrc.alcoholdutyaccount.service
 
 import cats.data.EitherT
 import uk.gov.hmrc.alcoholdutyaccount.base.SpecBase
-import uk.gov.hmrc.alcoholdutyaccount.common.ReturnPeriod
 import uk.gov.hmrc.alcoholdutyaccount.connectors.FinancialDataConnector
+import uk.gov.hmrc.alcoholdutyaccount.models.ReturnPeriod
 import uk.gov.hmrc.alcoholdutyaccount.models.hods.FinancialTransactionDocument
-import uk.gov.hmrc.alcoholdutyaccount.models.payments.{OpenPayments, OutstandingPayment, TransactionType, UnallocatedPayment}
+import uk.gov.hmrc.alcoholdutyaccount.models.payments.{HistoricPayment, HistoricPayments, OpenPayments, OutstandingPayment, TransactionType, UnallocatedPayment}
 import uk.gov.hmrc.play.bootstrap.backend.http.ErrorResponse
 
 import scala.concurrent.Future
@@ -385,7 +385,7 @@ class PaymentsServiceSpec extends SpecBase {
 
         val errorResponse = ErrorResponse(
           INTERNAL_SERVER_ERROR,
-          s"Not all chargeReferences, mainTransactions and/or dueDates matched against the first entry of financial transaction ${mismatchedTransactionTypesOnLineItems.financialTransactions.head.sapDocumentNumber}."
+          s"Not all chargeReferences, periodKeys, mainTransactions and/or dueDates matched against the first entry of financial transaction ${mismatchedTransactionTypesOnLineItems.financialTransactions.head.sapDocumentNumber}."
         )
 
         whenReady(paymentsService.getOpenPayments(appaId).value) { result =>
@@ -406,7 +406,7 @@ class PaymentsServiceSpec extends SpecBase {
 
         val errorResponse = ErrorResponse(
           INTERNAL_SERVER_ERROR,
-          s"Not all chargeReferences, mainTransactions and/or dueDates matched against the first entry of financial transaction ${missingChargeReferencesOnSecondLineItem.financialTransactions.head.sapDocumentNumber}."
+          s"Not all chargeReferences, periodKeys, mainTransactions and/or dueDates matched against the first entry of financial transaction ${missingChargeReferencesOnSecondLineItem.financialTransactions.head.sapDocumentNumber}."
         )
 
         whenReady(paymentsService.getOpenPayments(appaId).value) { result =>
@@ -427,7 +427,7 @@ class PaymentsServiceSpec extends SpecBase {
 
         val errorResponse = ErrorResponse(
           INTERNAL_SERVER_ERROR,
-          s"Not all chargeReferences, mainTransactions and/or dueDates matched against the first entry of financial transaction ${missingChargeReferencesOnSecondLineItem.financialTransactions.head.sapDocumentNumber}."
+          s"Not all chargeReferences, periodKeys, mainTransactions and/or dueDates matched against the first entry of financial transaction ${missingChargeReferencesOnSecondLineItem.financialTransactions.head.sapDocumentNumber}."
         )
 
         whenReady(paymentsService.getOpenPayments(appaId).value) { result =>
@@ -448,7 +448,7 @@ class PaymentsServiceSpec extends SpecBase {
 
         val errorResponse = ErrorResponse(
           INTERNAL_SERVER_ERROR,
-          s"Not all chargeReferences, mainTransactions and/or dueDates matched against the first entry of financial transaction ${mismatchedChargeReferencesOnLineItems.financialTransactions.head.sapDocumentNumber}."
+          s"Not all chargeReferences, periodKeys, mainTransactions and/or dueDates matched against the first entry of financial transaction ${mismatchedChargeReferencesOnLineItems.financialTransactions.head.sapDocumentNumber}."
         )
 
         whenReady(paymentsService.getOpenPayments(appaId).value) { result =>
@@ -473,7 +473,7 @@ class PaymentsServiceSpec extends SpecBase {
 
         val errorResponse = ErrorResponse(
           INTERNAL_SERVER_ERROR,
-          s"Not all chargeReferences, mainTransactions and/or dueDates matched against the first entry of financial transaction ${missingDueDateOnSecondLineItem.financialTransactions.head.sapDocumentNumber}."
+          s"Not all chargeReferences, periodKeys, mainTransactions and/or dueDates matched against the first entry of financial transaction ${missingDueDateOnSecondLineItem.financialTransactions.head.sapDocumentNumber}."
         )
 
         whenReady(paymentsService.getOpenPayments(appaId).value) { result =>
@@ -504,7 +504,7 @@ class PaymentsServiceSpec extends SpecBase {
 
         val errorResponse = ErrorResponse(
           INTERNAL_SERVER_ERROR,
-          s"Not all chargeReferences, mainTransactions and/or dueDates matched against the first entry of financial transaction ${mismatchedDueDateOnSecondLineItem.financialTransactions.head.sapDocumentNumber}."
+          s"Not all chargeReferences, periodKeys, mainTransactions and/or dueDates matched against the first entry of financial transaction ${mismatchedDueDateOnSecondLineItem.financialTransactions.head.sapDocumentNumber}."
         )
 
         whenReady(paymentsService.getOpenPayments(appaId).value) { result =>
@@ -532,6 +532,66 @@ class PaymentsServiceSpec extends SpecBase {
       }
     }
 
+    "when calling getHistoricPayments" - {
+      "a successful and correct response should be returned" - {
+        "for multiple statuses" in new SetUp {
+          when(mockFinancialDataConnector.getFinancialData(appaId = appaId, open = false, year = year))
+            .thenReturn(EitherT.pure[Future, ErrorResponse](multipleStatuses))
+
+          whenReady(paymentsService.getHistoricPayments(appaId, year).value) {
+            case Right(HistoricPayments(`year`, payments)) =>
+              payments.map(payment =>
+                payment.copy(chargeReference = payment.chargeReference.map(_ => "ChargeRef"))
+              ) must contain theSameElementsAs Seq(
+                HistoricPayment(
+                  ReturnPeriod.fromPeriodKeyOrThrow("24AH"),
+                  TransactionType.Return,
+                  Some("ChargeRef"),
+                  BigDecimal("237.44")
+                ),
+                HistoricPayment(
+                  ReturnPeriod.fromPeriodKeyOrThrow("24AE"),
+                  TransactionType.Return,
+                  Some("ChargeRef"),
+                  BigDecimal("4577.44")
+                ),
+                HistoricPayment(
+                  ReturnPeriod.fromPeriodKeyOrThrow("24AD"),
+                  TransactionType.Return,
+                  Some("ChargeRef"),
+                  BigDecimal("4577.44")
+                ),
+                HistoricPayment(
+                  ReturnPeriod.fromPeriodKeyOrThrow("24AC"),
+                  TransactionType.Return,
+                  Some("ChargeRef"),
+                  BigDecimal("-4577.44")
+                ),
+                HistoricPayment(
+                  ReturnPeriod.fromPeriodKeyOrThrow("24AB"),
+                  TransactionType.LPI,
+                  Some("ChargeRef"),
+                  BigDecimal("20.56")
+                ),
+                HistoricPayment(
+                  ReturnPeriod.fromPeriodKeyOrThrow("24AB"),
+                  TransactionType.LPI,
+                  Some("ChargeRef"),
+                  BigDecimal("20.56")
+                ),
+                HistoricPayment(
+                  ReturnPeriod.fromPeriodKeyOrThrow("24AA"),
+                  TransactionType.RPI,
+                  None,
+                  BigDecimal("-50.00")
+                )
+              )
+            case _                                         => fail()
+          }
+        }
+      }
+    }
+
     "when calling calculateOutstandingAmount" - {
       "and outstanding amount is missing for some reason" - {
         "the total can be calculated by assuming it is 0 (coverage)" in new SetUp {
@@ -550,7 +610,7 @@ class PaymentsServiceSpec extends SpecBase {
         "it should return an error gracefully (coverage)" in new SetUp {
           val sapDocumentNumber = sapDocumentNumberGen.sample.get
 
-          paymentsService.validateAndGetCommonData(sapDocumentNumber, Seq.empty) mustBe Left(
+          paymentsService.validateAndGetCommonData(sapDocumentNumber, Seq.empty, open = true) mustBe Left(
             ErrorResponse(
               INTERNAL_SERVER_ERROR,
               s"Should have had a least one entry for financial transaction $sapDocumentNumber. This shouldn't happen"
@@ -564,5 +624,7 @@ class PaymentsServiceSpec extends SpecBase {
   class SetUp {
     val mockFinancialDataConnector = mock[FinancialDataConnector]
     val paymentsService            = new PaymentsService(mockFinancialDataConnector)
+
+    val year = 2024
   }
 }

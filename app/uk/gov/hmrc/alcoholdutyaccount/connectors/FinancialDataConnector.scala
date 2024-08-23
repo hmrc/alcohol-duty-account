@@ -35,7 +35,9 @@ class FinancialDataConnector @Inject() (config: AppConfig, implicit val httpClie
   override protected val logger: Logger = Logger(this.getClass)
 
   def getFinancialData(
-    appaId: String
+    appaId: String,
+    open: Boolean = true,
+    year: Int = 2024
   )(implicit hc: HeaderCarrier): EitherT[Future, ErrorResponse, FinancialTransactionDocument] =
     EitherT {
       val headers: Seq[(String, String)] = Seq(
@@ -48,7 +50,7 @@ class FinancialDataConnector @Inject() (config: AppConfig, implicit val httpClie
       httpClient
         .GET[Either[UpstreamErrorResponse, HttpResponse]](
           url = config.financialDataUrl(appaId),
-          queryParams = getQueryParams,
+          queryParams = getQueryParams(open, year),
           headers = headers
         )
         .map {
@@ -97,13 +99,21 @@ class FinancialDataConnector @Inject() (config: AppConfig, implicit val httpClie
         ErrorResponse(INTERNAL_SERVER_ERROR, errorMessage)
     }
 
-  private def getQueryParams: Seq[(String, String)] =
-    Seq(
-      "onlyOpenItems"              -> true.toString,
+  private def getQueryParams(open: Boolean, year: Int): Seq[(String, String)] = {
+    val mainParameters = Seq(
+      "onlyOpenItems"              -> open.toString,
       "includeLocks"               -> false.toString,
       "calculateAccruedInterest"   -> false.toString,
       "customerPaymentInformation" -> false.toString
     )
+
+    if (open) {
+      mainParameters
+    } else {
+      mainParameters ++
+        Seq("dateFrom" -> s"$year-01-01", "dateTo" -> s"$year-12-31")
+    }
+  }
 
   /*
    * Wrapper to preserve call for BTA Tile API which wants an OptionT

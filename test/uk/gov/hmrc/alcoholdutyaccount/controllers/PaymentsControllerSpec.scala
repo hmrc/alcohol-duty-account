@@ -41,12 +41,32 @@ class PaymentsControllerSpec extends SpecBase {
         contentAsJson(result) mustBe Json.toJson(noOpenPayments)
       }
 
-      "return any error returned from the service" in new SetUp {
+      "return and sanitise any error returned from the service" in new SetUp {
         when(mockPaymentsService.getOpenPayments(eqTo(appaId))(*))
           .thenReturn(EitherT.fromEither(Left(ErrorResponse(INTERNAL_SERVER_ERROR, "An error occurred"))))
 
         val result: Future[Result] = controller.openPayments(appaId)(fakeRequest)
         status(result) mustBe INTERNAL_SERVER_ERROR
+        contentAsJson(result).as[ErrorResponse].message mustBe "Unexpected Response"
+      }
+    }
+
+    "when calling historicPayments" - {
+      "return OK when the service returns success" in new SetUp {
+        mockPaymentsService.getHistoricPayments(eqTo(appaId), eqTo(year))(*) returnsF noHistoricPayments
+
+        val result: Future[Result] = controller.historicPayments(appaId, year)(fakeRequest)
+        status(result) mustBe OK
+        contentAsJson(result) mustBe Json.toJson(noHistoricPayments)
+      }
+
+      "return and sanitise any error returned from the service" in new SetUp {
+        when(mockPaymentsService.getHistoricPayments(eqTo(appaId), eqTo(year))(*))
+          .thenReturn(EitherT.fromEither(Left(ErrorResponse(INTERNAL_SERVER_ERROR, "An error occurred"))))
+
+        val result: Future[Result] = controller.historicPayments(appaId, year)(fakeRequest)
+        status(result) mustBe INTERNAL_SERVER_ERROR
+        contentAsJson(result).as[ErrorResponse].message mustBe "Unexpected Response"
       }
     }
   }
@@ -55,5 +75,7 @@ class PaymentsControllerSpec extends SpecBase {
     val mockPaymentsService: PaymentsService = mock[PaymentsService]
     val cc                                   = Helpers.stubControllerComponents()
     val controller                           = new PaymentsController(fakeAuthorisedAction, mockPaymentsService, cc)
+
+    val year: Int = 2024
   }
 }

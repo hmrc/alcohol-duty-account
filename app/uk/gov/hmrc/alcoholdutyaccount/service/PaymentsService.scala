@@ -21,13 +21,14 @@ import cats.implicits._
 import play.api.Logging
 import play.api.http.Status.INTERNAL_SERVER_ERROR
 import uk.gov.hmrc.alcoholdutyaccount.connectors.FinancialDataConnector
+import uk.gov.hmrc.alcoholdutyaccount.models.ReturnPeriod
 import uk.gov.hmrc.alcoholdutyaccount.models.hods.{FinancialTransaction, FinancialTransactionDocument}
 import uk.gov.hmrc.alcoholdutyaccount.models.payments.TransactionType.{PaymentOnAccount, RPI}
 import uk.gov.hmrc.alcoholdutyaccount.models.payments.{HistoricPayment, HistoricPayments, OpenPayment, OpenPayments, OutstandingPayment, TransactionType, UnallocatedPayment}
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.bootstrap.backend.http.ErrorResponse
 
-import java.time.LocalDate
+import java.time.{LocalDate, YearMonth}
 import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -37,6 +38,7 @@ class PaymentsService @Inject() (
     extends Logging {
   private[service] case class FinancialTransactionData(
     transactionType: TransactionType,
+    maybePeriodKey: Option[String],
     dueDate: LocalDate,
     maybeChargeReference: Option[String]
   )
@@ -78,14 +80,17 @@ class PaymentsService @Inject() (
     sapDocumentNumber: String,
     dueDate: LocalDate,
     firstFinancialTransaction: FinancialTransaction,
-    subsequentFinancialTransactions: List[FinancialTransaction]
+    subsequentFinancialTransactions: List[FinancialTransaction],
+    open: Boolean
   ): Either[ErrorResponse, FinancialTransactionData] = {
     val mainTransactionType = firstFinancialTransaction.mainTransaction
+    val periodKey           = firstFinancialTransaction.periodKey
     val chargeReference     = firstFinancialTransaction.chargeReference
 
     val hasErrors = subsequentFinancialTransactions
       .map(nextFinancialTransaction =>
         !(mainTransactionType == nextFinancialTransaction.mainTransaction &&
+          periodKey == nextFinancialTransaction.periodKey &&
           chargeReference == nextFinancialTransaction.chargeReference &&
           nextFinancialTransaction.items.forall(_.dueDate.fold(false)(_.isEqual(dueDate))))
       )
@@ -93,7 +98,7 @@ class PaymentsService @Inject() (
 
     if (hasErrors) {
       val errorMessage =
-        s"Not all chargeReferences, mainTransactions and/or dueDates matched against the first entry of financial transaction $sapDocumentNumber."
+        s"Not all chargeReferences, periodKeys, mainTransactions and/or dueDates matched against the first entry of financial transaction $sapDocumentNumber."
       logger.warn(errorMessage)
       Left(ErrorResponse(INTERNAL_SERVER_ERROR, errorMessage))
     } else {
@@ -105,7 +110,7 @@ class PaymentsService @Inject() (
           logger.warn(errorMessage)
           Left(ErrorResponse(INTERNAL_SERVER_ERROR, errorMessage))
         } { transactionType =>
-          if (transactionType == RPI) {
+          if (transactionType == RPI && open) {
             val errorMessage =
               s"Unexpected RPI in open payments on financial transaction $sapDocumentNumber."
             logger.warn(errorMessage)
@@ -114,6 +119,7 @@ class PaymentsService @Inject() (
           Right(
             FinancialTransactionData(
               transactionType,
+              periodKey,
               dueDate,
               chargeReference
             )
@@ -124,7 +130,8 @@ class PaymentsService @Inject() (
 
   private[service] def validateAndGetCommonData(
     sapDocumentNumber: String,
-    financialTransactionsForDocument: Seq[FinancialTransaction]
+    financialTransactionsForDocument: Seq[FinancialTransaction],
+    open: Boolean
   ): Either[ErrorResponse, FinancialTransactionData] = financialTransactionsForDocument.toList match {
     case firstFinancialTransaction :: subsequentFinancialTransactions =>
       for {
@@ -133,7 +140,8 @@ class PaymentsService @Inject() (
                                       sapDocumentNumber,
                                       dueDate,
                                       firstFinancialTransaction,
-                                      subsequentFinancialTransactions
+                                      subsequentFinancialTransactions,
+                                      open
                                     )
       } yield financialTransactionData
 
@@ -144,7 +152,7 @@ class PaymentsService @Inject() (
       Left(ErrorResponse(INTERNAL_SERVER_ERROR, errorMessage))
   }
 
-  private def calculatedTotalBalance(
+  private def calculateTotalBalance(
     outstandingPayments: Seq[OutstandingPayment],
     unallocatedPayments: Seq[UnallocatedPayment]
   ): PaymentTotals = {
@@ -187,21 +195,19 @@ class PaymentsService @Inject() (
   private def extractOpenPayments(
     financialTransactionDocument: FinancialTransactionDocument
   ): EitherT[Future, ErrorResponse, List[OpenPayment]] =
-    EitherT {
-      Future.successful(
-        financialTransactionDocument.financialTransactions
-          .groupBy(_.sapDocumentNumber)
-          .map { case (sapDocumentNumber, financialTransactionsForDocument) =>
-            validateAndGetCommonData(sapDocumentNumber, financialTransactionsForDocument)
-              .map {
-                val outstandingAmount = calculateOutstandingAmount(financialTransactionsForDocument)
-                buildOpenPayment(_, outstandingAmount)
-              }
-          }
-          .toList
-          .sequence
-      )
-    }
+    EitherT.fromEither(
+      financialTransactionDocument.financialTransactions
+        .groupBy(_.sapDocumentNumber)
+        .map { case (sapDocumentNumber, financialTransactionsForDocument) =>
+          validateAndGetCommonData(sapDocumentNumber, financialTransactionsForDocument, open = true)
+            .map {
+              val outstandingAmount = calculateOutstandingAmount(financialTransactionsForDocument)
+              buildOpenPayment(_, outstandingAmount)
+            }
+        }
+        .toList
+        .sequence
+    )
 
   private def buildOpenPaymentsPayload(openPayments: List[OpenPayment]): OpenPayments = {
     val (outstandingPayments, unallocatedPayments) =
@@ -215,7 +221,7 @@ class PaymentsService @Inject() (
           }
       }
 
-    val paymentTotals = calculatedTotalBalance(outstandingPayments, unallocatedPayments)
+    val paymentTotals = calculateTotalBalance(outstandingPayments, unallocatedPayments)
 
     OpenPayments(
       outstandingPayments = outstandingPayments,
@@ -234,17 +240,47 @@ class PaymentsService @Inject() (
       openPayments                 <- extractOpenPayments(financialTransactionDocument)
     } yield buildOpenPaymentsPayload(openPayments)
 
-  def extractHistoricPayments(
+  private[service] def calculateTotalAmount(financialTransactionsForDocument: Seq[FinancialTransaction]): BigDecimal =
+    financialTransactionsForDocument.map(_.originalAmount).sum
+
+  private def extractHistoricPayments(
     financialTransactionDocument: FinancialTransactionDocument
-  ): EitherT[Future, ErrorResponse, Seq[HistoricPayment]] =
-    EitherT.pure(Seq.empty)
+  ): EitherT[Future, ErrorResponse, List[HistoricPayment]] =
+    EitherT.fromEither(
+      financialTransactionDocument.financialTransactions
+        .groupBy(_.sapDocumentNumber)
+        .map { case (sapDocumentNumber, financialTransactionsForDocument) =>
+          validateAndGetCommonData(sapDocumentNumber, financialTransactionsForDocument, open = false)
+            .map { financialTransactionData =>
+              if (financialTransactionData.transactionType == TransactionType.PaymentOnAccount) {
+                None
+              } else {
+                val totalAmount = calculateTotalAmount(financialTransactionsForDocument)
+                Some(
+                  HistoricPayment(
+                    period = financialTransactionData.maybePeriodKey
+                      .flatMap(ReturnPeriod.fromPeriodKey)
+                      .getOrElse(ReturnPeriod(YearMonth.from(financialTransactionData.dueDate))),
+                    transactionType = financialTransactionData.transactionType,
+                    chargeReference = financialTransactionData.maybeChargeReference,
+                    amount = totalAmount
+                  )
+                )
+              }
+            }
+        }
+        .toList
+        .sequence
+        .map(_.flatten)
+    )
 
   def getHistoricPayments(
     appaId: String,
     year: Int
   )(implicit hc: HeaderCarrier): EitherT[Future, ErrorResponse, HistoricPayments] =
     for {
-      financialTransactionDocument <- financialDataConnector.getFinancialData(appaId)
+      financialTransactionDocument <-
+        financialDataConnector.getFinancialData(appaId = appaId, open = false, year = year)
       historicPayments             <- extractHistoricPayments(financialTransactionDocument)
     } yield HistoricPayments(year, historicPayments)
 }

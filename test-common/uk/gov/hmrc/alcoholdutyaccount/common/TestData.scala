@@ -19,9 +19,9 @@ package uk.gov.hmrc.alcoholdutyaccount.common
 import org.scalacheck.Gen
 import play.api.libs.json.{Json, OFormat}
 import uk.gov.hmrc.alcoholdutyaccount.common.generators.ModelGenerators
-import uk.gov.hmrc.alcoholdutyaccount.models.{AdrObligationData, ObligationStatus}
+import uk.gov.hmrc.alcoholdutyaccount.models.{AdrObligationData, ObligationStatus, ReturnPeriod}
 import uk.gov.hmrc.alcoholdutyaccount.models.hods._
-import uk.gov.hmrc.alcoholdutyaccount.models.payments.{OpenPayments, TransactionType}
+import uk.gov.hmrc.alcoholdutyaccount.models.payments.{HistoricPayments, OpenPayments, TransactionType}
 import uk.gov.hmrc.alcoholdutyaccount.models.subscription.{AdrSubscriptionSummary, AlcoholRegime, ApprovalStatus}
 
 import java.time.{Clock, Instant, LocalDate, ZoneId}
@@ -524,6 +524,170 @@ trait TestData extends ModelGenerators {
       )
     )
 
+  val multipleStatuses: FinancialTransactionDocument = FinancialTransactionDocument(
+    financialTransactions = Seq(
+      FinancialTransaction(
+        sapDocumentNumber = sapDocumentNumberGen.sample.get,
+        periodKey = Some("24AH"),
+        chargeReference = Some(chargeReferenceGen.sample.get),
+        mainTransaction = TransactionType.toMainTransactionType(TransactionType.Return),
+        subTransaction = "6132",
+        originalAmount = BigDecimal("237.44"),
+        outstandingAmount = Some(BigDecimal("237.44")),
+        items = Seq(
+          FinancialTransactionItem(
+            subItem = "000",
+            dueDate = Some(LocalDate.of(2024, 9, 25)),
+            amount = BigDecimal("237.4")
+          )
+        )
+      ),
+      FinancialTransaction(
+        sapDocumentNumber = sapDocumentNumberGen.sample.get,
+        periodKey = Some("24AE"),
+        chargeReference = Some(chargeReferenceGen.sample.get),
+        mainTransaction = TransactionType.toMainTransactionType(TransactionType.Return),
+        subTransaction = "6132",
+        originalAmount = BigDecimal("4577.44"),
+        outstandingAmount = Some(BigDecimal("4577.44")),
+        items = Seq(
+          FinancialTransactionItem(
+            subItem = "000",
+            dueDate = Some(LocalDate.of(2024, 6, 25)),
+            amount = BigDecimal("4577.44")
+          )
+        )
+      ),
+      FinancialTransaction(
+        sapDocumentNumber = sapDocumentNumberGen.sample.get,
+        periodKey = Some("24AD"),
+        chargeReference = Some(chargeReferenceGen.sample.get),
+        mainTransaction = TransactionType.toMainTransactionType(TransactionType.Return),
+        subTransaction = "6132",
+        originalAmount = BigDecimal("4577.44"),
+        outstandingAmount = Some(BigDecimal("2577.44")),
+        items = Seq(
+          FinancialTransactionItem(
+            subItem = "000",
+            dueDate = Some(LocalDate.of(2024, 5, 25)),
+            amount = BigDecimal("2577.44")
+          ),
+          FinancialTransactionItem(
+            subItem = "001",
+            dueDate = Some(LocalDate.of(2024, 5, 25)),
+            amount = BigDecimal("2000.00")
+          )
+        )
+      ),
+      FinancialTransaction(
+        sapDocumentNumber = sapDocumentNumberGen.sample.get,
+        periodKey = Some("24AC"),
+        chargeReference = Some(chargeReferenceGen.sample.get),
+        mainTransaction = TransactionType.toMainTransactionType(TransactionType.Return),
+        subTransaction = "6132",
+        originalAmount = BigDecimal("-4577.44"),
+        outstandingAmount = Some(BigDecimal("-2577.44")),
+        items = Seq(
+          FinancialTransactionItem(
+            subItem = "000",
+            dueDate = Some(LocalDate.of(2024, 4, 25)),
+            amount = BigDecimal("-2577.44")
+          ),
+          FinancialTransactionItem(
+            subItem = "001",
+            dueDate = Some(LocalDate.of(2024, 4, 25)),
+            amount = BigDecimal("-2000.00")
+          )
+        )
+      ),
+      FinancialTransaction(
+        sapDocumentNumber = sapDocumentNumberGen.sample.get,
+        periodKey = None,
+        chargeReference = Some(chargeReferenceGen.sample.get),
+        mainTransaction = TransactionType.toMainTransactionType(TransactionType.LPI),
+        subTransaction = "6132",
+        originalAmount = BigDecimal("20.56"),
+        outstandingAmount = Some(BigDecimal("20.56")),
+        items = Seq(
+          FinancialTransactionItem(
+            subItem = "000",
+            dueDate = Some(LocalDate.of(2024, 2, 1)),
+            amount = BigDecimal("20.56")
+          )
+        )
+      ),
+      FinancialTransaction(
+        sapDocumentNumber = sapDocumentNumberGen.sample.get,
+        periodKey = None,
+        chargeReference = Some(chargeReferenceGen.sample.get),
+        mainTransaction = TransactionType.toMainTransactionType(TransactionType.LPI),
+        subTransaction = "6132",
+        originalAmount = BigDecimal("20.56"),
+        outstandingAmount = Some(BigDecimal("10.56")),
+        items = Seq(
+          FinancialTransactionItem(
+            subItem = "000",
+            dueDate = Some(LocalDate.of(2024, 2, 1)),
+            amount = BigDecimal("10.56")
+          ),
+          FinancialTransactionItem(
+            subItem = "001",
+            dueDate = Some(LocalDate.of(2024, 2, 1)),
+            amount = BigDecimal("10.00")
+          )
+        )
+      ),
+      FinancialTransaction(
+        sapDocumentNumber = sapDocumentNumberGen.sample.get,
+        periodKey = None,
+        chargeReference = None,
+        mainTransaction = TransactionType.toMainTransactionType(TransactionType.PaymentOnAccount),
+        subTransaction = "6132",
+        originalAmount = BigDecimal("-1000.00"),
+        outstandingAmount = Some(BigDecimal("-1000.00")),
+        items = Seq(
+          FinancialTransactionItem(
+            subItem = "000",
+            dueDate = Some(LocalDate.of(2024, 8, 1)),
+            amount = BigDecimal("-1000.00")
+          )
+        )
+      ),
+      FinancialTransaction(
+        sapDocumentNumber = sapDocumentNumberGen.sample.get,
+        periodKey = None,
+        chargeReference = None,
+        mainTransaction = TransactionType.toMainTransactionType(TransactionType.PaymentOnAccount),
+        subTransaction = "6132",
+        originalAmount = BigDecimal("-500.00"),
+        outstandingAmount = Some(BigDecimal("-500.00")),
+        items = Seq(
+          FinancialTransactionItem(
+            subItem = "000",
+            dueDate = Some(LocalDate.of(2024, 8, 1)),
+            amount = BigDecimal("-500.00")
+          )
+        )
+      ),
+      FinancialTransaction(
+        sapDocumentNumber = sapDocumentNumberGen.sample.get,
+        periodKey = None,
+        chargeReference = None,
+        originalAmount = BigDecimal("-50"),
+        mainTransaction = TransactionType.toMainTransactionType(TransactionType.RPI),
+        subTransaction = "6132",
+        outstandingAmount = Some(BigDecimal("-50")),
+        items = Seq(
+          FinancialTransactionItem(
+            subItem = "000",
+            dueDate = Some(ReturnPeriod.fromPeriodKeyOrThrow("24AA").periodFromDate()),
+            amount = BigDecimal("-50")
+          )
+        )
+      )
+    )
+  )
+
   val approvedAdrSubscriptionSummary = new AdrSubscriptionSummary(
     approvalStatus = ApprovalStatus.Approved,
     regimes = Set(
@@ -565,12 +729,17 @@ trait TestData extends ModelGenerators {
   val adrMultipleOpenData =
     Seq(adrObligationDetails, adrObligationDetailsOpen2)
 
-  val noOpenPayments = OpenPayments(
+  val noOpenPayments: OpenPayments = OpenPayments(
     outstandingPayments = Seq.empty,
     totalOutstandingPayments = BigDecimal(0),
     unallocatedPayments = Seq.empty,
     totalUnallocatedPayments = BigDecimal(0),
     totalOpenPaymentsAmount = BigDecimal(0)
+  )
+
+  val noHistoricPayments: HistoricPayments = HistoricPayments(
+    year = 2024,
+    payments = Seq.empty
   )
 
   case class DownstreamErrorDetails(code: String, message: String, logID: String)

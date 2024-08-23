@@ -27,22 +27,35 @@ class FinancialDataConnectorSpec extends SpecBase with ScalaFutures with Connect
 
   "FinancialDataConnector" - {
     "when calling getFinancialData" - {
-      "returns the financial transaction document if the request is successful" in new SetUp {
+      "returns the financial transaction document if the request is successful when requesting open transactions" in new SetUp {
         stubGetWithParameters(
           url,
-          expectedQueryParams,
+          expectedOpenQueryParams,
           OK,
           Json.toJson(financialDocumentWithSingleSapDocumentNo).toString
         )
         whenReady(connector.getFinancialData(appaId).value) { result =>
           result mustBe Right(financialDocumentWithSingleSapDocumentNo)
-          verifyGetWithParameters(url, expectedQueryParams)
+          verifyGetWithParameters(url, expectedOpenQueryParams)
+        }
+      }
+
+      "returns the financial transaction document if the request is successful when requesting all transactions" in new SetUp {
+        stubGetWithParameters(
+          url,
+          expectedAllQueryParams,
+          OK,
+          Json.toJson(financialDocumentWithSingleSapDocumentNo).toString
+        )
+        whenReady(connector.getFinancialData(appaId = appaId, open = false, year = year).value) { result =>
+          result mustBe Right(financialDocumentWithSingleSapDocumentNo)
+          verifyGetWithParameters(url, expectedAllQueryParams)
         }
       }
 
       "return an error" - {
         "if the data retrieved cannot be parsed" in new SetUp {
-          stubGetWithParameters(url, expectedQueryParams, OK, "blah")
+          stubGetWithParameters(url, expectedOpenQueryParams, OK, "blah")
           whenReady(connector.getFinancialData(appaId).value) { result =>
             result mustBe Left(
               ErrorResponse(
@@ -50,30 +63,30 @@ class FinancialDataConnectorSpec extends SpecBase with ScalaFutures with Connect
                 s"Parsing failed for financial transaction document for appaId $appaId"
               )
             )
-            verifyGetWithParameters(url, expectedQueryParams)
+            verifyGetWithParameters(url, expectedOpenQueryParams)
           }
         }
 
         "if the financial transaction document cannot be found" in new SetUp {
-          stubGetWithParameters(url, expectedQueryParams, NOT_FOUND, "")
+          stubGetWithParameters(url, expectedOpenQueryParams, NOT_FOUND, "")
           whenReady(connector.getFinancialData(appaId).value) { result =>
             result mustBe Left(ErrorResponse(NOT_FOUND, s"No financial data found for appaId $appaId"))
-            verifyGetWithParameters(url, expectedQueryParams)
+            verifyGetWithParameters(url, expectedOpenQueryParams)
           }
         }
 
         "if the api call returns BAD_REQUEST" in new SetUp {
-          stubGetWithParameters(url, expectedQueryParams, BAD_REQUEST, "")
+          stubGetWithParameters(url, expectedOpenQueryParams, BAD_REQUEST, "")
           whenReady(connector.getFinancialData(appaId).value) { result =>
             result mustBe Left(
               ErrorResponse(INTERNAL_SERVER_ERROR, s"Bad request when fetching financial data for appaId $appaId")
             )
-            verifyGetWithParameters(url, expectedQueryParams)
+            verifyGetWithParameters(url, expectedOpenQueryParams)
           }
         }
 
         "if the api call returns INTERNAL_SERVER_ERROR" in new SetUp {
-          stubGetWithParameters(url, expectedQueryParams, INTERNAL_SERVER_ERROR, "")
+          stubGetWithParameters(url, expectedOpenQueryParams, INTERNAL_SERVER_ERROR, "")
           whenReady(connector.getFinancialData(appaId).value) { result =>
             result mustBe Left(
               ErrorResponse(
@@ -81,12 +94,12 @@ class FinancialDataConnectorSpec extends SpecBase with ScalaFutures with Connect
                 s"An error was returned while trying to fetch financial transaction document appaId $appaId"
               )
             )
-            verifyGetWithParameters(url, expectedQueryParams)
+            verifyGetWithParameters(url, expectedOpenQueryParams)
           }
         }
 
         "if an exception is thrown when fetching financial data" in new SetUp {
-          stubGetFaultWithParameters(url, expectedQueryParams)
+          stubGetFaultWithParameters(url, expectedOpenQueryParams)
           whenReady(connector.getFinancialData(appaId).value) { result =>
             result mustBe Left(
               ErrorResponse(
@@ -94,7 +107,7 @@ class FinancialDataConnectorSpec extends SpecBase with ScalaFutures with Connect
                 s"An exception was returned while trying to fetch financial data for appaId $appaId"
               )
             )
-            verifyGetWithParameters(url, expectedQueryParams)
+            verifyGetWithParameters(url, expectedOpenQueryParams)
           }
         }
       }
@@ -104,56 +117,56 @@ class FinancialDataConnectorSpec extends SpecBase with ScalaFutures with Connect
       "returns the financial transaction document if the request is successful" in new SetUp {
         stubGetWithParameters(
           url,
-          expectedQueryParams,
+          expectedOpenQueryParams,
           OK,
           Json.toJson(financialDocumentWithSingleSapDocumentNo).toString
         )
         whenReady(connector.getFinancialDataForBtaTile(appaId).value) { result =>
           result mustBe Some(financialDocumentWithSingleSapDocumentNo)
-          verifyGetWithParameters(url, expectedQueryParams)
+          verifyGetWithParameters(url, expectedOpenQueryParams)
         }
       }
 
       "return an empty document" - {
         "if the financial transaction document cannot be found" in new SetUp {
-          stubGetWithParameters(url, expectedQueryParams, NOT_FOUND, "")
+          stubGetWithParameters(url, expectedOpenQueryParams, NOT_FOUND, "")
           whenReady(connector.getFinancialDataForBtaTile(appaId).value) { result =>
             result mustBe Some(emptyFinancialDocument)
-            verifyGetWithParameters(url, expectedQueryParams)
+            verifyGetWithParameters(url, expectedOpenQueryParams)
           }
         }
       }
 
       "return None " - {
         "if the data retrieved cannot be parsed" in new SetUp {
-          stubGetWithParameters(url, expectedQueryParams, OK, "blah")
+          stubGetWithParameters(url, expectedOpenQueryParams, OK, "blah")
           whenReady(connector.getFinancialDataForBtaTile(appaId).value) { result =>
             result mustBe None
-            verifyGetWithParameters(url, expectedQueryParams)
+            verifyGetWithParameters(url, expectedOpenQueryParams)
           }
         }
 
         "if the api call returns BAD_REQUEST" in new SetUp {
-          stubGetWithParameters(url, expectedQueryParams, BAD_REQUEST, "")
+          stubGetWithParameters(url, expectedOpenQueryParams, BAD_REQUEST, "")
           whenReady(connector.getFinancialDataForBtaTile(appaId).value) { result =>
             result mustBe None
-            verifyGetWithParameters(url, expectedQueryParams)
+            verifyGetWithParameters(url, expectedOpenQueryParams)
           }
         }
 
         "if the api call returns INTERNAL_SERVER_ERROR" in new SetUp {
-          stubGetWithParameters(url, expectedQueryParams, INTERNAL_SERVER_ERROR, "")
+          stubGetWithParameters(url, expectedOpenQueryParams, INTERNAL_SERVER_ERROR, "")
           whenReady(connector.getFinancialDataForBtaTile(appaId).value) { result =>
             result mustBe None
-            verifyGetWithParameters(url, expectedQueryParams)
+            verifyGetWithParameters(url, expectedOpenQueryParams)
           }
         }
 
         "if an exception thrown when fetching financial data" in new SetUp {
-          stubGetFaultWithParameters(url, expectedQueryParams)
+          stubGetFaultWithParameters(url, expectedOpenQueryParams)
           whenReady(connector.getFinancialDataForBtaTile(appaId).value) { result =>
             result mustBe None
-            verifyGetWithParameters(url, expectedQueryParams)
+            verifyGetWithParameters(url, expectedOpenQueryParams)
           }
         }
       }
@@ -161,13 +174,25 @@ class FinancialDataConnectorSpec extends SpecBase with ScalaFutures with Connect
   }
 
   class SetUp extends ConnectorFixture with TestData {
-    val connector                                  = new FinancialDataConnector(config = config, httpClient = httpClient)
-    val url                                        = appConfig.financialDataUrl(appaId)
-    val expectedQueryParams: Seq[(String, String)] = Seq(
+    val connector = new FinancialDataConnector(config = config, httpClient = httpClient)
+    val url       = appConfig.financialDataUrl(appaId)
+
+    val year: Int = 2024
+
+    val expectedOpenQueryParams: Seq[(String, String)] = Seq(
       "onlyOpenItems"              -> "true",
       "includeLocks"               -> "false",
       "calculateAccruedInterest"   -> "false",
       "customerPaymentInformation" -> "false"
+    )
+
+    val expectedAllQueryParams: Seq[(String, String)] = Seq(
+      "onlyOpenItems"              -> "false",
+      "includeLocks"               -> "false",
+      "calculateAccruedInterest"   -> "false",
+      "customerPaymentInformation" -> "false",
+      "dateFrom"                   -> s"$year-01-01",
+      "dateTo"                     -> s"$year-12-31"
     )
   }
 }
