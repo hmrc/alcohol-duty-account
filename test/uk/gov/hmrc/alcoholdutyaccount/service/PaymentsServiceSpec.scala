@@ -20,6 +20,7 @@ import cats.data.EitherT
 import uk.gov.hmrc.alcoholdutyaccount.base.SpecBase
 import uk.gov.hmrc.alcoholdutyaccount.common.ReturnPeriod
 import uk.gov.hmrc.alcoholdutyaccount.connectors.FinancialDataConnector
+import uk.gov.hmrc.alcoholdutyaccount.models.ErrorCodes
 import uk.gov.hmrc.alcoholdutyaccount.models.hods.FinancialTransactionDocument
 import uk.gov.hmrc.alcoholdutyaccount.models.payments.{OpenPayments, OutstandingPayment, TransactionType, UnallocatedPayment}
 import uk.gov.hmrc.play.bootstrap.backend.http.ErrorResponse
@@ -285,13 +286,8 @@ class PaymentsServiceSpec extends SpecBase {
         when(mockFinancialDataConnector.getFinancialData(appaId))
           .thenReturn(EitherT.pure[Future, ErrorResponse](noItemsOnFinancialDocument))
 
-        val errorResponse = ErrorResponse(
-          INTERNAL_SERVER_ERROR,
-          s"Expected at least one item for financial transaction ${noItemsOnFinancialDocument.financialTransactions.head.sapDocumentNumber}."
-        )
-
         whenReady(paymentsService.getOpenPayments(appaId).value) { result =>
-          result mustBe Left(errorResponse)
+          result mustBe Left(ErrorCodes.unexpectedResponse)
         }
       }
 
@@ -307,13 +303,8 @@ class PaymentsServiceSpec extends SpecBase {
         when(mockFinancialDataConnector.getFinancialData(appaId))
           .thenReturn(EitherT.pure[Future, ErrorResponse](noDueDatePresentOnFirstItem))
 
-        val errorResponse = ErrorResponse(
-          INTERNAL_SERVER_ERROR,
-          s"Due date not found on first item of first entry of financial transaction ${noDueDatePresentOnFirstItem.financialTransactions.head.sapDocumentNumber}."
-        )
-
         whenReady(paymentsService.getOpenPayments(appaId).value) { result =>
-          result mustBe Left(errorResponse)
+          result mustBe Left(ErrorCodes.unexpectedResponse)
         }
       }
 
@@ -332,13 +323,8 @@ class PaymentsServiceSpec extends SpecBase {
         when(mockFinancialDataConnector.getFinancialData(appaId))
           .thenReturn(EitherT.pure[Future, ErrorResponse](noDueDatePresentOnSecondItemOfDocument))
 
-        val errorResponse = ErrorResponse(
-          INTERNAL_SERVER_ERROR,
-          s"Not all dueDates matched for first entry of financial transaction ${noDueDatePresentOnSecondItemOfDocument.financialTransactions.head.sapDocumentNumber}."
-        )
-
         whenReady(paymentsService.getOpenPayments(appaId).value) { result =>
-          result mustBe Left(errorResponse)
+          result mustBe Left(ErrorCodes.unexpectedResponse)
         }
       }
 
@@ -360,13 +346,8 @@ class PaymentsServiceSpec extends SpecBase {
         when(mockFinancialDataConnector.getFinancialData(appaId))
           .thenReturn(EitherT.pure[Future, ErrorResponse](mismatchedDueDatePresentOnSecondItemOfDocument))
 
-        val errorResponse = ErrorResponse(
-          INTERNAL_SERVER_ERROR,
-          s"Not all dueDates matched for first entry of financial transaction ${mismatchedDueDatePresentOnSecondItemOfDocument.financialTransactions.head.sapDocumentNumber}."
-        )
-
         whenReady(paymentsService.getOpenPayments(appaId).value) { result =>
-          result mustBe Left(errorResponse)
+          result mustBe Left(ErrorCodes.unexpectedResponse)
         }
       }
 
@@ -383,13 +364,8 @@ class PaymentsServiceSpec extends SpecBase {
         when(mockFinancialDataConnector.getFinancialData(appaId))
           .thenReturn(EitherT.pure[Future, ErrorResponse](mismatchedTransactionTypesOnLineItems))
 
-        val errorResponse = ErrorResponse(
-          INTERNAL_SERVER_ERROR,
-          s"Not all chargeReferences, mainTransactions and/or dueDates matched against the first entry of financial transaction ${mismatchedTransactionTypesOnLineItems.financialTransactions.head.sapDocumentNumber}."
-        )
-
         whenReady(paymentsService.getOpenPayments(appaId).value) { result =>
-          result mustBe Left(errorResponse)
+          result mustBe Left(ErrorCodes.unexpectedResponse)
         }
       }
 
@@ -404,13 +380,8 @@ class PaymentsServiceSpec extends SpecBase {
         when(mockFinancialDataConnector.getFinancialData(appaId))
           .thenReturn(EitherT.pure[Future, ErrorResponse](missingChargeReferencesOnSecondLineItem))
 
-        val errorResponse = ErrorResponse(
-          INTERNAL_SERVER_ERROR,
-          s"Not all chargeReferences, mainTransactions and/or dueDates matched against the first entry of financial transaction ${missingChargeReferencesOnSecondLineItem.financialTransactions.head.sapDocumentNumber}."
-        )
-
         whenReady(paymentsService.getOpenPayments(appaId).value) { result =>
-          result mustBe Left(errorResponse)
+          result mustBe Left(ErrorCodes.unexpectedResponse)
         }
       }
 
@@ -425,13 +396,8 @@ class PaymentsServiceSpec extends SpecBase {
         when(mockFinancialDataConnector.getFinancialData(appaId))
           .thenReturn(EitherT.pure[Future, ErrorResponse](missingChargeReferencesOnSecondLineItem))
 
-        val errorResponse = ErrorResponse(
-          INTERNAL_SERVER_ERROR,
-          s"Not all chargeReferences, mainTransactions and/or dueDates matched against the first entry of financial transaction ${missingChargeReferencesOnSecondLineItem.financialTransactions.head.sapDocumentNumber}."
-        )
-
         whenReady(paymentsService.getOpenPayments(appaId).value) { result =>
-          result mustBe Left(errorResponse)
+          result mustBe Left(ErrorCodes.unexpectedResponse)
         }
       }
 
@@ -446,13 +412,8 @@ class PaymentsServiceSpec extends SpecBase {
         when(mockFinancialDataConnector.getFinancialData(appaId))
           .thenReturn(EitherT.pure[Future, ErrorResponse](mismatchedChargeReferencesOnLineItems))
 
-        val errorResponse = ErrorResponse(
-          INTERNAL_SERVER_ERROR,
-          s"Not all chargeReferences, mainTransactions and/or dueDates matched against the first entry of financial transaction ${mismatchedChargeReferencesOnLineItems.financialTransactions.head.sapDocumentNumber}."
-        )
-
         whenReady(paymentsService.getOpenPayments(appaId).value) { result =>
-          result mustBe Left(errorResponse)
+          result mustBe Left(ErrorCodes.unexpectedResponse)
         }
       }
 
@@ -471,13 +432,8 @@ class PaymentsServiceSpec extends SpecBase {
         when(mockFinancialDataConnector.getFinancialData(appaId))
           .thenReturn(EitherT.pure[Future, ErrorResponse](missingDueDateOnSecondLineItem))
 
-        val errorResponse = ErrorResponse(
-          INTERNAL_SERVER_ERROR,
-          s"Not all chargeReferences, mainTransactions and/or dueDates matched against the first entry of financial transaction ${missingDueDateOnSecondLineItem.financialTransactions.head.sapDocumentNumber}."
-        )
-
         whenReady(paymentsService.getOpenPayments(appaId).value) { result =>
-          result mustBe Left(errorResponse)
+          result mustBe Left(ErrorCodes.unexpectedResponse)
         }
       }
 
@@ -502,13 +458,8 @@ class PaymentsServiceSpec extends SpecBase {
         when(mockFinancialDataConnector.getFinancialData(appaId))
           .thenReturn(EitherT.pure[Future, ErrorResponse](mismatchedDueDateOnSecondLineItem))
 
-        val errorResponse = ErrorResponse(
-          INTERNAL_SERVER_ERROR,
-          s"Not all chargeReferences, mainTransactions and/or dueDates matched against the first entry of financial transaction ${mismatchedDueDateOnSecondLineItem.financialTransactions.head.sapDocumentNumber}."
-        )
-
         whenReady(paymentsService.getOpenPayments(appaId).value) { result =>
-          result mustBe Left(errorResponse)
+          result mustBe Left(ErrorCodes.unexpectedResponse)
         }
       }
 
@@ -521,13 +472,8 @@ class PaymentsServiceSpec extends SpecBase {
         when(mockFinancialDataConnector.getFinancialData(appaId))
           .thenReturn(EitherT.pure[Future, ErrorResponse](unknownTransactionType))
 
-        val errorResponse = ErrorResponse(
-          INTERNAL_SERVER_ERROR,
-          s"Unexpected transaction type $badTransactionType on financial transaction ${unknownTransactionType.financialTransactions.head.sapDocumentNumber}."
-        )
-
         whenReady(paymentsService.getOpenPayments(appaId).value) { result =>
-          result mustBe Left(errorResponse)
+          result mustBe Left(ErrorCodes.unexpectedResponse)
         }
       }
     }
@@ -551,10 +497,7 @@ class PaymentsServiceSpec extends SpecBase {
           val sapDocumentNumber = sapDocumentNumberGen.sample.get
 
           paymentsService.validateAndGetCommonData(sapDocumentNumber, Seq.empty) mustBe Left(
-            ErrorResponse(
-              INTERNAL_SERVER_ERROR,
-              s"Should have had a least one entry for financial transaction $sapDocumentNumber. This shouldn't happen"
-            )
+            ErrorCodes.unexpectedResponse
           )
         }
       }

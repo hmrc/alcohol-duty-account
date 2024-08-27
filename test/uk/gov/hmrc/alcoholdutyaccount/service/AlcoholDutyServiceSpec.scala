@@ -16,9 +16,8 @@
 
 package uk.gov.hmrc.alcoholdutyaccount.service
 
-import cats.data.{EitherT, OptionT}
+import cats.data.EitherT
 import org.mockito.ArgumentMatchersSugar.*
-import org.mockito.IdiomaticMockito.StubbingOps
 import org.mockito.cats.IdiomaticMockitoCats.StubbingOpsCats
 import uk.gov.hmrc.alcoholdutyaccount.base.SpecBase
 import uk.gov.hmrc.alcoholdutyaccount.common.TestData
@@ -31,7 +30,7 @@ import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.bootstrap.backend.http.ErrorResponse
 
 import java.time.LocalDate
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.ExecutionContext
 import scala.util.Success
 
 class AlcoholDutyServiceSpec extends SpecBase with TestData {
@@ -449,9 +448,9 @@ class AlcoholDutyServiceSpec extends SpecBase with TestData {
     }
 
     "getPaymentInformation should" - {
-      "return None if the financialDataConnector returns None" in new SetUp {
-        when(financialDataConnector.getFinancialDataForBtaTile(*)(*))
-          .thenReturn(OptionT.none[Future, FinancialTransactionDocument])
+      "return None if the financialDataConnector returns an error" in new SetUp {
+        when(financialDataConnector.getFinancialData(*)(*))
+          .thenReturn(EitherT.leftT(ErrorCodes.unexpectedResponse))
 
         val result = service.getPaymentInformation(appaId)
         result onComplete {
@@ -460,11 +459,21 @@ class AlcoholDutyServiceSpec extends SpecBase with TestData {
         }
       }
 
-      "return a empty Payments object if the financialDataConnector returns an empty Document" in new SetUp {
-        financialDataConnector.getFinancialDataForBtaTile(*)(*) returnsF emptyFinancialDocument
+      "return a empty Payments object if the financialDataConnector returns NOT_FOUND" in new SetUp {
+        when(financialDataConnector.getFinancialData(*)(*))
+          .thenReturn(EitherT.leftT(ErrorCodes.entityNotFound))
 
         service.getPaymentInformation(appaId).onComplete { result =>
           result mustBe Success(Some(Payments()))
+        }
+      }
+
+      "return a Payments object if the financialDataConnector returns a Document" in new SetUp {
+        when(financialDataConnector.getFinancialData(*)(*))
+          .thenReturn(EitherT.pure(financialDocumentWithSingleSapDocumentNo))
+
+        service.getPaymentInformation(appaId).onComplete { result =>
+          result mustBe Success(Some(Payments(Some(Balance(BigDecimal(100), false, Some("X1234567890"))))))
         }
       }
     }
@@ -499,7 +508,8 @@ class AlcoholDutyServiceSpec extends SpecBase with TestData {
           when(obligationDataConnector.getObligationDetails(*, *)(*))
             .thenReturn(EitherT.fromEither(Right(obligationDataOneDue)))
 
-          financialDataConnector.getFinancialDataForBtaTile(*)(*) returnsF financialDocumentWithSingleSapDocumentNo
+          when(financialDataConnector.getFinancialData(*)(*))
+            .thenReturn(EitherT.pure(financialDocumentWithSingleSapDocumentNo))
 
           whenReady(service.getAlcoholDutyCardData(appaId).value) { result =>
             result mustBe Right(
@@ -543,7 +553,8 @@ class AlcoholDutyServiceSpec extends SpecBase with TestData {
           when(obligationDataConnector.getObligationDetails(*, *)(*))
             .thenReturn(EitherT.fromEither(Right(obligationDataOneDue)))
 
-          financialDataConnector.getFinancialDataForBtaTile(*)(*) returnsF financialDocumentWithSingleSapDocumentNo
+          when(financialDataConnector.getFinancialData(*)(*))
+            .thenReturn(EitherT.pure(financialDocumentWithSingleSapDocumentNo))
 
           whenReady(service.getAlcoholDutyCardData(appaId).value) { result =>
             result mustBe Right(
@@ -586,7 +597,8 @@ class AlcoholDutyServiceSpec extends SpecBase with TestData {
         when(obligationDataConnector.getObligationDetails(*, *)(*))
           .thenReturn(EitherT.fromEither(Left(ErrorResponse(BAD_REQUEST, ""))))
 
-        financialDataConnector.getFinancialDataForBtaTile(*)(*) returnsF financialDocumentWithSingleSapDocumentNo
+        when(financialDataConnector.getFinancialData(*)(*))
+          .thenReturn(EitherT.pure(financialDocumentWithSingleSapDocumentNo))
 
         whenReady(service.getAlcoholDutyCardData(appaId).value) { result =>
           result mustBe Right(
@@ -615,7 +627,8 @@ class AlcoholDutyServiceSpec extends SpecBase with TestData {
         when(obligationDataConnector.getObligationDetails(*, *)(*))
           .thenReturn(EitherT.fromEither(Left(ErrorResponse(NOT_FOUND, ""))))
 
-        financialDataConnector.getFinancialDataForBtaTile(*)(*) returnsF financialDocumentWithSingleSapDocumentNo
+        when(financialDataConnector.getFinancialData(*)(*))
+          .thenReturn(EitherT.pure(financialDocumentWithSingleSapDocumentNo))
 
         whenReady(service.getAlcoholDutyCardData(appaId).value) { result =>
           result mustBe Right(
@@ -660,8 +673,7 @@ class AlcoholDutyServiceSpec extends SpecBase with TestData {
         when(obligationDataConnector.getObligationDetails(*, *)(*))
           .thenReturn(EitherT.fromEither(Right(obligationDataOneDue)))
 
-        financialDataConnector.getFinancialDataForBtaTile(*)(*) returns OptionT
-          .none[Future, FinancialTransactionDocument]
+        when(financialDataConnector.getFinancialData(*)(*)).thenReturn(EitherT.leftT(ErrorCodes.unexpectedResponse))
 
         whenReady(service.getAlcoholDutyCardData(appaId).value) { result =>
           result mustBe Right(
@@ -691,8 +703,7 @@ class AlcoholDutyServiceSpec extends SpecBase with TestData {
           when(obligationDataConnector.getObligationDetails(*, *)(*))
             .thenReturn(EitherT.fromEither(Left(ErrorResponse(BAD_REQUEST, ""))))
 
-          financialDataConnector.getFinancialDataForBtaTile(*)(*) returns OptionT
-            .none[Future, FinancialTransactionDocument]
+          when(financialDataConnector.getFinancialData(*)(*)).thenReturn(EitherT.leftT(ErrorCodes.unexpectedResponse))
 
           whenReady(service.getAlcoholDutyCardData(appaId).value) { result =>
             result mustBe Right(

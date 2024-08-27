@@ -16,10 +16,11 @@
 
 package uk.gov.hmrc.alcoholdutyaccount.connectors
 
-import cats.data.{EitherT, OptionT}
-import play.api.http.Status.{BAD_REQUEST, INTERNAL_SERVER_ERROR, NOT_FOUND}
+import cats.data.EitherT
+import play.api.http.Status.{BAD_REQUEST, NOT_FOUND}
 import play.api.{Logger, Logging}
 import uk.gov.hmrc.alcoholdutyaccount.config.AppConfig
+import uk.gov.hmrc.alcoholdutyaccount.models.ErrorCodes
 import uk.gov.hmrc.alcoholdutyaccount.models.hods.FinancialTransactionDocument
 import uk.gov.hmrc.http.{HeaderCarrier, HeaderNames, HttpClient, HttpReadsInstances, HttpResponse, UpstreamErrorResponse}
 import uk.gov.hmrc.play.bootstrap.backend.http.ErrorResponse
@@ -63,12 +64,7 @@ class FinancialDataConnector @Inject() (config: AppConfig, implicit val httpClie
               case Failure(exception) =>
                 val error = s"Parsing failed for financial transaction document for appaId $appaId"
                 logger.warn(error, exception)
-                Left(
-                  ErrorResponse(
-                    INTERNAL_SERVER_ERROR,
-                    error
-                  )
-                )
+                Left(ErrorCodes.unexpectedResponse)
             }
           case Left(error)     =>
             Left(processErrors(appaId, error))
@@ -76,7 +72,7 @@ class FinancialDataConnector @Inject() (config: AppConfig, implicit val httpClie
         .recoverWith { case e: Exception =>
           val error = s"An exception was returned while trying to fetch financial data for appaId $appaId"
           logger.warn(error, e)
-          Future.successful(Left(ErrorResponse(INTERNAL_SERVER_ERROR, error)))
+          Future.successful(Left(ErrorCodes.unexpectedResponse))
         }
     }
 
@@ -85,16 +81,16 @@ class FinancialDataConnector @Inject() (config: AppConfig, implicit val httpClie
       case BAD_REQUEST =>
         val errorMessage = s"Bad request when fetching financial data for appaId $appaId"
         logger.info(errorMessage)
-        ErrorResponse(INTERNAL_SERVER_ERROR, errorMessage)
+        ErrorCodes.unexpectedResponse
       case NOT_FOUND   =>
         val errorMessage = s"No financial data found for appaId $appaId"
         logger.info(errorMessage)
-        ErrorResponse(NOT_FOUND, errorMessage)
+        ErrorCodes.entityNotFound
       case _           =>
         val errorMessage =
           s"An error was returned while trying to fetch financial transaction document appaId $appaId"
         logger.warn(errorMessage, error)
-        ErrorResponse(INTERNAL_SERVER_ERROR, errorMessage)
+        ErrorCodes.unexpectedResponse
     }
 
   private def getQueryParams: Seq[(String, String)] =
@@ -104,17 +100,4 @@ class FinancialDataConnector @Inject() (config: AppConfig, implicit val httpClie
       "calculateAccruedInterest"   -> false.toString,
       "customerPaymentInformation" -> false.toString
     )
-
-  /*
-   * Wrapper to preserve call for BTA Tile API which wants an OptionT
-   */
-  def getFinancialDataForBtaTile(
-    appaId: String
-  )(implicit hc: HeaderCarrier): OptionT[Future, FinancialTransactionDocument] = OptionT(
-    getFinancialData(appaId).value.map {
-      case Left(ErrorResponse(NOT_FOUND, _, _, _)) => Some(FinancialTransactionDocument(Seq.empty))
-      case Left(_)                                 => None
-      case Right(result)                           => Some(result)
-    }
-  )
 }

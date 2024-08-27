@@ -19,8 +19,8 @@ package uk.gov.hmrc.alcoholdutyaccount.service
 import cats.data.EitherT
 import cats.implicits._
 import play.api.Logging
-import play.api.http.Status.INTERNAL_SERVER_ERROR
 import uk.gov.hmrc.alcoholdutyaccount.connectors.FinancialDataConnector
+import uk.gov.hmrc.alcoholdutyaccount.models.ErrorCodes
 import uk.gov.hmrc.alcoholdutyaccount.models.hods.{FinancialTransaction, FinancialTransactionDocument}
 import uk.gov.hmrc.alcoholdutyaccount.models.payments.TransactionType.{PaymentOnAccount, RPI}
 import uk.gov.hmrc.alcoholdutyaccount.models.payments.{OpenPayment, OpenPayments, OutstandingPayment, TransactionType, UnallocatedPayment}
@@ -53,25 +53,21 @@ class PaymentsService @Inject() (
   ): Either[ErrorResponse, LocalDate] = firstFinancialTransaction.items.toList match {
     case firstItem :: subsequentItems =>
       firstItem.dueDate.fold[Either[ErrorResponse, LocalDate]] {
-        val errorMessage =
-          s"Due date not found on first item of first entry of financial transaction $sapDocumentNumber."
-        logger.warn(errorMessage)
-        Left(ErrorResponse(INTERNAL_SERVER_ERROR, errorMessage))
+        logger.warn(s"Due date not found on first item of first entry of financial transaction $sapDocumentNumber.")
+        Left(ErrorCodes.unexpectedResponse)
       } { dueDate =>
         val hasErrors = subsequentItems.map(_.dueDate.fold(true)(!dueDate.isEqual(_))).exists(identity)
 
         if (hasErrors) {
-          val errorMessage = s"Not all dueDates matched for first entry of financial transaction $sapDocumentNumber."
-          logger.warn(errorMessage)
-          Left(ErrorResponse(INTERNAL_SERVER_ERROR, errorMessage))
+          logger.warn(s"Not all dueDates matched for first entry of financial transaction $sapDocumentNumber.")
+          Left(ErrorCodes.unexpectedResponse)
         } else {
           Right(dueDate)
         }
       }
     case _                            =>
-      val errorMessage = s"Expected at least one item for financial transaction $sapDocumentNumber."
-      logger.warn(errorMessage)
-      Left(ErrorResponse(INTERNAL_SERVER_ERROR, errorMessage))
+      logger.warn(s"Expected at least one item for financial transaction $sapDocumentNumber.")
+      Left(ErrorCodes.unexpectedResponse)
   }
 
   private def validateAndGetFinancialTransactionData(
@@ -92,23 +88,19 @@ class PaymentsService @Inject() (
       .exists(identity)
 
     if (hasErrors) {
-      val errorMessage =
+      logger.warn(
         s"Not all chargeReferences, mainTransactions and/or dueDates matched against the first entry of financial transaction $sapDocumentNumber."
-      logger.warn(errorMessage)
-      Left(ErrorResponse(INTERNAL_SERVER_ERROR, errorMessage))
+      )
+      Left(ErrorCodes.unexpectedResponse)
     } else {
       TransactionType
         .fromMainTransactionType(mainTransactionType)
         .fold[Either[ErrorResponse, FinancialTransactionData]] {
-          val errorMessage =
-            s"Unexpected transaction type $mainTransactionType on financial transaction $sapDocumentNumber."
-          logger.warn(errorMessage)
-          Left(ErrorResponse(INTERNAL_SERVER_ERROR, errorMessage))
+          logger.warn(s"Unexpected transaction type $mainTransactionType on financial transaction $sapDocumentNumber.")
+          Left(ErrorCodes.unexpectedResponse)
         } { transactionType =>
           if (transactionType == RPI) {
-            val errorMessage =
-              s"Unexpected RPI in open payments on financial transaction $sapDocumentNumber."
-            logger.warn(errorMessage)
+            logger.warn(s"Unexpected RPI in open payments on financial transaction $sapDocumentNumber.")
           }
 
           Right(
@@ -138,10 +130,10 @@ class PaymentsService @Inject() (
       } yield financialTransactionData
 
     case _ =>
-      val errorMessage =
+      logger.warn(
         s"Should have had a least one entry for financial transaction $sapDocumentNumber. This shouldn't happen"
-      logger.warn(errorMessage)
-      Left(ErrorResponse(INTERNAL_SERVER_ERROR, errorMessage))
+      )
+      Left(ErrorCodes.unexpectedResponse)
   }
 
   private def calculatedTotalBalance(

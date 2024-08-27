@@ -20,7 +20,6 @@ import play.api.Logging
 import play.api.libs.json.Json
 import play.api.mvc.{Action, AnyContent, ControllerComponents}
 import uk.gov.hmrc.alcoholdutyaccount.controllers.actions.AuthorisedAction
-import uk.gov.hmrc.alcoholdutyaccount.models.ErrorCodes
 import uk.gov.hmrc.alcoholdutyaccount.service.PaymentsService
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
@@ -43,7 +42,7 @@ class PaymentsController @Inject() (
         .fold(
           errorResponse => {
             logger.warn(s"Unable to get open payments for $appaId: $errorResponse")
-            error(ErrorCodes.sanitiseError(errorResponse))
+            error(errorResponse)
           },
           openPayments => Ok(Json.toJson(openPayments))
         )
