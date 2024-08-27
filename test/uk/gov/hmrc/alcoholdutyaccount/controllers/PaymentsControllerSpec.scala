@@ -27,6 +27,7 @@ import uk.gov.hmrc.alcoholdutyaccount.common.TestData
 import uk.gov.hmrc.alcoholdutyaccount.service.PaymentsService
 import uk.gov.hmrc.play.bootstrap.backend.http.ErrorResponse
 
+import java.time.LocalDate
 import scala.concurrent.Future
 
 class PaymentsControllerSpec extends SpecBase {
@@ -68,13 +69,27 @@ class PaymentsControllerSpec extends SpecBase {
         status(result) mustBe INTERNAL_SERVER_ERROR
         contentAsJson(result).as[ErrorResponse].message mustBe "Unexpected Response"
       }
+
+      "return an error if the year is before the minimum" in new SetUp {
+        val minimumYear = appConfig.minimumHistoricPaymentsYear
+
+        val result: Future[Result] = controller.historicPayments(appaId, minimumYear - 1)(fakeRequest)
+        status(result) mustBe BAD_REQUEST
+        contentAsJson(result).as[ErrorResponse].message mustBe "Bad request made"
+      }
+
+      "return an error if the year is after the current" in new SetUp {
+        val result: Future[Result] = controller.historicPayments(appaId, LocalDate.now().getYear + 1)(fakeRequest)
+        status(result) mustBe BAD_REQUEST
+        contentAsJson(result).as[ErrorResponse].message mustBe "Bad request made"
+      }
     }
   }
 
   class SetUp extends TestData {
     val mockPaymentsService: PaymentsService = mock[PaymentsService]
     val cc                                   = Helpers.stubControllerComponents()
-    val controller                           = new PaymentsController(fakeAuthorisedAction, mockPaymentsService, cc)
+    val controller                           = new PaymentsController(fakeAuthorisedAction, mockPaymentsService, appConfig, cc)
 
     val year: Int = 2024
   }

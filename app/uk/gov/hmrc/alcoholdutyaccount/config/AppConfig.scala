@@ -69,6 +69,9 @@ class AppConfig @Inject() (config: Configuration, servicesConfig: ServicesConfig
     s"$obligationDataHost$url"
   }
 
+  def minimumHistoricPaymentsYear: Int =
+    config.get[Int]("payments.minimumHistoricPaymentsYear")
+
   private[config] def getConfStringAndThrowIfNotFound(key: String) =
     servicesConfig.getConfString(key, throw new RuntimeException(s"Could not find services config key '$key'"))
 }

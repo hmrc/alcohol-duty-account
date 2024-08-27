@@ -393,6 +393,52 @@ class PaymentsServiceSpec extends SpecBase {
         }
       }
 
+      "if all period key is there on some, but not all document entries" in new SetUp {
+        val mismatchedTransactionTypesOnLineItems = twoLineItemPartiallyOutstandingReturn.copy(financialTransactions =
+          Seq(
+            twoLineItemPartiallyOutstandingReturn.financialTransactions(0),
+            twoLineItemPartiallyOutstandingReturn
+              .financialTransactions(1)
+              .copy(periodKey = None)
+          )
+        )
+
+        when(mockFinancialDataConnector.getFinancialData(appaId))
+          .thenReturn(EitherT.pure[Future, ErrorResponse](mismatchedTransactionTypesOnLineItems))
+
+        val errorResponse = ErrorResponse(
+          INTERNAL_SERVER_ERROR,
+          s"Not all chargeReferences, periodKeys, mainTransactions and/or dueDates matched against the first entry of financial transaction ${mismatchedTransactionTypesOnLineItems.financialTransactions.head.sapDocumentNumber}."
+        )
+
+        whenReady(paymentsService.getOpenPayments(appaId).value) { result =>
+          result mustBe Left(errorResponse)
+        }
+      }
+
+      "if all period keys are present, but do not match on all document line items" in new SetUp {
+        val mismatchedTransactionTypesOnLineItems = twoLineItemPartiallyOutstandingReturn.copy(financialTransactions =
+          Seq(
+            twoLineItemPartiallyOutstandingReturn.financialTransactions(0),
+            twoLineItemPartiallyOutstandingReturn
+              .financialTransactions(1)
+              .copy(periodKey = Some(periodKey2))
+          )
+        )
+
+        when(mockFinancialDataConnector.getFinancialData(appaId))
+          .thenReturn(EitherT.pure[Future, ErrorResponse](mismatchedTransactionTypesOnLineItems))
+
+        val errorResponse = ErrorResponse(
+          INTERNAL_SERVER_ERROR,
+          s"Not all chargeReferences, periodKeys, mainTransactions and/or dueDates matched against the first entry of financial transaction ${mismatchedTransactionTypesOnLineItems.financialTransactions.head.sapDocumentNumber}."
+        )
+
+        whenReady(paymentsService.getOpenPayments(appaId).value) { result =>
+          result mustBe Left(errorResponse)
+        }
+      }
+
       "if chargeReference is missing on the first, but present on the second line item of a document" in new SetUp {
         val missingChargeReferencesOnSecondLineItem = twoLineItemPartiallyOutstandingReturn.copy(financialTransactions =
           Seq(
