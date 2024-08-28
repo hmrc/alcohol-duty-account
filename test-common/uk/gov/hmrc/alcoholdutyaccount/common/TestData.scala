@@ -31,7 +31,10 @@ trait TestData extends ModelGenerators {
 
   val dummyUUID = "01234567-89ab-cdef-0123-456789abcdef"
 
-  val appaId: String = appaIdGen.sample.get
+  val appaId: String          = appaIdGen.sample.get
+  val businessPartner: String = businessPartnerGen.sample.get
+  val contractAccount: String = contractAccountGen.sample.get
+  val contractObject: String  = contractObjectGen.sample.get
 
   val allApprovals = Set[ApprovalType](Beer, CiderOrPerry, WineAndOtherFermentedProduct, Spirits)
 

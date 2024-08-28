@@ -50,7 +50,7 @@ class PaymentsController @Inject() (
         .fold(
           errorResponse => {
             logger.warn(s"Unable to get open payments for $appaId: $errorResponse")
-            error(ErrorCodes.sanitiseError(errorResponse))
+            error(errorResponse)
           },
           openPayments => Ok(Json.toJson(openPayments))
         )

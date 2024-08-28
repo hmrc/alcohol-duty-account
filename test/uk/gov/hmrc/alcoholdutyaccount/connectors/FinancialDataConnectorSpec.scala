@@ -20,7 +20,7 @@ import org.scalatest.concurrent.ScalaFutures
 import play.api.libs.json.Json
 import uk.gov.hmrc.alcoholdutyaccount.base.{ConnectorTestHelpers, SpecBase}
 import uk.gov.hmrc.alcoholdutyaccount.common.TestData
-import uk.gov.hmrc.play.bootstrap.backend.http.ErrorResponse
+import uk.gov.hmrc.alcoholdutyaccount.models.ErrorCodes
 
 class FinancialDataConnectorSpec extends SpecBase with ScalaFutures with ConnectorTestHelpers {
   protected val endpointName = "financial"
@@ -57,12 +57,7 @@ class FinancialDataConnectorSpec extends SpecBase with ScalaFutures with Connect
         "if the data retrieved cannot be parsed" in new SetUp {
           stubGetWithParameters(url, expectedOpenQueryParams, OK, "blah")
           whenReady(connector.getFinancialData(appaId).value) { result =>
-            result mustBe Left(
-              ErrorResponse(
-                INTERNAL_SERVER_ERROR,
-                s"Parsing failed for financial transaction document for appaId $appaId"
-              )
-            )
+            result mustBe Left(ErrorCodes.unexpectedResponse)
             verifyGetWithParameters(url, expectedOpenQueryParams)
           }
         }
@@ -70,7 +65,7 @@ class FinancialDataConnectorSpec extends SpecBase with ScalaFutures with Connect
         "if the financial transaction document cannot be found" in new SetUp {
           stubGetWithParameters(url, expectedOpenQueryParams, NOT_FOUND, "")
           whenReady(connector.getFinancialData(appaId).value) { result =>
-            result mustBe Left(ErrorResponse(NOT_FOUND, s"No financial data found for appaId $appaId"))
+            result mustBe Left(ErrorCodes.entityNotFound)
             verifyGetWithParameters(url, expectedOpenQueryParams)
           }
         }
@@ -78,9 +73,7 @@ class FinancialDataConnectorSpec extends SpecBase with ScalaFutures with Connect
         "if the api call returns BAD_REQUEST" in new SetUp {
           stubGetWithParameters(url, expectedOpenQueryParams, BAD_REQUEST, "")
           whenReady(connector.getFinancialData(appaId).value) { result =>
-            result mustBe Left(
-              ErrorResponse(INTERNAL_SERVER_ERROR, s"Bad request when fetching financial data for appaId $appaId")
-            )
+            result mustBe Left(ErrorCodes.unexpectedResponse)
             verifyGetWithParameters(url, expectedOpenQueryParams)
           }
         }
@@ -88,12 +81,7 @@ class FinancialDataConnectorSpec extends SpecBase with ScalaFutures with Connect
         "if the api call returns INTERNAL_SERVER_ERROR" in new SetUp {
           stubGetWithParameters(url, expectedOpenQueryParams, INTERNAL_SERVER_ERROR, "")
           whenReady(connector.getFinancialData(appaId).value) { result =>
-            result mustBe Left(
-              ErrorResponse(
-                INTERNAL_SERVER_ERROR,
-                s"An error was returned while trying to fetch financial transaction document appaId $appaId"
-              )
-            )
+            result mustBe Left(ErrorCodes.unexpectedResponse)
             verifyGetWithParameters(url, expectedOpenQueryParams)
           }
         }
@@ -101,71 +89,7 @@ class FinancialDataConnectorSpec extends SpecBase with ScalaFutures with Connect
         "if an exception is thrown when fetching financial data" in new SetUp {
           stubGetFaultWithParameters(url, expectedOpenQueryParams)
           whenReady(connector.getFinancialData(appaId).value) { result =>
-            result mustBe Left(
-              ErrorResponse(
-                INTERNAL_SERVER_ERROR,
-                s"An exception was returned while trying to fetch financial data for appaId $appaId"
-              )
-            )
-            verifyGetWithParameters(url, expectedOpenQueryParams)
-          }
-        }
-      }
-    }
-
-    "when calling getFinancialDataForBtaTile" - {
-      "returns the financial transaction document if the request is successful" in new SetUp {
-        stubGetWithParameters(
-          url,
-          expectedOpenQueryParams,
-          OK,
-          Json.toJson(financialDocumentWithSingleSapDocumentNo).toString
-        )
-        whenReady(connector.getFinancialDataForBtaTile(appaId).value) { result =>
-          result mustBe Some(financialDocumentWithSingleSapDocumentNo)
-          verifyGetWithParameters(url, expectedOpenQueryParams)
-        }
-      }
-
-      "return an empty document" - {
-        "if the financial transaction document cannot be found" in new SetUp {
-          stubGetWithParameters(url, expectedOpenQueryParams, NOT_FOUND, "")
-          whenReady(connector.getFinancialDataForBtaTile(appaId).value) { result =>
-            result mustBe Some(emptyFinancialDocument)
-            verifyGetWithParameters(url, expectedOpenQueryParams)
-          }
-        }
-      }
-
-      "return None " - {
-        "if the data retrieved cannot be parsed" in new SetUp {
-          stubGetWithParameters(url, expectedOpenQueryParams, OK, "blah")
-          whenReady(connector.getFinancialDataForBtaTile(appaId).value) { result =>
-            result mustBe None
-            verifyGetWithParameters(url, expectedOpenQueryParams)
-          }
-        }
-
-        "if the api call returns BAD_REQUEST" in new SetUp {
-          stubGetWithParameters(url, expectedOpenQueryParams, BAD_REQUEST, "")
-          whenReady(connector.getFinancialDataForBtaTile(appaId).value) { result =>
-            result mustBe None
-            verifyGetWithParameters(url, expectedOpenQueryParams)
-          }
-        }
-
-        "if the api call returns INTERNAL_SERVER_ERROR" in new SetUp {
-          stubGetWithParameters(url, expectedOpenQueryParams, INTERNAL_SERVER_ERROR, "")
-          whenReady(connector.getFinancialDataForBtaTile(appaId).value) { result =>
-            result mustBe None
-            verifyGetWithParameters(url, expectedOpenQueryParams)
-          }
-        }
-
-        "if an exception thrown when fetching financial data" in new SetUp {
-          stubGetFaultWithParameters(url, expectedOpenQueryParams)
-          whenReady(connector.getFinancialDataForBtaTile(appaId).value) { result =>
-            result mustBe None
+            result mustBe Left(ErrorCodes.unexpectedResponse)
             verifyGetWithParameters(url, expectedOpenQueryParams)
           }
         }

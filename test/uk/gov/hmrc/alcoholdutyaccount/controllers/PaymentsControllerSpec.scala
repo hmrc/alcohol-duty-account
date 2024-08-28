@@ -24,6 +24,8 @@ import play.api.mvc.Result
 import play.api.test.Helpers
 import uk.gov.hmrc.alcoholdutyaccount.base.SpecBase
 import uk.gov.hmrc.alcoholdutyaccount.common.TestData
+import uk.gov.hmrc.alcoholdutyaccount.models.ErrorCodes
+import uk.gov.hmrc.alcoholdutyaccount.models.payments.OpenPayments
 import uk.gov.hmrc.alcoholdutyaccount.service.PaymentsService
 import uk.gov.hmrc.play.bootstrap.backend.http.ErrorResponse
 
@@ -42,13 +44,13 @@ class PaymentsControllerSpec extends SpecBase {
         contentAsJson(result) mustBe Json.toJson(noOpenPayments)
       }
 
-      "return and sanitise any error returned from the service" in new SetUp {
+      "return any error returned from the service" in new SetUp {
         when(mockPaymentsService.getOpenPayments(eqTo(appaId))(*))
-          .thenReturn(EitherT.fromEither(Left(ErrorResponse(INTERNAL_SERVER_ERROR, "An error occurred"))))
+          .thenReturn(EitherT.leftT[Future, OpenPayments](ErrorCodes.unexpectedResponse))
 
         val result: Future[Result] = controller.openPayments(appaId)(fakeRequest)
         status(result) mustBe INTERNAL_SERVER_ERROR
-        contentAsJson(result).as[ErrorResponse].message mustBe "Unexpected Response"
+        contentAsJson(result).as[ErrorResponse] mustBe ErrorCodes.unexpectedResponse
       }
     }
 

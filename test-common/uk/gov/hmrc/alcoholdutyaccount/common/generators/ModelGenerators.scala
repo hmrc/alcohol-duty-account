@@ -34,6 +34,9 @@ trait ModelGenerators {
 
   def businessGen: Gen[String] = Gen.listOfN(6, Gen.alphaLowerChar).map(id => s"test$id Ltd")
 
-  def sapDocumentNumberGen: Gen[String] = Gen.listOfN(12, Gen.numChar).map(_.mkString)
   def chargeReferenceGen: Gen[String]   = Gen.listOfN(14, Gen.numChar).map(id => s"XA${id.mkString}")
+  def businessPartnerGen: Gen[String]   = Gen.listOfN(10, Gen.numChar).map(_.mkString)
+  def contractAccountGen: Gen[String]   = Gen.listOfN(12, Gen.numChar).map(_.mkString)
+  def contractObjectGen: Gen[String]    = Gen.listOfN(20, Gen.numChar).map(_.mkString)
+  def sapDocumentNumberGen: Gen[String] = Gen.listOfN(12, Gen.numChar).map(_.mkString)
 }
