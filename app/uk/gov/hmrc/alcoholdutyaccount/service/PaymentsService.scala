@@ -232,38 +232,49 @@ class PaymentsService @Inject() (
       openPayments                 <- extractOpenPayments(financialTransactionDocument)
     } yield buildOpenPaymentsPayload(openPayments)
 
-  private[service] def calculateTotalAmount(financialTransactionsForDocument: Seq[FinancialTransaction]): BigDecimal =
-    financialTransactionsForDocument.map(_.originalAmount).sum
+  private def isTransactionFullyOpen(financialTransaction: FinancialTransaction): Boolean =
+    financialTransaction.outstandingAmount.contains(financialTransaction.originalAmount)
+
+  private[service] def calculateTotalAmountPaid(
+    financialTransactionsForDocument: Seq[FinancialTransaction]
+  ): BigDecimal =
+    financialTransactionsForDocument
+      .map(transaction =>
+        if (TransactionType.isRPI(transaction.mainTransaction)) {
+          transaction.originalAmount
+        } else {
+          transaction.originalAmount - transaction.outstandingAmount.getOrElse(BigDecimal(0))
+        }
+      )
+      .sum
 
   private def extractHistoricPayments(
     financialTransactionDocument: FinancialTransactionDocument
   ): EitherT[Future, ErrorResponse, List[HistoricPayment]] =
     EitherT.fromEither(
       financialTransactionDocument.financialTransactions
+        .filter(transaction =>
+          TransactionType.isRPI(transaction.mainTransaction) ||
+            !(TransactionType.isPaymentOnAccount(transaction.mainTransaction) || isTransactionFullyOpen(transaction))
+        )
         .groupBy(_.sapDocumentNumber)
         .map { case (sapDocumentNumber, financialTransactionsForDocument) =>
           validateAndGetCommonData(sapDocumentNumber, financialTransactionsForDocument, open = false)
             .map { financialTransactionData =>
-              if (financialTransactionData.transactionType == TransactionType.PaymentOnAccount) {
-                None
-              } else {
-                val totalAmount = calculateTotalAmount(financialTransactionsForDocument)
-                Some(
-                  HistoricPayment(
-                    period = financialTransactionData.maybePeriodKey
-                      .flatMap(ReturnPeriod.fromPeriodKey)
-                      .getOrElse(ReturnPeriod(YearMonth.from(financialTransactionData.dueDate))),
-                    transactionType = financialTransactionData.transactionType,
-                    chargeReference = financialTransactionData.maybeChargeReference,
-                    amount = totalAmount
-                  )
-                )
-              }
+              val totalAmountPaid = calculateTotalAmountPaid(financialTransactionsForDocument)
+
+              HistoricPayment(
+                period = financialTransactionData.maybePeriodKey
+                  .flatMap(ReturnPeriod.fromPeriodKey)
+                  .getOrElse(ReturnPeriod(YearMonth.from(financialTransactionData.dueDate))),
+                transactionType = financialTransactionData.transactionType,
+                chargeReference = financialTransactionData.maybeChargeReference,
+                amountPaid = totalAmountPaid
+              )
             }
         }
         .toList
         .sequence
-        .map(_.flatten)
     )
 
   def getHistoricPayments(

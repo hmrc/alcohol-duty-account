@@ -45,4 +45,8 @@ object TransactionType extends Enum[TransactionType] with PlayJsonEnum[Transacti
     case LPI              => "6075"
     case RPI              => "6076"
   }
+
+  def isRPI(mainTransactionType: String): Boolean = mainTransactionType == "6076"
+
+  def isPaymentOnAccount(mainTransactionType: String): Boolean = mainTransactionType == "0060"
 }

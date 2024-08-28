@@ -23,7 +23,7 @@ case class HistoricPayment(
   period: ReturnPeriod,
   transactionType: TransactionType,
   chargeReference: Option[String],
-  amount: BigDecimal
+  amountPaid: BigDecimal
 )
 
 object HistoricPayment {

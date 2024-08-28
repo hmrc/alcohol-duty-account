@@ -516,6 +516,89 @@ class PaymentsServiceSpec extends SpecBase {
 
     "when calling getHistoricPayments" - {
       "a successful and correct response should be returned" - {
+        "when just payment on account (no historic payments returned)" in new SetUp {
+          when(mockFinancialDataConnector.getFinancialData(appaId = appaId, open = false, year = year))
+            .thenReturn(EitherT.pure[Future, ErrorResponse](twoSeparatePayments))
+
+          whenReady(paymentsService.getHistoricPayments(appaId, year).value) {
+            _ mustBe Right(HistoricPayments(year, Seq.empty))
+          }
+        }
+
+        "when just RPI (which should be included)" in new SetUp {
+          when(mockFinancialDataConnector.getFinancialData(appaId = appaId, open = false, year = year))
+            .thenReturn(EitherT.pure[Future, ErrorResponse](singleRPI))
+
+          whenReady(paymentsService.getHistoricPayments(appaId, year).value) {
+            _ mustBe Right(
+              HistoricPayments(
+                year,
+                Seq(
+                  HistoricPayment(
+                    ReturnPeriod.fromPeriodKeyOrThrow(periodKey),
+                    TransactionType.RPI,
+                    None,
+                    BigDecimal("-50")
+                  )
+                )
+              )
+            )
+          }
+        }
+
+        "when fully open returns (nothing returned)" in new SetUp {
+          when(mockFinancialDataConnector.getFinancialData(appaId = appaId, open = false, year = year))
+            .thenReturn(EitherT.pure[Future, ErrorResponse](singleFullyOutstandingReturn))
+
+          whenReady(paymentsService.getHistoricPayments(appaId, year).value) {
+            _ mustBe Right(HistoricPayments(year, Seq.empty))
+          }
+        }
+
+        "when partial open return (the paid part)" in new SetUp {
+          when(mockFinancialDataConnector.getFinancialData(appaId = appaId, open = false, year = year))
+            .thenReturn(EitherT.pure[Future, ErrorResponse](singlePartiallyOutstandingReturn))
+
+          whenReady(paymentsService.getHistoricPayments(appaId, year).value) { historicPayments =>
+            val chargeReference = historicPayments.right.get.payments.headOption.flatMap(_.chargeReference)
+            historicPayments mustBe Right(
+              HistoricPayments(
+                year,
+                Seq(
+                  HistoricPayment(
+                    ReturnPeriod.fromPeriodKeyOrThrow(periodKey),
+                    TransactionType.Return,
+                    chargeReference,
+                    BigDecimal("4000")
+                  )
+                )
+              )
+            )
+          }
+        }
+
+        "when fully paid (the original amount)" in new SetUp {
+          when(mockFinancialDataConnector.getFinancialData(appaId = appaId, open = false, year = year))
+            .thenReturn(EitherT.pure[Future, ErrorResponse](singlePaidReturn))
+
+          whenReady(paymentsService.getHistoricPayments(appaId, year).value) { historicPayments =>
+            val chargeReference = historicPayments.right.get.payments.headOption.flatMap(_.chargeReference)
+            historicPayments mustBe Right(
+              HistoricPayments(
+                year,
+                Seq(
+                  HistoricPayment(
+                    ReturnPeriod.fromPeriodKeyOrThrow(periodKey),
+                    TransactionType.Return,
+                    chargeReference,
+                    BigDecimal("9000")
+                  )
+                )
+              )
+            )
+          }
+        }
+
         "for multiple statuses" in new SetUp {
           when(mockFinancialDataConnector.getFinancialData(appaId = appaId, open = false, year = year))
             .thenReturn(EitherT.pure[Future, ErrorResponse](multipleStatuses))
@@ -526,40 +609,22 @@ class PaymentsServiceSpec extends SpecBase {
                 payment.copy(chargeReference = payment.chargeReference.map(_ => "ChargeRef"))
               ) must contain theSameElementsAs Seq(
                 HistoricPayment(
-                  ReturnPeriod.fromPeriodKeyOrThrow("24AH"),
-                  TransactionType.Return,
-                  Some("ChargeRef"),
-                  BigDecimal("237.44")
-                ),
-                HistoricPayment(
-                  ReturnPeriod.fromPeriodKeyOrThrow("24AE"),
-                  TransactionType.Return,
-                  Some("ChargeRef"),
-                  BigDecimal("4577.44")
-                ),
-                HistoricPayment(
                   ReturnPeriod.fromPeriodKeyOrThrow("24AD"),
                   TransactionType.Return,
                   Some("ChargeRef"),
-                  BigDecimal("4577.44")
+                  BigDecimal("2000")
                 ),
                 HistoricPayment(
                   ReturnPeriod.fromPeriodKeyOrThrow("24AC"),
                   TransactionType.Return,
                   Some("ChargeRef"),
-                  BigDecimal("-4577.44")
+                  BigDecimal("-2000")
                 ),
                 HistoricPayment(
                   ReturnPeriod.fromPeriodKeyOrThrow("24AB"),
                   TransactionType.LPI,
                   Some("ChargeRef"),
-                  BigDecimal("20.56")
-                ),
-                HistoricPayment(
-                  ReturnPeriod.fromPeriodKeyOrThrow("24AB"),
-                  TransactionType.LPI,
-                  Some("ChargeRef"),
-                  BigDecimal("20.56")
+                  BigDecimal("10")
                 ),
                 HistoricPayment(
                   ReturnPeriod.fromPeriodKeyOrThrow("24AA"),
