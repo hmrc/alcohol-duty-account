@@ -18,8 +18,11 @@ package uk.gov.hmrc.alcoholdutyaccount.models.hods
 
 import play.api.libs.json.{Format, Json}
 
+import java.time.LocalDate
+
 case class FinancialTransactionItem(
   subItem: String,
+  dueDate: Option[LocalDate],
   amount: BigDecimal
 )
 
@@ -31,9 +34,9 @@ case class FinancialTransaction(
   sapDocumentNumber: String,
   periodKey: Option[String],
   chargeReference: Option[String],
-  originalAmount: BigDecimal,
   mainTransaction: String,
   subTransaction: String,
+  originalAmount: BigDecimal,
   outstandingAmount: Option[BigDecimal],
   items: Seq[FinancialTransactionItem]
 )
@@ -41,6 +44,7 @@ case class FinancialTransaction(
 object FinancialTransaction {
   implicit val format: Format[FinancialTransaction] = Json.format[FinancialTransaction]
 }
+
 case class FinancialTransactionDocument(financialTransactions: Seq[FinancialTransaction])
 
 object FinancialTransactionDocument {

@@ -20,58 +20,65 @@ import org.scalatest.concurrent.ScalaFutures
 import play.api.libs.json.Json
 import uk.gov.hmrc.alcoholdutyaccount.base.{ConnectorTestHelpers, SpecBase}
 import uk.gov.hmrc.alcoholdutyaccount.common.TestData
+import uk.gov.hmrc.alcoholdutyaccount.models.ErrorCodes
 
 class FinancialDataConnectorSpec extends SpecBase with ScalaFutures with ConnectorTestHelpers {
   protected val endpointName = "financial"
 
   "FinancialDataConnector" - {
-    "returns the financial transaction document if the request is successful" in new SetUp {
-      stubGetWithParameters(
-        url,
-        expectedQueryParams,
-        OK,
-        Json.toJson(financialDocumentWithSingleSapDocumentNo).toString
-      )
-      whenReady(connector.getFinancialData(appaId).value) { result =>
-        result mustBe Some(financialDocumentWithSingleSapDocumentNo)
-        verifyGetWithParameters(url, expectedQueryParams)
-      }
-    }
-    "return None " - {
-      "if the data retrieved cannot be parsed" in new SetUp {
-        stubGetWithParameters(url, expectedQueryParams, OK, "blah")
+    "when calling getFinancialData" - {
+      "returns the financial transaction document if the request is successful" in new SetUp {
+        stubGetWithParameters(
+          url,
+          expectedQueryParams,
+          OK,
+          Json.toJson(financialDocumentWithSingleSapDocumentNo).toString
+        )
         whenReady(connector.getFinancialData(appaId).value) { result =>
-          result mustBe None
-          verifyGetWithParameters(url, expectedQueryParams)
-        }
-      }
-      "if the financial transaction document cannot be found" in new SetUp {
-        stubGetWithParameters(url, expectedQueryParams, NOT_FOUND, "")
-        whenReady(connector.getFinancialData(appaId).value) { result =>
-          result mustBe Some(financialDocument_Empty)
-          verifyGetWithParameters(url, expectedQueryParams)
-        }
-      }
-      "if the api call returns bad request" in new SetUp {
-        stubGetWithParameters(url, expectedQueryParams, BAD_REQUEST, "")
-        whenReady(connector.getFinancialData(appaId).value) { result =>
-          result mustBe None
+          result mustBe Right(financialDocumentWithSingleSapDocumentNo)
           verifyGetWithParameters(url, expectedQueryParams)
         }
       }
 
-      "if the api call returns internal serve error" in new SetUp {
-        stubGetWithParameters(url, expectedQueryParams, INTERNAL_SERVER_ERROR, "")
-        whenReady(connector.getFinancialData(appaId).value) { result =>
-          result mustBe None
-          verifyGetWithParameters(url, expectedQueryParams)
+      "return an error" - {
+        "if the data retrieved cannot be parsed" in new SetUp {
+          stubGetWithParameters(url, expectedQueryParams, OK, "blah")
+          whenReady(connector.getFinancialData(appaId).value) { result =>
+            result mustBe Left(ErrorCodes.unexpectedResponse)
+            verifyGetWithParameters(url, expectedQueryParams)
+          }
         }
-      }
-      "if an exception thrown when fetching financial data" in new SetUp {
-        stubGetFaultWithParameters(url, expectedQueryParams)
-        whenReady(connector.getFinancialData(appaId).value) { result =>
-          result mustBe None
-          verifyGetWithParameters(url, expectedQueryParams)
+
+        "if the financial transaction document cannot be found" in new SetUp {
+          stubGetWithParameters(url, expectedQueryParams, NOT_FOUND, "")
+          whenReady(connector.getFinancialData(appaId).value) { result =>
+            result mustBe Left(ErrorCodes.entityNotFound)
+            verifyGetWithParameters(url, expectedQueryParams)
+          }
+        }
+
+        "if the api call returns BAD_REQUEST" in new SetUp {
+          stubGetWithParameters(url, expectedQueryParams, BAD_REQUEST, "")
+          whenReady(connector.getFinancialData(appaId).value) { result =>
+            result mustBe Left(ErrorCodes.unexpectedResponse)
+            verifyGetWithParameters(url, expectedQueryParams)
+          }
+        }
+
+        "if the api call returns INTERNAL_SERVER_ERROR" in new SetUp {
+          stubGetWithParameters(url, expectedQueryParams, INTERNAL_SERVER_ERROR, "")
+          whenReady(connector.getFinancialData(appaId).value) { result =>
+            result mustBe Left(ErrorCodes.unexpectedResponse)
+            verifyGetWithParameters(url, expectedQueryParams)
+          }
+        }
+
+        "if an exception is thrown when fetching financial data" in new SetUp {
+          stubGetFaultWithParameters(url, expectedQueryParams)
+          whenReady(connector.getFinancialData(appaId).value) { result =>
+            result mustBe Left(ErrorCodes.unexpectedResponse)
+            verifyGetWithParameters(url, expectedQueryParams)
+          }
         }
       }
     }
@@ -79,8 +86,7 @@ class FinancialDataConnectorSpec extends SpecBase with ScalaFutures with Connect
 
   class SetUp extends ConnectorFixture with TestData {
     val connector                                  = new FinancialDataConnector(config = config, httpClient = httpClient)
-    val url                                        =
-      s"${config.financialDataHost}/enterprise/financial-data/${config.idType}/$appaId/${config.regime}"
+    val url                                        = appConfig.financialDataUrl(appaId)
     val expectedQueryParams: Seq[(String, String)] = Seq(
       "onlyOpenItems"              -> "true",
       "includeLocks"               -> "false",

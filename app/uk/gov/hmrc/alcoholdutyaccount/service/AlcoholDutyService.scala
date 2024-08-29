@@ -16,7 +16,7 @@
 
 package uk.gov.hmrc.alcoholdutyaccount.service
 
-import cats.data.EitherT
+import cats.data.{EitherT, OptionT}
 import cats.implicits._
 import play.api.Logging
 import play.api.http.Status.NOT_FOUND
@@ -154,11 +154,23 @@ class AlcoholDutyService @Inject() (
       Returns(Some(dueReturnExists), Some(numberOfOverdueReturns), periodKey)
     }
 
+  /*
+   * Wrapper to preserve call for BTA Tile API which wants an OptionT
+   */
+  private def getFinancialDataForBtaTile(
+    appaId: String
+  )(implicit hc: HeaderCarrier): OptionT[Future, FinancialTransactionDocument] = OptionT(
+    financialDataConnector.getFinancialData(appaId).value.map {
+      case Left(ErrorResponse(NOT_FOUND, _, _, _)) => Some(FinancialTransactionDocument(Seq.empty))
+      case Left(_)                                 => None
+      case Right(result)                           => Some(result)
+    }
+  )
+
   private[service] def getPaymentInformation(
     alcoholDutyReference: String
   )(implicit hc: HeaderCarrier): Future[Option[Payments]] =
-    financialDataConnector
-      .getFinancialData(alcoholDutyReference)
+    getFinancialDataForBtaTile(alcoholDutyReference)
       .fold {
         Option.empty[Payments]
       } { financialData =>

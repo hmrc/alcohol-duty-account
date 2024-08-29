@@ -16,12 +16,14 @@
 
 package uk.gov.hmrc.alcoholdutyaccount.connectors
 
-import cats.data.OptionT
+import cats.data.EitherT
 import play.api.http.Status.NOT_FOUND
 import play.api.{Logger, Logging}
 import uk.gov.hmrc.alcoholdutyaccount.config.AppConfig
+import uk.gov.hmrc.alcoholdutyaccount.models.ErrorCodes
 import uk.gov.hmrc.alcoholdutyaccount.models.hods.FinancialTransactionDocument
 import uk.gov.hmrc.http.{HeaderCarrier, HeaderNames, HttpClient, HttpReadsInstances, HttpResponse, UpstreamErrorResponse}
+import uk.gov.hmrc.play.bootstrap.backend.http.ErrorResponse
 
 import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
@@ -34,23 +36,19 @@ class FinancialDataConnector @Inject() (config: AppConfig, implicit val httpClie
   override protected val logger: Logger = Logger(this.getClass)
 
   def getFinancialData(
-    alcoholDutyReference: String
-  )(implicit hc: HeaderCarrier): OptionT[Future, FinancialTransactionDocument] =
-    OptionT {
-
+    appaId: String
+  )(implicit hc: HeaderCarrier): EitherT[Future, ErrorResponse, FinancialTransactionDocument] =
+    EitherT {
       val headers: Seq[(String, String)] = Seq(
-        HeaderNames.authorisation -> s"Bearer ${config.obligationDataToken}",
-        "Environment"             -> config.obligationDataEnv
+        HeaderNames.authorisation -> s"Bearer ${config.financialDataToken}",
+        "Environment"             -> config.financialDataEnv
       )
 
-      val url =
-        s"${config.financialDataHost}/enterprise/financial-data/${config.idType}/$alcoholDutyReference/${config.regime}"
-
-      logger.info(s"Fetching financial transaction document for appaId $alcoholDutyReference")
+      logger.info(s"Fetching financial transaction document for appaId $appaId")
 
       httpClient
         .GET[Either[UpstreamErrorResponse, HttpResponse]](
-          url = url,
+          url = config.financialDataUrl(appaId),
           queryParams = getQueryParams,
           headers = headers
         )
@@ -61,38 +59,32 @@ class FinancialDataConnector @Inject() (config: AppConfig, implicit val httpClie
                 .as[FinancialTransactionDocument]
             } match {
               case Success(doc)       =>
-                logger.info(s"Retrieved financial transaction document for appaId $alcoholDutyReference")
-                Some(doc)
+                logger.info(s"Retrieved financial transaction document for appaId $appaId")
+                Right(doc)
               case Failure(exception) =>
-                logger.warn(
-                  s"Parsing failed for financial transaction document with appaId $alcoholDutyReference",
-                  exception
-                )
-                None
+                logger.warn(s"Parsing failed for financial transaction document for appaId $appaId", exception)
+                Left(ErrorCodes.unexpectedResponse)
             }
           case Left(error)     =>
-            processErrors(alcoholDutyReference, error)
+            Left(processErrors(appaId, error))
         }
         .recoverWith { case e: Exception =>
-          logger.warn(
-            s"An exception was returned while trying to fetch financial data appaId $alcoholDutyReference",
-            e
-          )
-          Future.successful(None)
+          logger.warn(s"An exception was returned while trying to fetch financial data for appaId $appaId", e)
+          Future.successful(Left(ErrorCodes.unexpectedResponse))
         }
     }
 
-  private def processErrors(alcoholDutyReference: String, error: UpstreamErrorResponse) =
+  private def processErrors(appaId: String, error: UpstreamErrorResponse): ErrorResponse =
     error.statusCode match {
       case NOT_FOUND =>
-        logger.info(s"No financial data found for appaId $alcoholDutyReference")
-        Some(FinancialTransactionDocument(Seq.empty))
-      case _         =>
+        logger.info(s"No financial data found for appaId $appaId")
+        ErrorCodes.entityNotFound
+      case status    =>
         logger.warn(
-          s"An error was returned while trying to fetch financial transaction document appaId $alcoholDutyReference",
+          s"An error status $status was returned while trying to fetch financial transaction document appaId $appaId",
           error
         )
-        None
+        ErrorCodes.unexpectedResponse
     }
 
   private def getQueryParams: Seq[(String, String)] =
@@ -102,5 +94,4 @@ class FinancialDataConnector @Inject() (config: AppConfig, implicit val httpClie
       "calculateAccruedInterest"   -> false.toString,
       "customerPaymentInformation" -> false.toString
     )
-
 }

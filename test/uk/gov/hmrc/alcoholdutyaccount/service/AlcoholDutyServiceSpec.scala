@@ -16,9 +16,8 @@
 
 package uk.gov.hmrc.alcoholdutyaccount.service
 
-import cats.data.{EitherT, OptionT}
+import cats.data.EitherT
 import org.mockito.ArgumentMatchersSugar.*
-import org.mockito.IdiomaticMockito.StubbingOps
 import org.mockito.cats.IdiomaticMockitoCats.StubbingOpsCats
 import uk.gov.hmrc.alcoholdutyaccount.base.SpecBase
 import uk.gov.hmrc.alcoholdutyaccount.common.TestData
@@ -31,7 +30,7 @@ import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.bootstrap.backend.http.ErrorResponse
 
 import java.time.LocalDate
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.ExecutionContext
 import scala.util.Success
 
 class AlcoholDutyServiceSpec extends SpecBase with TestData {
@@ -176,7 +175,7 @@ class AlcoholDutyServiceSpec extends SpecBase with TestData {
 
     "extractPayments should" - {
       "return an empty Payments object if there are no financial transactions" in new SetUp {
-        val result = service.extractPayments(financialDocument_Empty)
+        val result = service.extractPayments(emptyFinancialDocument)
         result mustBe Payments()
       }
 
@@ -303,6 +302,7 @@ class AlcoholDutyServiceSpec extends SpecBase with TestData {
                 items = Seq(
                   FinancialTransactionItem(
                     subItem = "001",
+                    dueDate = None,
                     amount = 50.00
                   )
                 )
@@ -318,6 +318,7 @@ class AlcoholDutyServiceSpec extends SpecBase with TestData {
                 items = Seq(
                   FinancialTransactionItem(
                     subItem = "002",
+                    dueDate = None,
                     amount = 50.00
                   )
                 )
@@ -333,6 +334,7 @@ class AlcoholDutyServiceSpec extends SpecBase with TestData {
                 items = Seq(
                   FinancialTransactionItem(
                     subItem = "003",
+                    dueDate = None,
                     amount = 50.00
                   )
                 )
@@ -367,6 +369,7 @@ class AlcoholDutyServiceSpec extends SpecBase with TestData {
                   items = Seq(
                     FinancialTransactionItem(
                       subItem = "001",
+                      dueDate = None,
                       amount = 50.00
                     )
                   )
@@ -382,6 +385,7 @@ class AlcoholDutyServiceSpec extends SpecBase with TestData {
                   items = Seq(
                     FinancialTransactionItem(
                       subItem = "002",
+                      dueDate = None,
                       amount = 50.00
                     )
                   )
@@ -397,6 +401,7 @@ class AlcoholDutyServiceSpec extends SpecBase with TestData {
                   items = Seq(
                     FinancialTransactionItem(
                       subItem = "003",
+                      dueDate = None,
                       amount = 50.00
                     )
                   )
@@ -443,9 +448,9 @@ class AlcoholDutyServiceSpec extends SpecBase with TestData {
     }
 
     "getPaymentInformation should" - {
-      "return None if the financialDataConnector returns None" in new SetUp {
+      "return None if the financialDataConnector returns an error" in new SetUp {
         when(financialDataConnector.getFinancialData(*)(*))
-          .thenReturn(OptionT.none[Future, FinancialTransactionDocument])
+          .thenReturn(EitherT.leftT(ErrorCodes.unexpectedResponse))
 
         val result = service.getPaymentInformation(appaId)
         result onComplete {
@@ -454,11 +459,21 @@ class AlcoholDutyServiceSpec extends SpecBase with TestData {
         }
       }
 
-      "return a empty Payments object if the financialDataConnector returns an empty Document" in new SetUp {
-        financialDataConnector.getFinancialData(*)(*) returnsF financialDocument_Empty
+      "return a empty Payments object if the financialDataConnector returns NOT_FOUND" in new SetUp {
+        when(financialDataConnector.getFinancialData(*)(*))
+          .thenReturn(EitherT.leftT(ErrorCodes.entityNotFound))
 
         service.getPaymentInformation(appaId).onComplete { result =>
           result mustBe Success(Some(Payments()))
+        }
+      }
+
+      "return a Payments object if the financialDataConnector returns a Document" in new SetUp {
+        when(financialDataConnector.getFinancialData(*)(*))
+          .thenReturn(EitherT.pure(financialDocumentWithSingleSapDocumentNo))
+
+        service.getPaymentInformation(appaId).onComplete { result =>
+          result mustBe Success(Some(Payments(Some(Balance(BigDecimal(100), false, Some("X1234567890"))))))
         }
       }
     }
@@ -493,7 +508,8 @@ class AlcoholDutyServiceSpec extends SpecBase with TestData {
           when(obligationDataConnector.getObligationDetails(*, *)(*))
             .thenReturn(EitherT.fromEither(Right(obligationDataOneDue)))
 
-          financialDataConnector.getFinancialData(*)(*) returnsF financialDocumentWithSingleSapDocumentNo
+          when(financialDataConnector.getFinancialData(*)(*))
+            .thenReturn(EitherT.pure(financialDocumentWithSingleSapDocumentNo))
 
           whenReady(service.getAlcoholDutyCardData(appaId).value) { result =>
             result mustBe Right(
@@ -537,7 +553,8 @@ class AlcoholDutyServiceSpec extends SpecBase with TestData {
           when(obligationDataConnector.getObligationDetails(*, *)(*))
             .thenReturn(EitherT.fromEither(Right(obligationDataOneDue)))
 
-          financialDataConnector.getFinancialData(*)(*) returnsF financialDocumentWithSingleSapDocumentNo
+          when(financialDataConnector.getFinancialData(*)(*))
+            .thenReturn(EitherT.pure(financialDocumentWithSingleSapDocumentNo))
 
           whenReady(service.getAlcoholDutyCardData(appaId).value) { result =>
             result mustBe Right(
@@ -580,7 +597,8 @@ class AlcoholDutyServiceSpec extends SpecBase with TestData {
         when(obligationDataConnector.getObligationDetails(*, *)(*))
           .thenReturn(EitherT.fromEither(Left(ErrorResponse(BAD_REQUEST, ""))))
 
-        financialDataConnector.getFinancialData(*)(*) returnsF financialDocumentWithSingleSapDocumentNo
+        when(financialDataConnector.getFinancialData(*)(*))
+          .thenReturn(EitherT.pure(financialDocumentWithSingleSapDocumentNo))
 
         whenReady(service.getAlcoholDutyCardData(appaId).value) { result =>
           result mustBe Right(
@@ -609,7 +627,8 @@ class AlcoholDutyServiceSpec extends SpecBase with TestData {
         when(obligationDataConnector.getObligationDetails(*, *)(*))
           .thenReturn(EitherT.fromEither(Left(ErrorResponse(NOT_FOUND, ""))))
 
-        financialDataConnector.getFinancialData(*)(*) returnsF financialDocumentWithSingleSapDocumentNo
+        when(financialDataConnector.getFinancialData(*)(*))
+          .thenReturn(EitherT.pure(financialDocumentWithSingleSapDocumentNo))
 
         whenReady(service.getAlcoholDutyCardData(appaId).value) { result =>
           result mustBe Right(
@@ -654,7 +673,7 @@ class AlcoholDutyServiceSpec extends SpecBase with TestData {
         when(obligationDataConnector.getObligationDetails(*, *)(*))
           .thenReturn(EitherT.fromEither(Right(obligationDataOneDue)))
 
-        financialDataConnector.getFinancialData(*)(*) returns OptionT.none[Future, FinancialTransactionDocument]
+        when(financialDataConnector.getFinancialData(*)(*)).thenReturn(EitherT.leftT(ErrorCodes.unexpectedResponse))
 
         whenReady(service.getAlcoholDutyCardData(appaId).value) { result =>
           result mustBe Right(
@@ -684,7 +703,7 @@ class AlcoholDutyServiceSpec extends SpecBase with TestData {
           when(obligationDataConnector.getObligationDetails(*, *)(*))
             .thenReturn(EitherT.fromEither(Left(ErrorResponse(BAD_REQUEST, ""))))
 
-          financialDataConnector.getFinancialData(*)(*) returns OptionT.none[Future, FinancialTransactionDocument]
+          when(financialDataConnector.getFinancialData(*)(*)).thenReturn(EitherT.leftT(ErrorCodes.unexpectedResponse))
 
           whenReady(service.getAlcoholDutyCardData(appaId).value) { result =>
             result mustBe Right(

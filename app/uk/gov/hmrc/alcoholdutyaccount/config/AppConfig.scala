@@ -20,27 +20,28 @@ import javax.inject.{Inject, Singleton}
 import play.api.Configuration
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 
-import java.text.MessageFormat
-
 @Singleton
 class AppConfig @Inject() (config: Configuration, servicesConfig: ServicesConfig) {
 
   val appName: String = config.get[String]("appName")
 
-  val obligationDataHost: String            = servicesConfig.baseUrl("obligation")
-  val obligationDataToken: String           = getConfStringAndThrowIfNotFound("obligation.token")
-  val obligationDataEnv: String             = getConfStringAndThrowIfNotFound("obligation.env")
+  private val obligationDataHost: String   = servicesConfig.baseUrl("obligation")
+  val obligationDataToken: String          = getConfStringAndThrowIfNotFound("obligation.token")
+  val obligationDataEnv: String            = getConfStringAndThrowIfNotFound("obligation.env")
+  private lazy val obligationDataUrlPrefix = getConfStringAndThrowIfNotFound("obligation.url.obligationData")
+
   val obligationDataFilterStartDate: String = getConfStringAndThrowIfNotFound("obligation.filterStartDate")
 
-  val financialDataHost: String  = servicesConfig.baseUrl("financial")
-  val financialDataToken: String = getConfStringAndThrowIfNotFound("obligation.token")
-  val financialDataEnv: String   = getConfStringAndThrowIfNotFound("obligation.env")
+  private val financialDataHost: String   = servicesConfig.baseUrl("financial")
+  val financialDataToken: String          = getConfStringAndThrowIfNotFound("financial.token")
+  val financialDataEnv: String            = getConfStringAndThrowIfNotFound("financial.env")
+  private lazy val financialDataUrlPrefix = getConfStringAndThrowIfNotFound("financial.url.financialData")
 
   private val subscriptionHost: String                  = servicesConfig.baseUrl("subscription")
   lazy val subscriptionClientId: String                 = getConfStringAndThrowIfNotFound("subscription.clientId")
   lazy val subscriptionSecret: String                   = getConfStringAndThrowIfNotFound("subscription.secret")
-  private lazy val subscriptionGetSubscriptionUrlFormat = new MessageFormat(
-    getConfStringAndThrowIfNotFound("subscription.url.subscriptionSummary")
+  private lazy val subscriptionGetSubscriptionUrlPrefix = getConfStringAndThrowIfNotFound(
+    "subscription.url.subscriptionSummary"
   )
 
   val idType: String = config.get[String]("downstream-apis.idType")
@@ -48,11 +49,15 @@ class AppConfig @Inject() (config: Configuration, servicesConfig: ServicesConfig
 
   val enrolmentServiceName: String = config.get[String]("enrolment.serviceName")
 
-  def getSubscriptionUrl(appaId: String): String = {
-    val url = subscriptionGetSubscriptionUrlFormat.format(Array(regime, idType, appaId))
-    s"$subscriptionHost$url"
-  }
+  def getSubscriptionUrl(appaId: String): String =
+    s"$subscriptionHost$subscriptionGetSubscriptionUrlPrefix/$regime/$idType/$appaId"
 
-  private def getConfStringAndThrowIfNotFound(key: String) =
+  def financialDataUrl(appaId: String): String =
+    s"$financialDataHost$financialDataUrlPrefix/$idType/$appaId/$regime"
+
+  def obligationDataUrl(appaId: String): String =
+    s"$obligationDataHost$obligationDataUrlPrefix/$idType/$appaId/$regime"
+
+  private[config] def getConfStringAndThrowIfNotFound(key: String) =
     servicesConfig.getConfString(key, throw new RuntimeException(s"Could not find services config key '$key'"))
 }
