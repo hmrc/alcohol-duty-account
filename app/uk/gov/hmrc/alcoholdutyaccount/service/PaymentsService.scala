@@ -21,7 +21,7 @@ import cats.implicits._
 import play.api.Logging
 import uk.gov.hmrc.alcoholdutyaccount.connectors.FinancialDataConnector
 import uk.gov.hmrc.alcoholdutyaccount.models.ErrorCodes
-import uk.gov.hmrc.alcoholdutyaccount.models.hods.{FinancialTransaction, FinancialTransactionDocument}
+import uk.gov.hmrc.alcoholdutyaccount.models.hods.{FinancialTransaction, FinancialTransactionDocument, FinancialTransactionItem}
 import uk.gov.hmrc.alcoholdutyaccount.models.payments.TransactionType.{PaymentOnAccount, RPI}
 import uk.gov.hmrc.alcoholdutyaccount.models.payments.{OpenPayment, OpenPayments, OutstandingPayment, TransactionType, UnallocatedPayment}
 import uk.gov.hmrc.http.HeaderCarrier
@@ -47,94 +47,127 @@ class PaymentsService @Inject() (
     totalOpenPaymentsAmount: BigDecimal
   )
 
-  private def validateAndGetDueDateFromFirstTransaction(
-    sapDocumentNumber: String,
-    firstFinancialTransaction: FinancialTransaction
-  ): Either[ErrorResponse, LocalDate] = firstFinancialTransaction.items.toList match {
-    case firstItem :: subsequentItems =>
-      firstItem.dueDate.fold[Either[ErrorResponse, LocalDate]] {
-        logger.warn(s"Due date not found on first item of first entry of financial transaction $sapDocumentNumber.")
-        Left(ErrorCodes.unexpectedResponse)
-      } { dueDate =>
-        val hasErrors = subsequentItems.map(_.dueDate.fold(true)(!dueDate.isEqual(_))).exists(identity)
-
-        if (hasErrors) {
-          logger.warn(s"Not all dueDates matched for first entry of financial transaction $sapDocumentNumber.")
-          Left(ErrorCodes.unexpectedResponse)
-        } else {
-          Right(dueDate)
-        }
-      }
-    case _                            =>
-      logger.warn(s"Expected at least one item for financial transaction $sapDocumentNumber.")
-      Left(ErrorCodes.unexpectedResponse)
-  }
-
-  private def validateAndGetFinancialTransactionData(
-    sapDocumentNumber: String,
-    dueDate: LocalDate,
-    firstFinancialTransaction: FinancialTransaction,
-    subsequentFinancialTransactions: List[FinancialTransaction]
-  ): Either[ErrorResponse, FinancialTransactionData] = {
-    val mainTransactionType = firstFinancialTransaction.mainTransaction
-    val chargeReference     = firstFinancialTransaction.chargeReference
-
-    val hasErrors = subsequentFinancialTransactions
-      .map(nextFinancialTransaction =>
-        !(mainTransactionType == nextFinancialTransaction.mainTransaction &&
-          chargeReference == nextFinancialTransaction.chargeReference &&
-          nextFinancialTransaction.items.forall(_.dueDate.fold(false)(_.isEqual(dueDate))))
-      )
-      .exists(identity)
-
-    if (hasErrors) {
-      logger.warn(
-        s"Not all chargeReferences, mainTransactions and/or dueDates matched against the first entry of financial transaction $sapDocumentNumber."
-      )
-      Left(ErrorCodes.unexpectedResponse)
-    } else {
-      TransactionType
-        .fromMainTransactionType(mainTransactionType)
-        .fold[Either[ErrorResponse, FinancialTransactionData]] {
-          logger.warn(s"Unexpected transaction type $mainTransactionType on financial transaction $sapDocumentNumber.")
-          Left(ErrorCodes.unexpectedResponse)
-        } { transactionType =>
-          if (transactionType == RPI) {
-            logger.warn(s"Unexpected RPI in open payments on financial transaction $sapDocumentNumber.")
-          }
-
-          Right(
-            FinancialTransactionData(
-              transactionType,
-              dueDate,
-              chargeReference
-            )
-          )
-        }
-    }
-  }
-
-  private[service] def validateAndGetCommonData(
+  private def getFirstFinancialTransactionLineItem(
     sapDocumentNumber: String,
     financialTransactionsForDocument: Seq[FinancialTransaction]
-  ): Either[ErrorResponse, FinancialTransactionData] = financialTransactionsForDocument.toList match {
-    case firstFinancialTransaction :: subsequentFinancialTransactions =>
-      for {
-        dueDate                  <- validateAndGetDueDateFromFirstTransaction(sapDocumentNumber, firstFinancialTransaction)
-        financialTransactionData <- validateAndGetFinancialTransactionData(
-                                      sapDocumentNumber,
-                                      dueDate,
-                                      firstFinancialTransaction,
-                                      subsequentFinancialTransactions
-                                    )
-      } yield financialTransactionData
+  ): Either[ErrorResponse, FinancialTransaction] =
+    financialTransactionsForDocument.toList match {
+      case firstFinancialTransactionLineItem :: _ => Right(firstFinancialTransactionLineItem)
+      case _                                      =>
+        logger.warn(
+          s"Should have had a least one entry for financial transaction $sapDocumentNumber. This shouldn't happen"
+        )
 
-    case _ =>
-      logger.warn(
-        s"Should have had a least one entry for financial transaction $sapDocumentNumber. This shouldn't happen"
+        Left(ErrorCodes.unexpectedResponse)
+    }
+
+  private def getFirstItemDueDate(
+    sapDocumentNumber: String,
+    financialTransactionLineItem: FinancialTransaction
+  ): Either[ErrorResponse, LocalDate] =
+    financialTransactionLineItem.items.toList match {
+      case FinancialTransactionItem(_, Some(dueDate), _) :: _ => Right(dueDate)
+      case FinancialTransactionItem(_, None, _) :: _          =>
+        logger.warn(s"Due date not found on first item of first entry of financial transaction $sapDocumentNumber.")
+        Left(ErrorCodes.unexpectedResponse)
+      case _                                                  =>
+        logger.warn(s"Expected at least one item on line items for financial transaction $sapDocumentNumber.")
+        Left(ErrorCodes.unexpectedResponse)
+    }
+
+  private def validateFinancialLineItems(
+    sapDocumentNumber: String,
+    financialTransactionsForDocument: Seq[FinancialTransaction],
+    mainTransactionType: String,
+    chargeReference: Option[String],
+    dueDate: LocalDate
+  ): Either[ErrorResponse, Unit] =
+    // Will need to identity check most fields on the first lines item so that due dates are also checked on all its items
+    financialTransactionsForDocument
+      .map(financialTransaction =>
+        if (financialTransaction.items.isEmpty) {
+          logger.warn(s"Expected at least one item on line items for financial transaction $sapDocumentNumber.")
+          Left(ErrorCodes.unexpectedResponse)
+        } else {
+          Right(
+            mainTransactionType == financialTransaction.mainTransaction &&
+              chargeReference == financialTransaction.chargeReference &&
+              financialTransaction.items.forall(_.dueDate.fold(false)(_.isEqual(dueDate)))
+          )
+        }
       )
-      Left(ErrorCodes.unexpectedResponse)
-  }
+      .toList
+      .sequence // Right is a list of whether all validation checks passed (true)
+      .filterOrElse(
+        _.forall(identity), {
+          logger.warn(
+            s"Not all chargeReferences, mainTransactions and/or dueDates matched against the first entry of financial transaction $sapDocumentNumber."
+          )
+          ErrorCodes.unexpectedResponse
+        }
+      )
+      .map(_ => ())
+
+  private def getTransactionTypeAndWarnIfOpenRPI(
+    sapDocumentNumber: String,
+    mainTransactionType: String
+  ): Either[ErrorResponse, TransactionType] =
+    TransactionType
+      .fromMainTransactionType(mainTransactionType)
+      .fold[Either[ErrorResponse, TransactionType]] {
+        logger.warn(
+          s"Unexpected transaction type $mainTransactionType on financial transaction $sapDocumentNumber."
+        )
+        Left(ErrorCodes.unexpectedResponse)
+      } { transactionType =>
+        if (transactionType == RPI) {
+          logger.warn(
+            s"Unexpected RPI in open payments on financial transaction $sapDocumentNumber."
+          )
+        }
+
+        Right(transactionType)
+      }
+
+  private def warnIfPaymentOnAccountAmountsDontMatch(
+    sapDocumentNumber: String,
+    financialTransactionsForDocument: Seq[FinancialTransaction]
+  ): Unit =
+    if (
+      financialTransactionsForDocument.exists(financialTransactionLineItem =>
+        financialTransactionLineItem.outstandingAmount.contains(financialTransactionLineItem.originalAmount)
+      )
+    ) {
+      logger.warn(
+        s"Expected original and outstanding amounts to match on payment on account on financial transaction $sapDocumentNumber."
+      )
+    }
+
+  private[service] def validateAndGetFinancialTransactionData(
+    sapDocumentNumber: String,
+    financialTransactionsForDocument: Seq[FinancialTransaction]
+  ): Either[ErrorResponse, FinancialTransactionData] =
+    // Various data has to be consistent across line items, so we need the first to obtain the data to compare against the rest
+    for {
+      firstFinancialTransactionLineItem <-
+        getFirstFinancialTransactionLineItem(sapDocumentNumber, financialTransactionsForDocument)
+      mainTransactionType                = firstFinancialTransactionLineItem.mainTransaction
+      maybeChargeReference               = firstFinancialTransactionLineItem.chargeReference
+      dueDate                           <- getFirstItemDueDate(sapDocumentNumber, firstFinancialTransactionLineItem)
+      _                                 <- validateFinancialLineItems(
+                                             sapDocumentNumber,
+                                             financialTransactionsForDocument,
+                                             mainTransactionType,
+                                             maybeChargeReference,
+                                             dueDate
+                                           )
+      transactionType                   <- getTransactionTypeAndWarnIfOpenRPI(sapDocumentNumber, mainTransactionType)
+      _                                  = warnIfPaymentOnAccountAmountsDontMatch(sapDocumentNumber, financialTransactionsForDocument)
+    } yield FinancialTransactionData(
+      transactionType,
+      dueDate,
+      maybeChargeReference
+    )
 
   private def calculatedTotalBalance(
     outstandingPayments: Seq[OutstandingPayment],
@@ -184,7 +217,7 @@ class PaymentsService @Inject() (
         financialTransactionDocument.financialTransactions
           .groupBy(_.sapDocumentNumber)
           .map { case (sapDocumentNumber, financialTransactionsForDocument) =>
-            validateAndGetCommonData(sapDocumentNumber, financialTransactionsForDocument)
+            validateAndGetFinancialTransactionData(sapDocumentNumber, financialTransactionsForDocument)
               .map {
                 val outstandingAmount = calculateOutstandingAmount(financialTransactionsForDocument)
                 buildOpenPayment(_, outstandingAmount)
