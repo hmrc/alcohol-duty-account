@@ -24,11 +24,4 @@ object ErrorCodes {
   val entityNotFound: ErrorResponse     = ErrorResponse(NOT_FOUND, "Entity not found")
   val invalidJson: ErrorResponse        = ErrorResponse(UNPROCESSABLE_ENTITY, "Invalid Json received")
   val unexpectedResponse: ErrorResponse = ErrorResponse(INTERNAL_SERVER_ERROR, "Unexpected Response")
-
-  def sanitiseError(errorResponse: ErrorResponse): ErrorResponse = errorResponse.statusCode match {
-    case BAD_REQUEST          => badRequest
-    case NOT_FOUND            => entityNotFound
-    case UNPROCESSABLE_ENTITY => invalidJson
-    case _                    => unexpectedResponse
-  }
 }
