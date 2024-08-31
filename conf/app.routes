@@ -5,5 +5,5 @@ GET        /openObligationDetails/:alcoholDutyReference/:periodKey     uk.gov.hm
 GET        /bta-tile-data/:alcoholDutyReference                        uk.gov.hmrc.alcoholdutyaccount.controllers.AlcoholDutyController.btaTileData(alcoholDutyReference)
 GET        /obligationDetails/:alcoholDutyReference                    uk.gov.hmrc.alcoholdutyaccount.controllers.AlcoholDutyController.obligationDetails(alcoholDutyReference)
 
-GET        /producers/:appaId/payments/open                            uk.gov.hmrc.alcoholdutyaccount.controllers.PaymentsController.openPayments(appaId: String)
+GET        /producers/:appaId/payments/open                            uk.gov.hmrc.alcoholdutyaccount.controllers.PaymentsController.openPayments(appaId:String)
 GET        /producers/:appaId/payments/historic/:year                  uk.gov.hmrc.alcoholdutyaccount.controllers.PaymentsController.historicPayments(appaId: String, year: Int)

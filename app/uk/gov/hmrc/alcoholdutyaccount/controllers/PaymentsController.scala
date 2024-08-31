@@ -56,7 +56,7 @@ class PaymentsController @Inject() (
         )
     }
 
-  def validateYear(year: Int): EitherT[Future, ErrorResponse, Unit] =
+  private def validateYear(year: Int): EitherT[Future, ErrorResponse, Unit] =
     if (year < minimumHistoricPaymentsYear) {
       logger.info(s"Year requested is before $minimumHistoricPaymentsYear")
       EitherT.leftT(ErrorCodes.badRequest)
@@ -77,7 +77,7 @@ class PaymentsController @Inject() (
       historicPayments.fold(
         errorResponse => {
           logger.warn(s"Unable to get historic payments for $appaId: $errorResponse")
-          error(ErrorCodes.sanitiseError(errorResponse))
+          error(errorResponse)
         },
         historicPayments => Ok(Json.toJson(historicPayments))
       )

@@ -359,7 +359,7 @@ trait TestData extends ModelGenerators {
     )
   }
 
-  val twoSeparateReturnsOneOutstanding: FinancialTransactionDocument =
+  val twoSeparateOutstandingReturnsOnePartiallyPaid: FinancialTransactionDocument =
     FinancialTransactionDocument(
       financialTransactions = Seq(
         FinancialTransaction(
@@ -385,7 +385,7 @@ trait TestData extends ModelGenerators {
         ),
         FinancialTransaction(
           sapDocumentNumber = sapDocumentNumberGen.sample.get,
-          periodKey = Some(periodKey),
+          periodKey = Some(periodKey2),
           chargeReference = Some(chargeReferenceGen.sample.get),
           originalAmount = BigDecimal("2000"),
           mainTransaction = TransactionType.toMainTransactionType(TransactionType.Return),
@@ -394,7 +394,7 @@ trait TestData extends ModelGenerators {
           items = Seq(
             FinancialTransactionItem(
               subItem = "000",
-              dueDate = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).dueDate()),
+              dueDate = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey2).dueDate()),
               amount = BigDecimal("2000")
             )
           )
@@ -402,7 +402,7 @@ trait TestData extends ModelGenerators {
       )
     )
 
-  val singleFullyUnallocatedPayment: FinancialTransactionDocument =
+  val singlePaymentOnAccount: FinancialTransactionDocument =
     FinancialTransactionDocument(
       financialTransactions = Seq(
         FinancialTransaction(
@@ -424,7 +424,7 @@ trait TestData extends ModelGenerators {
       )
     )
 
-  val twoSeparatePayments: FinancialTransactionDocument =
+  val twoSeparatePaymentsOnAccount: FinancialTransactionDocument =
     FinancialTransactionDocument(
       financialTransactions = Seq(
         FinancialTransaction(
@@ -462,56 +462,13 @@ trait TestData extends ModelGenerators {
       )
     )
 
-  val onePartiallyPaidReturnLineItemAndOnePartiallyAllocatedPaymentOnAccount: FinancialTransactionDocument =
-    FinancialTransactionDocument(
-      financialTransactions = Seq(
-        FinancialTransaction(
-          sapDocumentNumber = sapDocumentNumberGen.sample.get,
-          periodKey = Some(periodKey),
-          chargeReference = Some(chargeReferenceGen.sample.get),
-          originalAmount = BigDecimal("9000"),
-          mainTransaction = TransactionType.toMainTransactionType(TransactionType.Return),
-          subTransaction = "6132",
-          outstandingAmount = Some(BigDecimal("5000")),
-          items = Seq(
-            FinancialTransactionItem(
-              subItem = "000",
-              dueDate = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).dueDate()),
-              amount = BigDecimal("5000")
-            ),
-            FinancialTransactionItem(
-              subItem = "001",
-              dueDate = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).dueDate()),
-              amount = BigDecimal("4000")
-            )
-          )
-        ),
-        FinancialTransaction(
-          sapDocumentNumber = sapDocumentNumberGen.sample.get,
-          periodKey = None,
-          chargeReference = None,
-          originalAmount = BigDecimal("-2000"),
-          mainTransaction = TransactionType.toMainTransactionType(TransactionType.PaymentOnAccount),
-          subTransaction = "6132",
-          outstandingAmount = Some(BigDecimal("-2000")),
-          items = Seq(
-            FinancialTransactionItem(
-              subItem = "000",
-              dueDate = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).periodFromDate()),
-              amount = BigDecimal("-2000")
-            )
-          )
-        )
-      )
-    )
-
   val singleFullyOutstandingLPI: FinancialTransactionDocument =
     FinancialTransactionDocument(
       financialTransactions = Seq(
         FinancialTransaction(
           sapDocumentNumber = sapDocumentNumberGen.sample.get,
           periodKey = None,
-          chargeReference = None,
+          chargeReference = chargeReferenceGen.sample,
           originalAmount = BigDecimal("50"),
           mainTransaction = TransactionType.toMainTransactionType(TransactionType.LPI),
           subTransaction = "6132",
@@ -533,7 +490,7 @@ trait TestData extends ModelGenerators {
         FinancialTransaction(
           sapDocumentNumber = sapDocumentNumberGen.sample.get,
           periodKey = None,
-          chargeReference = None,
+          chargeReference = chargeReferenceGen.sample,
           originalAmount = BigDecimal("-50"),
           mainTransaction = TransactionType.toMainTransactionType(TransactionType.RPI),
           subTransaction = "6132",

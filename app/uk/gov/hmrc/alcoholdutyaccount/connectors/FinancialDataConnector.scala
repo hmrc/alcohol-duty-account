@@ -17,7 +17,7 @@
 package uk.gov.hmrc.alcoholdutyaccount.connectors
 
 import cats.data.EitherT
-import play.api.http.Status.{BAD_REQUEST, NOT_FOUND}
+import play.api.http.Status.NOT_FOUND
 import play.api.{Logger, Logging}
 import uk.gov.hmrc.alcoholdutyaccount.config.AppConfig
 import uk.gov.hmrc.alcoholdutyaccount.models.ErrorCodes
@@ -64,34 +64,28 @@ class FinancialDataConnector @Inject() (config: AppConfig, implicit val httpClie
                 logger.info(s"Retrieved financial transaction document for appaId $appaId")
                 Right(doc)
               case Failure(exception) =>
-                val error = s"Parsing failed for financial transaction document for appaId $appaId"
-                logger.warn(error, exception)
+                logger.warn(s"Parsing failed for financial transaction document for appaId $appaId", exception)
                 Left(ErrorCodes.unexpectedResponse)
             }
           case Left(error)     =>
             Left(processErrors(appaId, error))
         }
         .recoverWith { case e: Exception =>
-          val error = s"An exception was returned while trying to fetch financial data for appaId $appaId"
-          logger.warn(error, e)
+          logger.warn(s"An exception was returned while trying to fetch financial data for appaId $appaId", e)
           Future.successful(Left(ErrorCodes.unexpectedResponse))
         }
     }
 
   private def processErrors(appaId: String, error: UpstreamErrorResponse): ErrorResponse =
     error.statusCode match {
-      case BAD_REQUEST =>
-        val errorMessage = s"Bad request when fetching financial data for appaId $appaId"
-        logger.info(errorMessage)
-        ErrorCodes.unexpectedResponse
-      case NOT_FOUND   =>
-        val errorMessage = s"No financial data found for appaId $appaId"
-        logger.info(errorMessage)
+      case NOT_FOUND =>
+        logger.info(s"No financial data found for appaId $appaId")
         ErrorCodes.entityNotFound
-      case _           =>
-        val errorMessage =
-          s"An error was returned while trying to fetch financial transaction document appaId $appaId"
-        logger.warn(errorMessage, error)
+      case status    =>
+        logger.warn(
+          s"An error status $status was returned while trying to fetch financial transaction document appaId $appaId",
+          error
+        )
         ErrorCodes.unexpectedResponse
     }
 

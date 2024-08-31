@@ -63,13 +63,13 @@ class PaymentsControllerSpec extends SpecBase {
         contentAsJson(result) mustBe Json.toJson(noHistoricPayments)
       }
 
-      "return and sanitise any error returned from the service" in new SetUp {
+      "return any error returned from the service" in new SetUp {
         when(mockPaymentsService.getHistoricPayments(eqTo(appaId), eqTo(year))(*))
-          .thenReturn(EitherT.fromEither(Left(ErrorResponse(INTERNAL_SERVER_ERROR, "An error occurred"))))
+          .thenReturn(EitherT.fromEither(Left(ErrorCodes.unexpectedResponse)))
 
         val result: Future[Result] = controller.historicPayments(appaId, year)(fakeRequest)
         status(result) mustBe INTERNAL_SERVER_ERROR
-        contentAsJson(result).as[ErrorResponse].message mustBe "Unexpected Response"
+        contentAsJson(result).as[ErrorResponse] mustBe ErrorCodes.unexpectedResponse
       }
 
       "return an error if the year is before the minimum" in new SetUp {
