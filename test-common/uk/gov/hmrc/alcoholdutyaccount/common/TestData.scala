@@ -264,7 +264,7 @@ trait TestData extends ModelGenerators {
       )
     )
 
-  val singlePartiallyOutstandingReturn: FinancialTransactionDocument =
+  def singlePartiallyOutstandingReturn(open: Boolean): FinancialTransactionDocument =
     FinancialTransactionDocument(
       financialTransactions = Seq(
         FinancialTransaction(
@@ -287,7 +287,7 @@ trait TestData extends ModelGenerators {
               amount = BigDecimal("4000")
             )
           )
-        )
+        ).withOpen(open)
       )
     )
 
@@ -313,7 +313,7 @@ trait TestData extends ModelGenerators {
       )
     )
 
-  val twoLineItemPartiallyOutstandingReturn: FinancialTransactionDocument = {
+  def twoLineItemPartiallyOutstandingReturn(open: Boolean): FinancialTransactionDocument = {
     val sapDocumentNumber = sapDocumentNumberGen.sample.get
     val chargeReference   = chargeReferenceGen.sample.get
     FinancialTransactionDocument(
@@ -338,7 +338,7 @@ trait TestData extends ModelGenerators {
               amount = BigDecimal("4000")
             )
           )
-        ),
+        ).withOpen(open),
         FinancialTransaction(
           sapDocumentNumber = sapDocumentNumber,
           periodKey = Some(periodKey),
@@ -359,7 +359,49 @@ trait TestData extends ModelGenerators {
     )
   }
 
-  val twoSeparateOutstandingReturnsOnePartiallyPaid: FinancialTransactionDocument =
+  // No outstanding amounts as line items cancel
+  val nilReturnLineItemsCancelling: FinancialTransactionDocument = {
+    val sapDocumentNumber = sapDocumentNumberGen.sample.get
+    val chargeReference   = chargeReferenceGen.sample.get
+    FinancialTransactionDocument(
+      financialTransactions = Seq(
+        FinancialTransaction(
+          sapDocumentNumber = sapDocumentNumber,
+          periodKey = Some(periodKey),
+          chargeReference = Some(chargeReference),
+          originalAmount = BigDecimal("9000"),
+          mainTransaction = TransactionType.toMainTransactionType(TransactionType.Return),
+          subTransaction = "6132",
+          outstandingAmount = None,
+          items = Seq(
+            FinancialTransactionItem(
+              subItem = "000",
+              dueDate = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).dueDate()),
+              amount = BigDecimal("9000")
+            )
+          )
+        ),
+        FinancialTransaction(
+          sapDocumentNumber = sapDocumentNumber,
+          periodKey = Some(periodKey),
+          chargeReference = Some(chargeReference),
+          originalAmount = BigDecimal("-9000"),
+          mainTransaction = TransactionType.toMainTransactionType(TransactionType.Return),
+          subTransaction = "6132",
+          outstandingAmount = None,
+          items = Seq(
+            FinancialTransactionItem(
+              subItem = "000",
+              dueDate = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).dueDate()),
+              amount = BigDecimal("-9000")
+            )
+          )
+        )
+      )
+    )
+  }
+
+  def twoSeparateOutstandingReturnsOnePartiallyPaid(open: Boolean): FinancialTransactionDocument =
     FinancialTransactionDocument(
       financialTransactions = Seq(
         FinancialTransaction(
@@ -380,6 +422,44 @@ trait TestData extends ModelGenerators {
               subItem = "001",
               dueDate = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).dueDate()),
               amount = BigDecimal("4000")
+            )
+          )
+        ).withOpen(open),
+        FinancialTransaction(
+          sapDocumentNumber = sapDocumentNumberGen.sample.get,
+          periodKey = Some(periodKey2),
+          chargeReference = Some(chargeReferenceGen.sample.get),
+          originalAmount = BigDecimal("2000"),
+          mainTransaction = TransactionType.toMainTransactionType(TransactionType.Return),
+          subTransaction = "6132",
+          outstandingAmount = Some(BigDecimal("2000")),
+          items = Seq(
+            FinancialTransactionItem(
+              subItem = "000",
+              dueDate = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey2).dueDate()),
+              amount = BigDecimal("2000")
+            )
+          )
+        )
+      )
+    )
+
+  val twoSeparateReturnsOneFullyPaid: FinancialTransactionDocument =
+    FinancialTransactionDocument(
+      financialTransactions = Seq(
+        FinancialTransaction(
+          sapDocumentNumber = sapDocumentNumberGen.sample.get,
+          periodKey = Some(periodKey),
+          chargeReference = Some(chargeReferenceGen.sample.get),
+          originalAmount = BigDecimal("9000"),
+          mainTransaction = TransactionType.toMainTransactionType(TransactionType.Return),
+          subTransaction = "6132",
+          outstandingAmount = None,
+          items = Seq(
+            FinancialTransactionItem(
+              subItem = "000",
+              dueDate = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).dueDate()),
+              amount = BigDecimal("9000")
             )
           )
         ),
@@ -506,7 +586,7 @@ trait TestData extends ModelGenerators {
       )
     )
 
-  val multipleStatuses: FinancialTransactionDocument = FinancialTransactionDocument(
+  def multipleStatuses(open: Boolean): FinancialTransactionDocument = FinancialTransactionDocument(
     financialTransactions = Seq(
       FinancialTransaction(
         sapDocumentNumber = sapDocumentNumberGen.sample.get,
@@ -560,7 +640,7 @@ trait TestData extends ModelGenerators {
             amount = BigDecimal("2000.00")
           )
         )
-      ),
+      ).withOpen(open),
       FinancialTransaction(
         sapDocumentNumber = sapDocumentNumberGen.sample.get,
         periodKey = Some("24AC"),
@@ -581,7 +661,7 @@ trait TestData extends ModelGenerators {
             amount = BigDecimal("-2000.00")
           )
         )
-      ),
+      ).withOpen(open),
       FinancialTransaction(
         sapDocumentNumber = sapDocumentNumberGen.sample.get,
         periodKey = None,
@@ -618,7 +698,7 @@ trait TestData extends ModelGenerators {
             amount = BigDecimal("10.00")
           )
         )
-      ),
+      ).withOpen(open),
       FinancialTransaction(
         sapDocumentNumber = sapDocumentNumberGen.sample.get,
         periodKey = None,
@@ -667,7 +747,7 @@ trait TestData extends ModelGenerators {
           )
         )
       )
-    )
+    ) ++ nilReturnLineItemsCancelling.financialTransactions
   )
 
   val approvedAdrSubscriptionSummary = new AdrSubscriptionSummary(

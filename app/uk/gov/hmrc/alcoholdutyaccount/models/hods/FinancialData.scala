@@ -39,7 +39,14 @@ case class FinancialTransaction(
   originalAmount: BigDecimal,
   outstandingAmount: Option[BigDecimal],
   items: Seq[FinancialTransactionItem]
-)
+) {
+  def withOpen(open: Boolean): FinancialTransaction =
+    if (open) {
+      copy(items = items.take(1))
+    } else {
+      this
+    }
+}
 
 object FinancialTransaction {
   implicit val format: Format[FinancialTransaction] = Json.format[FinancialTransaction]

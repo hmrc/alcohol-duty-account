@@ -299,18 +299,25 @@ class PaymentsService @Inject() (
             .map { financialTransactionData =>
               val totalAmountPaid = calculateTotalAmountPaid(financialTransactionsForDocument)
 
-              HistoricPayment(
-                period = financialTransactionData.maybePeriodKey
-                  .flatMap(ReturnPeriod.fromPeriodKey)
-                  .getOrElse(ReturnPeriod(YearMonth.from(financialTransactionData.dueDate))),
-                transactionType = financialTransactionData.transactionType,
-                chargeReference = financialTransactionData.maybeChargeReference,
-                amountPaid = totalAmountPaid
-              )
+              if (totalAmountPaid != 0) {
+                Some(
+                  HistoricPayment(
+                    period = financialTransactionData.maybePeriodKey
+                      .flatMap(ReturnPeriod.fromPeriodKey)
+                      .getOrElse(ReturnPeriod(YearMonth.from(financialTransactionData.dueDate))),
+                    transactionType = financialTransactionData.transactionType,
+                    chargeReference = financialTransactionData.maybeChargeReference,
+                    amountPaid = totalAmountPaid
+                  )
+                )
+              } else {
+                None
+              }
             }
         }
         .toList
         .sequence
+        .map(_.flatten)
     )
 
   def getHistoricPayments(

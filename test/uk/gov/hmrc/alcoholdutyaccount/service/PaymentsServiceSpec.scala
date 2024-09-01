@@ -30,6 +30,23 @@ class PaymentsServiceSpec extends SpecBase {
   "PaymentsService" - {
     "when calling getOpenPayments" - {
       "a successful and correct response should be returned" - {
+        "handle no financial data (nil return or no data)" in new SetUp {
+          when(mockFinancialDataConnector.getFinancialData(appaId))
+            .thenReturn(EitherT.pure[Future, ErrorResponse](emptyFinancialDocument))
+
+          whenReady(paymentsService.getOpenPayments(appaId).value) { result =>
+            result mustBe Right(
+              OpenPayments(
+                Seq.empty,
+                BigDecimal("0"),
+                Seq.empty,
+                BigDecimal("0"),
+                BigDecimal("0")
+              )
+            )
+          }
+        }
+
         "when processing a single fully outstanding line item for a return" in new SetUp {
           when(mockFinancialDataConnector.getFinancialData(appaId))
             .thenReturn(EitherT.pure[Future, ErrorResponse](singleFullyOutstandingReturn))
@@ -55,8 +72,10 @@ class PaymentsServiceSpec extends SpecBase {
         }
 
         "when processing a single partially outstanding line item for a return" in new SetUp {
+          val financialTransactionDocument = singlePartiallyOutstandingReturn(open = true)
+
           when(mockFinancialDataConnector.getFinancialData(appaId))
-            .thenReturn(EitherT.pure[Future, ErrorResponse](singlePartiallyOutstandingReturn))
+            .thenReturn(EitherT.pure[Future, ErrorResponse](financialTransactionDocument))
 
           whenReady(paymentsService.getOpenPayments(appaId).value) { result =>
             result mustBe Right(
@@ -64,8 +83,8 @@ class PaymentsServiceSpec extends SpecBase {
                 outstandingPayments = Seq(
                   OutstandingPayment(
                     transactionType = TransactionType.Return,
-                    dueDate = singlePartiallyOutstandingReturn.financialTransactions.head.items.head.dueDate.get,
-                    chargeReference = singlePartiallyOutstandingReturn.financialTransactions.head.chargeReference,
+                    dueDate = financialTransactionDocument.financialTransactions.head.items.head.dueDate.get,
+                    chargeReference = financialTransactionDocument.financialTransactions.head.chargeReference,
                     remainingAmount = BigDecimal("5000")
                   )
                 ),
@@ -79,8 +98,10 @@ class PaymentsServiceSpec extends SpecBase {
         }
 
         "when processing a two line item outstanding return" in new SetUp {
+          val financialTransactionDocument = twoLineItemPartiallyOutstandingReturn(open = true)
+
           when(mockFinancialDataConnector.getFinancialData(appaId))
-            .thenReturn(EitherT.pure[Future, ErrorResponse](twoLineItemPartiallyOutstandingReturn))
+            .thenReturn(EitherT.pure[Future, ErrorResponse](financialTransactionDocument))
 
           whenReady(paymentsService.getOpenPayments(appaId).value) { result =>
             result mustBe Right(
@@ -88,8 +109,8 @@ class PaymentsServiceSpec extends SpecBase {
                 outstandingPayments = Seq(
                   OutstandingPayment(
                     transactionType = TransactionType.Return,
-                    dueDate = twoLineItemPartiallyOutstandingReturn.financialTransactions.head.items.head.dueDate.get,
-                    chargeReference = twoLineItemPartiallyOutstandingReturn.financialTransactions.head.chargeReference,
+                    dueDate = financialTransactionDocument.financialTransactions.head.items.head.dueDate.get,
+                    chargeReference = financialTransactionDocument.financialTransactions.head.chargeReference,
                     remainingAmount = BigDecimal("7000")
                   )
                 ),
@@ -103,8 +124,10 @@ class PaymentsServiceSpec extends SpecBase {
         }
 
         "when processing two outstanding returns" in new SetUp {
+          val financialTransactionDocument = twoSeparateOutstandingReturnsOnePartiallyPaid(open = true)
+
           when(mockFinancialDataConnector.getFinancialData(appaId))
-            .thenReturn(EitherT.pure[Future, ErrorResponse](twoSeparateOutstandingReturnsOnePartiallyPaid))
+            .thenReturn(EitherT.pure[Future, ErrorResponse](financialTransactionDocument))
 
           whenReady(paymentsService.getOpenPayments(appaId).value) {
             case Left(_)             => fail()
@@ -112,18 +135,14 @@ class PaymentsServiceSpec extends SpecBase {
               openPayments.outstandingPayments must contain theSameElementsAs Seq(
                 OutstandingPayment(
                   transactionType = TransactionType.Return,
-                  dueDate =
-                    twoSeparateOutstandingReturnsOnePartiallyPaid.financialTransactions(0).items.head.dueDate.get,
-                  chargeReference =
-                    twoSeparateOutstandingReturnsOnePartiallyPaid.financialTransactions(0).chargeReference,
+                  dueDate = financialTransactionDocument.financialTransactions(0).items.head.dueDate.get,
+                  chargeReference = financialTransactionDocument.financialTransactions(0).chargeReference,
                   remainingAmount = BigDecimal("5000")
                 ),
                 OutstandingPayment(
                   transactionType = TransactionType.Return,
-                  dueDate =
-                    twoSeparateOutstandingReturnsOnePartiallyPaid.financialTransactions(1).items.head.dueDate.get,
-                  chargeReference =
-                    twoSeparateOutstandingReturnsOnePartiallyPaid.financialTransactions(1).chargeReference,
+                  dueDate = financialTransactionDocument.financialTransactions(1).items.head.dueDate.get,
+                  chargeReference = financialTransactionDocument.financialTransactions(1).chargeReference,
                   remainingAmount = BigDecimal("2000")
                 )
               )
@@ -313,10 +332,10 @@ class PaymentsServiceSpec extends SpecBase {
       }
 
       "if no items are present on the subsequent line items" in new SetUp {
-        val noItemsOnSecondLineItem = twoLineItemPartiallyOutstandingReturn.copy(financialTransactions =
+        val noItemsOnSecondLineItem = twoLineItemPartiallyOutstandingReturnOpen.copy(financialTransactions =
           Seq(
-            twoLineItemPartiallyOutstandingReturn.financialTransactions(0),
-            twoLineItemPartiallyOutstandingReturn.financialTransactions(1).copy(items = Seq.empty)
+            twoLineItemPartiallyOutstandingReturnOpen.financialTransactions(0),
+            twoLineItemPartiallyOutstandingReturnOpen.financialTransactions(1).copy(items = Seq.empty)
           )
         )
 
@@ -329,14 +348,15 @@ class PaymentsServiceSpec extends SpecBase {
       }
 
       "if all transaction types on a document aren't the same" in new SetUp {
-        val mismatchedTransactionTypesOnLineItems = twoLineItemPartiallyOutstandingReturn.copy(financialTransactions =
-          Seq(
-            twoLineItemPartiallyOutstandingReturn.financialTransactions(0),
-            twoLineItemPartiallyOutstandingReturn
-              .financialTransactions(1)
-              .copy(mainTransaction = TransactionType.toMainTransactionType(TransactionType.LPI))
+        val mismatchedTransactionTypesOnLineItems =
+          twoLineItemPartiallyOutstandingReturnOpen.copy(financialTransactions =
+            Seq(
+              twoLineItemPartiallyOutstandingReturnOpen.financialTransactions(0),
+              twoLineItemPartiallyOutstandingReturnOpen
+                .financialTransactions(1)
+                .copy(mainTransaction = TransactionType.toMainTransactionType(TransactionType.LPI))
+            )
           )
-        )
 
         when(mockFinancialDataConnector.getFinancialData(appaId))
           .thenReturn(EitherT.pure[Future, ErrorResponse](mismatchedTransactionTypesOnLineItems))
@@ -347,14 +367,15 @@ class PaymentsServiceSpec extends SpecBase {
       }
 
       "if all period key is there on some, but not all document entries" in new SetUp {
-        val mismatchedTransactionTypesOnLineItems = twoLineItemPartiallyOutstandingReturn.copy(financialTransactions =
-          Seq(
-            twoLineItemPartiallyOutstandingReturn.financialTransactions(0),
-            twoLineItemPartiallyOutstandingReturn
-              .financialTransactions(1)
-              .copy(periodKey = None)
+        val mismatchedTransactionTypesOnLineItems =
+          twoLineItemPartiallyOutstandingReturnOpen.copy(financialTransactions =
+            Seq(
+              twoLineItemPartiallyOutstandingReturnOpen.financialTransactions(0),
+              twoLineItemPartiallyOutstandingReturnOpen
+                .financialTransactions(1)
+                .copy(periodKey = None)
+            )
           )
-        )
 
         when(mockFinancialDataConnector.getFinancialData(appaId))
           .thenReturn(EitherT.pure[Future, ErrorResponse](mismatchedTransactionTypesOnLineItems))
@@ -365,14 +386,15 @@ class PaymentsServiceSpec extends SpecBase {
       }
 
       "if all period keys are present, but do not match on all document line items" in new SetUp {
-        val mismatchedTransactionTypesOnLineItems = twoLineItemPartiallyOutstandingReturn.copy(financialTransactions =
-          Seq(
-            twoLineItemPartiallyOutstandingReturn.financialTransactions(0),
-            twoLineItemPartiallyOutstandingReturn
-              .financialTransactions(1)
-              .copy(periodKey = Some(periodKey2))
+        val mismatchedTransactionTypesOnLineItems =
+          twoLineItemPartiallyOutstandingReturnOpen.copy(financialTransactions =
+            Seq(
+              twoLineItemPartiallyOutstandingReturnOpen.financialTransactions(0),
+              twoLineItemPartiallyOutstandingReturnOpen
+                .financialTransactions(1)
+                .copy(periodKey = Some(periodKey2))
+            )
           )
-        )
 
         when(mockFinancialDataConnector.getFinancialData(appaId))
           .thenReturn(EitherT.pure[Future, ErrorResponse](mismatchedTransactionTypesOnLineItems))
@@ -383,12 +405,13 @@ class PaymentsServiceSpec extends SpecBase {
       }
 
       "if chargeReference is missing on the first, but present on the second line item of a document" in new SetUp {
-        val missingChargeReferencesOnSecondLineItem = twoLineItemPartiallyOutstandingReturn.copy(financialTransactions =
-          Seq(
-            twoLineItemPartiallyOutstandingReturn.financialTransactions(0).copy(chargeReference = None),
-            twoLineItemPartiallyOutstandingReturn.financialTransactions(1)
+        val missingChargeReferencesOnSecondLineItem =
+          twoLineItemPartiallyOutstandingReturnOpen.copy(financialTransactions =
+            Seq(
+              twoLineItemPartiallyOutstandingReturnOpen.financialTransactions(0).copy(chargeReference = None),
+              twoLineItemPartiallyOutstandingReturnOpen.financialTransactions(1)
+            )
           )
-        )
 
         when(mockFinancialDataConnector.getFinancialData(appaId))
           .thenReturn(EitherT.pure[Future, ErrorResponse](missingChargeReferencesOnSecondLineItem))
@@ -399,12 +422,13 @@ class PaymentsServiceSpec extends SpecBase {
       }
 
       "if chargeReference is present on the first, but not the second line item of a document" in new SetUp {
-        val missingChargeReferencesOnSecondLineItem = twoLineItemPartiallyOutstandingReturn.copy(financialTransactions =
-          Seq(
-            twoLineItemPartiallyOutstandingReturn.financialTransactions(0),
-            twoLineItemPartiallyOutstandingReturn.financialTransactions(1).copy(chargeReference = None)
+        val missingChargeReferencesOnSecondLineItem =
+          twoLineItemPartiallyOutstandingReturnOpen.copy(financialTransactions =
+            Seq(
+              twoLineItemPartiallyOutstandingReturnOpen.financialTransactions(0),
+              twoLineItemPartiallyOutstandingReturnOpen.financialTransactions(1).copy(chargeReference = None)
+            )
           )
-        )
 
         when(mockFinancialDataConnector.getFinancialData(appaId))
           .thenReturn(EitherT.pure[Future, ErrorResponse](missingChargeReferencesOnSecondLineItem))
@@ -415,12 +439,13 @@ class PaymentsServiceSpec extends SpecBase {
       }
 
       "if all chargeReferences on a document aren't the same if present on the first" in new SetUp {
-        val mismatchedChargeReferencesOnLineItems = twoLineItemPartiallyOutstandingReturn.copy(financialTransactions =
-          Seq(
-            twoLineItemPartiallyOutstandingReturn.financialTransactions(0),
-            twoLineItemPartiallyOutstandingReturn.financialTransactions(1).copy(chargeReference = Some("blah"))
+        val mismatchedChargeReferencesOnLineItems =
+          twoLineItemPartiallyOutstandingReturnOpen.copy(financialTransactions =
+            Seq(
+              twoLineItemPartiallyOutstandingReturnOpen.financialTransactions(0),
+              twoLineItemPartiallyOutstandingReturnOpen.financialTransactions(1).copy(chargeReference = Some("blah"))
+            )
           )
-        )
 
         when(mockFinancialDataConnector.getFinancialData(appaId))
           .thenReturn(EitherT.pure[Future, ErrorResponse](mismatchedChargeReferencesOnLineItems))
@@ -431,12 +456,12 @@ class PaymentsServiceSpec extends SpecBase {
       }
 
       "if no due date is present on any subsequent items of a document" in new SetUp {
-        val noDueDatePresentOnSecondItemOfDocument = singlePartiallyOutstandingReturn.copy(financialTransactions =
+        val noDueDatePresentOnSecondItemOfDocument = singlePartiallyOutstandingReturnOpen.copy(financialTransactions =
           Seq(
-            singlePartiallyOutstandingReturn.financialTransactions.head.copy(items =
+            singlePartiallyOutstandingReturnOpen.financialTransactions.head.copy(items =
               Seq(
-                singlePartiallyOutstandingReturn.financialTransactions.head.items.head,
-                singlePartiallyOutstandingReturn.financialTransactions.head.items.head.copy(dueDate = None)
+                singlePartiallyOutstandingReturnOpen.financialTransactions.head.items.head,
+                singlePartiallyOutstandingReturnOpen.financialTransactions.head.items.head.copy(dueDate = None)
               )
             )
           )
@@ -452,12 +477,12 @@ class PaymentsServiceSpec extends SpecBase {
 
       "if any due date on any subsequent items of a document doesn't match the first" in new SetUp {
         val mismatchedDueDatePresentOnSecondItemOfDocument =
-          singlePartiallyOutstandingReturn.copy(financialTransactions =
+          singlePartiallyOutstandingReturnOpen.copy(financialTransactions =
             Seq(
-              singlePartiallyOutstandingReturn.financialTransactions.head.copy(items =
+              singlePartiallyOutstandingReturnOpen.financialTransactions.head.copy(items =
                 Seq(
-                  singlePartiallyOutstandingReturn.financialTransactions.head.items.head,
-                  singlePartiallyOutstandingReturn.financialTransactions.head.items.head
+                  singlePartiallyOutstandingReturnOpen.financialTransactions.head.items.head,
+                  singlePartiallyOutstandingReturnOpen.financialTransactions.head.items.head
                     .copy(dueDate = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey2).dueDate()))
                 )
               )
@@ -489,6 +514,20 @@ class PaymentsServiceSpec extends SpecBase {
 
     "when calling getHistoricPayments" - {
       "a successful and correct response should be returned" - {
+        "handle no financial data (nil return or no data for the period)" in new SetUp {
+          when(mockFinancialDataConnector.getFinancialData(appaId = appaId, open = false, year = year))
+            .thenReturn(EitherT.pure[Future, ErrorResponse](emptyFinancialDocument))
+
+          whenReady(paymentsService.getHistoricPayments(appaId, year).value) { historicPayments =>
+            historicPayments mustBe Right(
+              HistoricPayments(
+                year,
+                Seq.empty
+              )
+            )
+          }
+        }
+
         "when just payment on account (no historic payments returned)" in new SetUp {
           when(mockFinancialDataConnector.getFinancialData(appaId = appaId, open = false, year = year))
             .thenReturn(EitherT.pure[Future, ErrorResponse](twoSeparatePaymentsOnAccount))
@@ -530,7 +569,7 @@ class PaymentsServiceSpec extends SpecBase {
 
         "when partial open return (the paid part)" in new SetUp {
           when(mockFinancialDataConnector.getFinancialData(appaId = appaId, open = false, year = year))
-            .thenReturn(EitherT.pure[Future, ErrorResponse](singlePartiallyOutstandingReturn))
+            .thenReturn(EitherT.pure[Future, ErrorResponse](singlePartiallyOutstandingReturn(open = false)))
 
           whenReady(paymentsService.getHistoricPayments(appaId, year).value) { historicPayments =>
             val chargeReference = historicPayments.toOption.get.payments.headOption.flatMap(_.chargeReference)
@@ -572,9 +611,46 @@ class PaymentsServiceSpec extends SpecBase {
           }
         }
 
+        "filter out nil returns where amounts offset to 0" in new SetUp {
+          when(mockFinancialDataConnector.getFinancialData(appaId = appaId, open = false, year = year))
+            .thenReturn(EitherT.pure[Future, ErrorResponse](nilReturnLineItemsCancelling))
+
+          whenReady(paymentsService.getHistoricPayments(appaId, year).value) { historicPayments =>
+            historicPayments mustBe Right(
+              HistoricPayments(
+                year,
+                Seq.empty
+              )
+            )
+          }
+        }
+
+        "filter out fully open returns leaving the remaining ones" in new SetUp {
+          when(mockFinancialDataConnector.getFinancialData(appaId = appaId, open = false, year = year))
+            .thenReturn(EitherT.pure[Future, ErrorResponse](twoSeparateReturnsOneFullyPaid))
+
+          whenReady(paymentsService.getHistoricPayments(appaId, year).value) { historicPayments =>
+            val chargeReference = historicPayments.toOption.get.payments.headOption.flatMap(_.chargeReference)
+
+            historicPayments mustBe Right(
+              HistoricPayments(
+                year,
+                Seq(
+                  HistoricPayment(
+                    ReturnPeriod.fromPeriodKeyOrThrow("24AE"),
+                    TransactionType.Return,
+                    chargeReference,
+                    BigDecimal("9000")
+                  )
+                )
+              )
+            )
+          }
+        }
+
         "for multiple statuses" in new SetUp {
           when(mockFinancialDataConnector.getFinancialData(appaId = appaId, open = false, year = year))
-            .thenReturn(EitherT.pure[Future, ErrorResponse](multipleStatuses))
+            .thenReturn(EitherT.pure[Future, ErrorResponse](multipleStatuses(open = false)))
 
           whenReady(paymentsService.getHistoricPayments(appaId, year).value) {
             case Right(HistoricPayments(`year`, payments)) =>
@@ -617,8 +693,8 @@ class PaymentsServiceSpec extends SpecBase {
         "the total can be calculated by assuming it is 0 (coverage)" in new SetUp {
           paymentsService.calculateOutstandingAmount(
             Seq(
-              twoLineItemPartiallyOutstandingReturn.financialTransactions(0).copy(outstandingAmount = None),
-              twoLineItemPartiallyOutstandingReturn.financialTransactions(1)
+              twoLineItemPartiallyOutstandingReturnOpen.financialTransactions(0).copy(outstandingAmount = None),
+              twoLineItemPartiallyOutstandingReturnOpen.financialTransactions(1)
             )
           ) mustBe BigDecimal("2000")
         }
@@ -643,6 +719,9 @@ class PaymentsServiceSpec extends SpecBase {
     val paymentsService            = new PaymentsService(mockFinancialDataConnector)
 
     val year = 2024
+
+    val singlePartiallyOutstandingReturnOpen      = singlePartiallyOutstandingReturn(open = true)
+    val twoLineItemPartiallyOutstandingReturnOpen = twoLineItemPartiallyOutstandingReturn(open = true)
 
     // Test edge case which shouldn't happen as payments on account should reduce original amount
     val onePartiallyPaidReturnLineItemAndOnePartiallyAllocatedPaymentOnAccount: FinancialTransactionDocument =
