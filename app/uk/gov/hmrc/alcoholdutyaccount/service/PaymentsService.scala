@@ -299,7 +299,7 @@ class PaymentsService @Inject() (
             .map { financialTransactionData =>
               val totalAmountPaid = calculateTotalAmountPaid(financialTransactionsForDocument)
 
-              if (totalAmountPaid != 0) {
+              if (totalAmountPaid > 0) {
                 Some(
                   HistoricPayment(
                     period = financialTransactionData.maybePeriodKey

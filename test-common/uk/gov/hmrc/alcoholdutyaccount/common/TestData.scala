@@ -313,6 +313,28 @@ trait TestData extends ModelGenerators {
       )
     )
 
+  val singleRefundedReturn: FinancialTransactionDocument =
+    FinancialTransactionDocument(
+      financialTransactions = Seq(
+        FinancialTransaction(
+          sapDocumentNumber = sapDocumentNumberGen.sample.get,
+          periodKey = Some(periodKey),
+          chargeReference = Some(chargeReferenceGen.sample.get),
+          originalAmount = BigDecimal("-9000"),
+          mainTransaction = TransactionType.toMainTransactionType(TransactionType.Return),
+          subTransaction = "6132",
+          outstandingAmount = None,
+          items = Seq(
+            FinancialTransactionItem(
+              subItem = "000",
+              dueDate = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).dueDate()),
+              amount = BigDecimal("-9000")
+            )
+          )
+        )
+      )
+    )
+
   def twoLineItemPartiallyOutstandingReturn(open: Boolean): FinancialTransactionDocument = {
     val sapDocumentNumber = sapDocumentNumberGen.sample.get
     val chargeReference   = chargeReferenceGen.sample.get

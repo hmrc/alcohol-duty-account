@@ -537,7 +537,7 @@ class PaymentsServiceSpec extends SpecBase {
           }
         }
 
-        "when just RPI (which should be included)" in new SetUp {
+        "when just RPI (which shouldn't be included as negative amount)" in new SetUp {
           when(mockFinancialDataConnector.getFinancialData(appaId = appaId, open = false, year = year))
             .thenReturn(EitherT.pure[Future, ErrorResponse](singleRPI))
 
@@ -545,14 +545,7 @@ class PaymentsServiceSpec extends SpecBase {
             _ mustBe Right(
               HistoricPayments(
                 year,
-                Seq(
-                  HistoricPayment(
-                    ReturnPeriod.fromPeriodKeyOrThrow(periodKey),
-                    TransactionType.RPI,
-                    chargeReference = singleRPI.financialTransactions.head.chargeReference,
-                    BigDecimal("-50")
-                  )
-                )
+                Seq.empty
               )
             )
           }
@@ -564,6 +557,20 @@ class PaymentsServiceSpec extends SpecBase {
 
           whenReady(paymentsService.getHistoricPayments(appaId, year).value) {
             _ mustBe Right(HistoricPayments(year, Seq.empty))
+          }
+        }
+
+        "when refunded (shouldn't show)" in new SetUp {
+          when(mockFinancialDataConnector.getFinancialData(appaId = appaId, open = false, year = year))
+            .thenReturn(EitherT.pure[Future, ErrorResponse](singleRefundedReturn))
+
+          whenReady(paymentsService.getHistoricPayments(appaId, year).value) { historicPayments =>
+            historicPayments mustBe Right(
+              HistoricPayments(
+                year,
+                Seq.empty
+              )
+            )
           }
         }
 
@@ -664,22 +671,10 @@ class PaymentsServiceSpec extends SpecBase {
                   BigDecimal("2000")
                 ),
                 HistoricPayment(
-                  ReturnPeriod.fromPeriodKeyOrThrow("24AC"),
-                  TransactionType.Return,
-                  Some("ChargeRef"),
-                  BigDecimal("-2000")
-                ),
-                HistoricPayment(
                   ReturnPeriod.fromPeriodKeyOrThrow("24AB"),
                   TransactionType.LPI,
                   Some("ChargeRef"),
                   BigDecimal("10")
-                ),
-                HistoricPayment(
-                  ReturnPeriod.fromPeriodKeyOrThrow("24AA"),
-                  TransactionType.RPI,
-                  None,
-                  BigDecimal("-50.00")
                 )
               )
             case _                                         => fail()
