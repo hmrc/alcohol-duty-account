@@ -162,7 +162,7 @@ class PaymentsService @Inject() (
       )
     ) {
       logger.warn(
-        s"Expected original and outstanding amounts of an API to be non-positive on financial transaction $sapDocumentNumber."
+        s"Expected original and outstanding amounts of an RPI to be non-positive on financial transaction $sapDocumentNumber."
       )
     }
 
