@@ -770,5 +770,22 @@ class AlcoholDutyServiceSpec extends SpecBase with TestData {
 
     val periodStart = LocalDate.of(2023, 1, 1)
     val periodEnd   = LocalDate.of(2023, 1, 31)
+
+    val financialTransaction = FinancialTransaction(
+      sapDocumentNumber = "123456",
+      periodKey = Some("18AA"),
+      chargeReference = Some("X1234567890"),
+      originalAmount = 1000.00,
+      outstandingAmount = Some(50.00),
+      mainTransaction = "1001",
+      subTransaction = "1111",
+      items = Seq(
+        FinancialTransactionItem(
+          subItem = "001",
+          dueDate = None,
+          amount = 50.00
+        )
+      )
+    )
   }
 }

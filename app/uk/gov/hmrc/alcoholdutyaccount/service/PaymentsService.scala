@@ -134,17 +134,35 @@ class PaymentsService @Inject() (
         Right(transactionType)
       }
 
-  private def warnIfPaymentOnAccountAmountsDontMatch(
+  private def warnIfPaymentOnAccountAndAmountsDontMatch(
     sapDocumentNumber: String,
+    transactionType: TransactionType,
     financialTransactionsForDocument: Seq[FinancialTransaction]
   ): Unit =
     if (
+      transactionType == PaymentOnAccount &&
       financialTransactionsForDocument.exists(financialTransactionLineItem =>
         financialTransactionLineItem.outstandingAmount.contains(financialTransactionLineItem.originalAmount)
       )
     ) {
       logger.warn(
         s"Expected original and outstanding amounts to match on payment on account on financial transaction $sapDocumentNumber."
+      )
+    }
+
+  private def warnIfRPIAndIsPositive(
+    sapDocumentNumber: String,
+    transactionType: TransactionType,
+    financialTransactionsForDocument: Seq[FinancialTransaction]
+  ): Unit =
+    if (
+      transactionType == RPI &&
+      financialTransactionsForDocument.exists(financialTransactionLineItem =>
+        financialTransactionLineItem.outstandingAmount.exists(_ > 0) || financialTransactionLineItem.originalAmount > 0
+      )
+    ) {
+      logger.warn(
+        s"Expected original and outstanding amounts of an API to be non-positive on financial transaction $sapDocumentNumber."
       )
     }
 
@@ -170,7 +188,9 @@ class PaymentsService @Inject() (
                                              dueDate
                                            )
       transactionType                   <- getTransactionTypeAndWarnIfOpenRPI(sapDocumentNumber, mainTransactionType, open)
-      _                                  = warnIfPaymentOnAccountAmountsDontMatch(sapDocumentNumber, financialTransactionsForDocument)
+      _                                  =
+        warnIfPaymentOnAccountAndAmountsDontMatch(sapDocumentNumber, transactionType, financialTransactionsForDocument)
+      _                                  = warnIfRPIAndIsPositive(sapDocumentNumber, transactionType, financialTransactionsForDocument)
     } yield FinancialTransactionData(
       transactionType,
       maybePeriodKey,
@@ -299,7 +319,7 @@ class PaymentsService @Inject() (
             .map { financialTransactionData =>
               val totalAmountPaid = calculateTotalAmountPaid(financialTransactionsForDocument)
 
-              if (totalAmountPaid > 0) {
+              if (totalAmountPaid > 0 && financialTransactionData.transactionType != RPI) {
                 Some(
                   HistoricPayment(
                     period = financialTransactionData.maybePeriodKey
