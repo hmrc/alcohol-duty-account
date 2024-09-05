@@ -115,7 +115,7 @@ class PaymentsService @Inject() (
   private def getTransactionTypeAndWarnIfOpenRPI(
     sapDocumentNumber: String,
     mainTransactionType: String,
-    open: Boolean
+    onlyOpenItems: Boolean
   ): Either[ErrorResponse, TransactionType] =
     TransactionType
       .fromMainTransactionType(mainTransactionType)
@@ -125,7 +125,7 @@ class PaymentsService @Inject() (
         )
         Left(ErrorCodes.unexpectedResponse)
       } { transactionType =>
-        if (transactionType == RPI && open) {
+        if (transactionType == RPI && onlyOpenItems) {
           logger.warn(
             s"Unexpected RPI in open payments on financial transaction $sapDocumentNumber."
           )
@@ -169,7 +169,7 @@ class PaymentsService @Inject() (
   private[service] def validateAndGetFinancialTransactionData(
     sapDocumentNumber: String,
     financialTransactionsForDocument: Seq[FinancialTransaction],
-    open: Boolean
+    onlyOpenItems: Boolean
   ): Either[ErrorResponse, FinancialTransactionData] =
     // Various data has to be consistent across line items, so we need the first to obtain the data to compare against the rest
     for {
@@ -187,7 +187,7 @@ class PaymentsService @Inject() (
                                              maybeChargeReference,
                                              dueDate
                                            )
-      transactionType                   <- getTransactionTypeAndWarnIfOpenRPI(sapDocumentNumber, mainTransactionType, open)
+      transactionType                   <- getTransactionTypeAndWarnIfOpenRPI(sapDocumentNumber, mainTransactionType, onlyOpenItems)
       _                                  =
         warnIfPaymentOnAccountAndAmountsDontMatch(sapDocumentNumber, transactionType, financialTransactionsForDocument)
       _                                  = warnIfRPIAndIsPositive(sapDocumentNumber, transactionType, financialTransactionsForDocument)
@@ -246,7 +246,11 @@ class PaymentsService @Inject() (
         financialTransactionDocument.financialTransactions
           .groupBy(_.sapDocumentNumber)
           .map { case (sapDocumentNumber, financialTransactionsForDocument) =>
-            validateAndGetFinancialTransactionData(sapDocumentNumber, financialTransactionsForDocument, open = true)
+            validateAndGetFinancialTransactionData(
+              sapDocumentNumber,
+              financialTransactionsForDocument,
+              onlyOpenItems = true
+            )
               .map {
                 val outstandingAmount = calculateOutstandingAmount(financialTransactionsForDocument)
                 buildOpenPayment(_, outstandingAmount)
@@ -284,12 +288,12 @@ class PaymentsService @Inject() (
     appaId: String
   )(implicit hc: HeaderCarrier): EitherT[Future, ErrorResponse, OpenPayments] =
     for {
-      financialTransactionDocument <- financialDataConnector.getFinancialData(appaId)
+      financialTransactionDocument <- financialDataConnector.getOnlyOpenFinancialData(appaId)
       openPayments                 <- extractOpenPayments(financialTransactionDocument)
     } yield buildOpenPaymentsPayload(openPayments)
 
   private def isTransactionFullyOpen(financialTransaction: FinancialTransaction): Boolean =
-    financialTransaction.outstandingAmount.contains(financialTransaction.originalAmount)
+    financialTransaction.clearedAmount.isEmpty
 
   private[service] def calculateTotalAmountPaid(
     financialTransactionsForDocument: Seq[FinancialTransaction]
@@ -299,7 +303,7 @@ class PaymentsService @Inject() (
         if (TransactionType.isRPI(transaction.mainTransaction)) {
           transaction.originalAmount
         } else {
-          transaction.originalAmount - transaction.outstandingAmount.getOrElse(BigDecimal(0))
+          transaction.clearedAmount.getOrElse(BigDecimal(0))
         }
       )
       .sum
@@ -315,7 +319,11 @@ class PaymentsService @Inject() (
         )
         .groupBy(_.sapDocumentNumber)
         .map { case (sapDocumentNumber, financialTransactionsForDocument) =>
-          validateAndGetFinancialTransactionData(sapDocumentNumber, financialTransactionsForDocument, open = false)
+          validateAndGetFinancialTransactionData(
+            sapDocumentNumber,
+            financialTransactionsForDocument,
+            onlyOpenItems = false
+          )
             .map { financialTransactionData =>
               val totalAmountPaid = calculateTotalAmountPaid(financialTransactionsForDocument)
 
@@ -346,7 +354,7 @@ class PaymentsService @Inject() (
   )(implicit hc: HeaderCarrier): EitherT[Future, ErrorResponse, HistoricPayments] =
     for {
       financialTransactionDocument <-
-        financialDataConnector.getFinancialData(appaId = appaId, open = false, year = year)
+        financialDataConnector.getNotOnlyOpenFinancialData(appaId = appaId, year = year)
       historicPayments             <- extractHistoricPayments(financialTransactionDocument)
     } yield HistoricPayments(year, historicPayments)
 }

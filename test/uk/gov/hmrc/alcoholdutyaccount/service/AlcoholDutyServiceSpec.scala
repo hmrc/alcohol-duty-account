@@ -295,8 +295,9 @@ class AlcoholDutyServiceSpec extends SpecBase with TestData {
                 sapDocumentNumber = "123456",
                 periodKey = Some("18AA"),
                 chargeReference = Some("XM002610011594"),
-                originalAmount = 1000.00,
-                outstandingAmount = Some(50.00),
+                originalAmount = BigDecimal(1000),
+                outstandingAmount = Some(BigDecimal(50)),
+                clearedAmount = Some(BigDecimal(950)),
                 mainTransaction = "1001",
                 subTransaction = "1111",
                 items = Seq(
@@ -311,8 +312,9 @@ class AlcoholDutyServiceSpec extends SpecBase with TestData {
                 sapDocumentNumber = "123457",
                 periodKey = Some("18AB"),
                 chargeReference = Some("XM002610011595"),
-                originalAmount = 2000.00,
-                outstandingAmount = Some(100.00),
+                originalAmount = BigDecimal(2000),
+                outstandingAmount = Some(BigDecimal(100)),
+                clearedAmount = Some(BigDecimal(900)),
                 mainTransaction = "1001",
                 subTransaction = "1112",
                 items = Seq(
@@ -327,8 +329,9 @@ class AlcoholDutyServiceSpec extends SpecBase with TestData {
                 sapDocumentNumber = "123456",
                 periodKey = Some("18AA"),
                 chargeReference = Some("XM002610011594"),
-                originalAmount = 3000.00,
-                outstandingAmount = Some(200.00),
+                originalAmount = BigDecimal(3000),
+                outstandingAmount = Some(BigDecimal(200)),
+                clearedAmount = Some(BigDecimal(2800)),
                 mainTransaction = "1001",
                 subTransaction = "1112",
                 items = Seq(
@@ -362,8 +365,9 @@ class AlcoholDutyServiceSpec extends SpecBase with TestData {
                   sapDocumentNumber = "123456",
                   periodKey = Some("18AA"),
                   chargeReference = Some("XM002610011594"),
-                  originalAmount = 1000.00,
-                  outstandingAmount = Some(50.00),
+                  originalAmount = BigDecimal(1000),
+                  outstandingAmount = Some(BigDecimal(50)),
+                  clearedAmount = Some(BigDecimal(950)),
                   mainTransaction = "1001",
                   subTransaction = "1111",
                   items = Seq(
@@ -378,8 +382,9 @@ class AlcoholDutyServiceSpec extends SpecBase with TestData {
                   sapDocumentNumber = "123457",
                   periodKey = Some("18AB"),
                   chargeReference = None,
-                  originalAmount = 2000.00,
-                  outstandingAmount = Some(100.00),
+                  originalAmount = BigDecimal(2000),
+                  outstandingAmount = Some(BigDecimal(100)),
+                  clearedAmount = Some(BigDecimal(1900)),
                   mainTransaction = "1001",
                   subTransaction = "1112",
                   items = Seq(
@@ -394,8 +399,9 @@ class AlcoholDutyServiceSpec extends SpecBase with TestData {
                   sapDocumentNumber = "123456",
                   periodKey = Some("18AA"),
                   chargeReference = Some("XM002610011594"),
-                  originalAmount = 3000.00,
-                  outstandingAmount = Some(200.00),
+                  originalAmount = BigDecimal(3000),
+                  outstandingAmount = Some(BigDecimal(200)),
+                  clearedAmount = Some(BigDecimal(2800)),
                   mainTransaction = "1001",
                   subTransaction = "1112",
                   items = Seq(
@@ -449,7 +455,7 @@ class AlcoholDutyServiceSpec extends SpecBase with TestData {
 
     "getPaymentInformation should" - {
       "return None if the financialDataConnector returns an error" in new SetUp {
-        when(financialDataConnector.getFinancialData(*, *, *)(*))
+        when(financialDataConnector.getOnlyOpenFinancialData(*)(*))
           .thenReturn(EitherT.leftT(ErrorCodes.unexpectedResponse))
 
         val result = service.getPaymentInformation(appaId)
@@ -460,7 +466,7 @@ class AlcoholDutyServiceSpec extends SpecBase with TestData {
       }
 
       "return a empty Payments object if the financialDataConnector returns NOT_FOUND" in new SetUp {
-        when(financialDataConnector.getFinancialData(*, *, *)(*))
+        when(financialDataConnector.getOnlyOpenFinancialData(*)(*))
           .thenReturn(EitherT.leftT(ErrorCodes.entityNotFound))
 
         service.getPaymentInformation(appaId).onComplete { result =>
@@ -469,7 +475,7 @@ class AlcoholDutyServiceSpec extends SpecBase with TestData {
       }
 
       "return a Payments object if the financialDataConnector returns a Document" in new SetUp {
-        when(financialDataConnector.getFinancialData(*, *, *)(*))
+        when(financialDataConnector.getOnlyOpenFinancialData(*)(*))
           .thenReturn(EitherT.pure(financialDocumentWithSingleSapDocumentNo))
 
         service.getPaymentInformation(appaId).onComplete { result =>
@@ -508,7 +514,7 @@ class AlcoholDutyServiceSpec extends SpecBase with TestData {
           when(obligationDataConnector.getObligationDetails(*, *)(*))
             .thenReturn(EitherT.fromEither(Right(obligationDataOneDue)))
 
-          when(financialDataConnector.getFinancialData(*, *, *)(*))
+          when(financialDataConnector.getOnlyOpenFinancialData(*)(*))
             .thenReturn(EitherT.pure(financialDocumentWithSingleSapDocumentNo))
 
           whenReady(service.getAlcoholDutyCardData(appaId).value) { result =>
@@ -553,7 +559,7 @@ class AlcoholDutyServiceSpec extends SpecBase with TestData {
           when(obligationDataConnector.getObligationDetails(*, *)(*))
             .thenReturn(EitherT.fromEither(Right(obligationDataOneDue)))
 
-          when(financialDataConnector.getFinancialData(*, *, *)(*))
+          when(financialDataConnector.getOnlyOpenFinancialData(*)(*))
             .thenReturn(EitherT.pure(financialDocumentWithSingleSapDocumentNo))
 
           whenReady(service.getAlcoholDutyCardData(appaId).value) { result =>
@@ -597,7 +603,7 @@ class AlcoholDutyServiceSpec extends SpecBase with TestData {
         when(obligationDataConnector.getObligationDetails(*, *)(*))
           .thenReturn(EitherT.fromEither(Left(ErrorResponse(BAD_REQUEST, ""))))
 
-        when(financialDataConnector.getFinancialData(*, *, *)(*))
+        when(financialDataConnector.getOnlyOpenFinancialData(*)(*))
           .thenReturn(EitherT.pure(financialDocumentWithSingleSapDocumentNo))
 
         whenReady(service.getAlcoholDutyCardData(appaId).value) { result =>
@@ -627,7 +633,7 @@ class AlcoholDutyServiceSpec extends SpecBase with TestData {
         when(obligationDataConnector.getObligationDetails(*, *)(*))
           .thenReturn(EitherT.fromEither(Left(ErrorResponse(NOT_FOUND, ""))))
 
-        when(financialDataConnector.getFinancialData(*, *, *)(*))
+        when(financialDataConnector.getOnlyOpenFinancialData(*)(*))
           .thenReturn(EitherT.pure(financialDocumentWithSingleSapDocumentNo))
 
         whenReady(service.getAlcoholDutyCardData(appaId).value) { result =>
@@ -673,7 +679,7 @@ class AlcoholDutyServiceSpec extends SpecBase with TestData {
         when(obligationDataConnector.getObligationDetails(*, *)(*))
           .thenReturn(EitherT.fromEither(Right(obligationDataOneDue)))
 
-        when(financialDataConnector.getFinancialData(*, *, *)(*))
+        when(financialDataConnector.getOnlyOpenFinancialData(*)(*))
           .thenReturn(EitherT.leftT(ErrorCodes.unexpectedResponse))
 
         whenReady(service.getAlcoholDutyCardData(appaId).value) { result =>
@@ -704,7 +710,7 @@ class AlcoholDutyServiceSpec extends SpecBase with TestData {
           when(obligationDataConnector.getObligationDetails(*, *)(*))
             .thenReturn(EitherT.fromEither(Left(ErrorResponse(BAD_REQUEST, ""))))
 
-          when(financialDataConnector.getFinancialData(*, *, *)(*))
+          when(financialDataConnector.getOnlyOpenFinancialData(*)(*))
             .thenReturn(EitherT.leftT(ErrorCodes.unexpectedResponse))
 
           whenReady(service.getAlcoholDutyCardData(appaId).value) { result =>
@@ -775,8 +781,9 @@ class AlcoholDutyServiceSpec extends SpecBase with TestData {
       sapDocumentNumber = "123456",
       periodKey = Some("18AA"),
       chargeReference = Some("X1234567890"),
-      originalAmount = 1000.00,
-      outstandingAmount = Some(50.00),
+      originalAmount = BigDecimal(1000),
+      outstandingAmount = Some(BigDecimal(50)),
+      clearedAmount = Some(BigDecimal(950)),
       mainTransaction = "1001",
       subTransaction = "1111",
       items = Seq(

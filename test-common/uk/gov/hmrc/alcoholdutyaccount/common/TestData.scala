@@ -137,8 +137,9 @@ trait TestData extends ModelGenerators {
         sapDocumentNumber = "123456",
         periodKey = Some("18AA"),
         chargeReference = Some("X1234567890"),
-        originalAmount = 1000.00,
-        outstandingAmount = Some(50.00),
+        originalAmount = BigDecimal(1000),
+        outstandingAmount = Some(BigDecimal("50")),
+        clearedAmount = Some(BigDecimal("950")),
         mainTransaction = "1001",
         subTransaction = "1111",
         items = Seq(
@@ -153,8 +154,9 @@ trait TestData extends ModelGenerators {
         sapDocumentNumber = "123456",
         periodKey = Some("18AA"),
         chargeReference = Some("X1234567890"),
-        originalAmount = 1000.00,
-        outstandingAmount = Some(50.00),
+        originalAmount = BigDecimal(1000),
+        outstandingAmount = Some(BigDecimal("50")),
+        clearedAmount = Some(BigDecimal("950")),
         mainTransaction = "1001",
         subTransaction = "2222",
         items = Seq(
@@ -169,7 +171,7 @@ trait TestData extends ModelGenerators {
   )
 
   def createFinancialDocument(
-    open: Boolean,
+    onlyOpenItems: Boolean,
     sapDocumentNumber: String,
     originalAmount: BigDecimal,
     maybeOutstandingAmount: Option[BigDecimal],
@@ -185,6 +187,9 @@ trait TestData extends ModelGenerators {
         chargeReference = maybeChargeReference,
         originalAmount = originalAmount,
         outstandingAmount = maybeOutstandingAmount,
+        clearedAmount = maybeOutstandingAmount.fold[Option[BigDecimal]](Some(originalAmount))(outstandingAmount =>
+          if (outstandingAmount == originalAmount) None else Some(originalAmount - outstandingAmount)
+        ),
         mainTransaction = toMainTransactionType(transactionType),
         subTransaction = "6132",
         items = if (maybeOutstandingAmount.isEmpty || maybeOutstandingAmount.contains(originalAmount)) {
@@ -195,7 +200,7 @@ trait TestData extends ModelGenerators {
               amount = originalAmount
             )
           )
-        } else if (open) {
+        } else if (onlyOpenItems) {
           Seq(
             FinancialTransactionItem(
               subItem = "000",
@@ -231,7 +236,7 @@ trait TestData extends ModelGenerators {
     val chargeReference   = chargeReferenceGen.sample.get
 
     createFinancialDocument(
-      open = true,
+      onlyOpenItems = true,
       sapDocumentNumber = sapDocumentNumber,
       originalAmount = BigDecimal("9000"),
       maybeOutstandingAmount = Some(BigDecimal("9000")),
@@ -242,12 +247,12 @@ trait TestData extends ModelGenerators {
     )
   }
 
-  def singlePartiallyOutstandingReturn(open: Boolean): FinancialTransactionDocument = {
+  def singlePartiallyOutstandingReturn(onlyOpenItems: Boolean): FinancialTransactionDocument = {
     val sapDocumentNumber = sapDocumentNumberGen.sample.get
     val chargeReference   = chargeReferenceGen.sample.get
 
     createFinancialDocument(
-      open = open,
+      onlyOpenItems = onlyOpenItems,
       sapDocumentNumber = sapDocumentNumber,
       originalAmount = BigDecimal("9000"),
       maybeOutstandingAmount = Some(BigDecimal("5000")),
@@ -263,7 +268,7 @@ trait TestData extends ModelGenerators {
     val chargeReference   = chargeReferenceGen.sample.get
 
     createFinancialDocument(
-      open = false,
+      onlyOpenItems = false,
       sapDocumentNumber = sapDocumentNumber,
       originalAmount = BigDecimal("9000"),
       maybeOutstandingAmount = None,
@@ -279,7 +284,7 @@ trait TestData extends ModelGenerators {
     val chargeReference   = chargeReferenceGen.sample.get
 
     createFinancialDocument(
-      open = false,
+      onlyOpenItems = false,
       sapDocumentNumber = sapDocumentNumber,
       originalAmount = BigDecimal("-9000"),
       maybeOutstandingAmount = None,
@@ -290,14 +295,14 @@ trait TestData extends ModelGenerators {
     )
   }
 
-  def twoLineItemPartiallyOutstandingReturn(open: Boolean): FinancialTransactionDocument = {
+  def twoLineItemPartiallyOutstandingReturn(onlyOpenItems: Boolean): FinancialTransactionDocument = {
     val sapDocumentNumber = sapDocumentNumberGen.sample.get
     val chargeReference   = chargeReferenceGen.sample.get
 
     combineFinancialTransactionDocuments(
       Seq(
         createFinancialDocument(
-          open = open,
+          onlyOpenItems = onlyOpenItems,
           sapDocumentNumber = sapDocumentNumber,
           originalAmount = BigDecimal("9000"),
           maybeOutstandingAmount = Some(BigDecimal("5000")),
@@ -307,7 +312,7 @@ trait TestData extends ModelGenerators {
           maybeChargeReference = Some(chargeReference)
         ),
         createFinancialDocument(
-          open = open,
+          onlyOpenItems = onlyOpenItems,
           sapDocumentNumber = sapDocumentNumber,
           originalAmount = BigDecimal("2000"),
           maybeOutstandingAmount = Some(BigDecimal("2000")),
@@ -328,7 +333,7 @@ trait TestData extends ModelGenerators {
     combineFinancialTransactionDocuments(
       Seq(
         createFinancialDocument(
-          open = false,
+          onlyOpenItems = false,
           sapDocumentNumber = sapDocumentNumber,
           originalAmount = BigDecimal("9000"),
           maybeOutstandingAmount = Some(BigDecimal("9000")),
@@ -338,7 +343,7 @@ trait TestData extends ModelGenerators {
           maybeChargeReference = Some(chargeReference)
         ),
         createFinancialDocument(
-          open = false,
+          onlyOpenItems = false,
           sapDocumentNumber = sapDocumentNumber,
           originalAmount = BigDecimal("-9000"),
           maybeOutstandingAmount = Some(BigDecimal("-9000")),
@@ -351,7 +356,7 @@ trait TestData extends ModelGenerators {
     )
   }
 
-  def twoSeparateOutstandingReturnsOnePartiallyPaid(open: Boolean): FinancialTransactionDocument = {
+  def twoSeparateOutstandingReturnsOnePartiallyPaid(onlyOpenItems: Boolean): FinancialTransactionDocument = {
     val sapDocumentNumber  = sapDocumentNumberGen.sample.get
     val chargeReference    = chargeReferenceGen.sample.get
     val sapDocumentNumber2 = sapDocumentNumberGen.sample.get
@@ -360,7 +365,7 @@ trait TestData extends ModelGenerators {
     combineFinancialTransactionDocuments(
       Seq(
         createFinancialDocument(
-          open = false,
+          onlyOpenItems = onlyOpenItems,
           sapDocumentNumber = sapDocumentNumber,
           originalAmount = BigDecimal("9000"),
           maybeOutstandingAmount = Some(BigDecimal("5000")),
@@ -370,7 +375,7 @@ trait TestData extends ModelGenerators {
           maybeChargeReference = Some(chargeReference)
         ),
         createFinancialDocument(
-          open = false,
+          onlyOpenItems = onlyOpenItems,
           sapDocumentNumber = sapDocumentNumber2,
           originalAmount = BigDecimal("2000"),
           maybeOutstandingAmount = Some(BigDecimal("2000")),
@@ -392,7 +397,7 @@ trait TestData extends ModelGenerators {
     combineFinancialTransactionDocuments(
       Seq(
         createFinancialDocument(
-          open = false,
+          onlyOpenItems = false,
           sapDocumentNumber = sapDocumentNumber,
           originalAmount = BigDecimal("9000"),
           maybeOutstandingAmount = None,
@@ -402,7 +407,7 @@ trait TestData extends ModelGenerators {
           maybeChargeReference = Some(chargeReference)
         ),
         createFinancialDocument(
-          open = false,
+          onlyOpenItems = false,
           sapDocumentNumber = sapDocumentNumber2,
           originalAmount = BigDecimal("2000"),
           maybeOutstandingAmount = Some(BigDecimal("2000")),
@@ -420,7 +425,7 @@ trait TestData extends ModelGenerators {
     val chargeReference   = chargeReferenceGen.sample.get
 
     createFinancialDocument(
-      open = false,
+      onlyOpenItems = false,
       sapDocumentNumber = sapDocumentNumber,
       originalAmount = BigDecimal("-9000"),
       maybeOutstandingAmount = Some(BigDecimal("-9000")),
@@ -431,7 +436,7 @@ trait TestData extends ModelGenerators {
     )
   }
 
-  def twoSeparatePaymentsOnAccount(open: Boolean): FinancialTransactionDocument = {
+  def twoSeparatePaymentsOnAccount(onlyOpenItems: Boolean): FinancialTransactionDocument = {
     val sapDocumentNumber  = sapDocumentNumberGen.sample.get
     val chargeReference    = chargeReferenceGen.sample.get
     val sapDocumentNumber2 = sapDocumentNumberGen.sample.get
@@ -440,7 +445,7 @@ trait TestData extends ModelGenerators {
     combineFinancialTransactionDocuments(
       Seq(
         createFinancialDocument(
-          open = open,
+          onlyOpenItems = onlyOpenItems,
           sapDocumentNumber = sapDocumentNumber,
           originalAmount = BigDecimal("-5000"),
           maybeOutstandingAmount = Some(BigDecimal("-5000")),
@@ -450,7 +455,7 @@ trait TestData extends ModelGenerators {
           maybeChargeReference = Some(chargeReference)
         ),
         createFinancialDocument(
-          open = open,
+          onlyOpenItems = onlyOpenItems,
           sapDocumentNumber = sapDocumentNumber2,
           originalAmount = BigDecimal("-2000"),
           maybeOutstandingAmount = Some(BigDecimal("-2000")),
@@ -468,7 +473,7 @@ trait TestData extends ModelGenerators {
     val chargeReference   = chargeReferenceGen.sample.get
 
     createFinancialDocument(
-      open = false,
+      onlyOpenItems = false,
       sapDocumentNumber = sapDocumentNumber,
       originalAmount = BigDecimal("50"),
       maybeOutstandingAmount = Some(BigDecimal("50")),
@@ -484,7 +489,7 @@ trait TestData extends ModelGenerators {
     val chargeReference   = chargeReferenceGen.sample.get
 
     createFinancialDocument(
-      open = false,
+      onlyOpenItems = false,
       sapDocumentNumber = sapDocumentNumber,
       originalAmount = BigDecimal("-50"),
       maybeOutstandingAmount = Some(BigDecimal("-50")),
@@ -495,11 +500,11 @@ trait TestData extends ModelGenerators {
     )
   }
 
-  def multipleStatuses(open: Boolean): FinancialTransactionDocument =
+  def multipleStatuses(onlyOpenItems: Boolean): FinancialTransactionDocument =
     combineFinancialTransactionDocuments(
       Seq(
         createFinancialDocument(
-          open = open,
+          onlyOpenItems = onlyOpenItems,
           sapDocumentNumber = sapDocumentNumberGen.sample.get,
           originalAmount = BigDecimal("237.44"),
           maybeOutstandingAmount = Some(BigDecimal("237.44")),
@@ -509,7 +514,7 @@ trait TestData extends ModelGenerators {
           maybeChargeReference = Some(chargeReferenceGen.sample.get)
         ),
         createFinancialDocument(
-          open = open,
+          onlyOpenItems = onlyOpenItems,
           sapDocumentNumber = sapDocumentNumberGen.sample.get,
           originalAmount = BigDecimal("4577.44"),
           maybeOutstandingAmount = Some(BigDecimal("4577.44")),
@@ -519,7 +524,7 @@ trait TestData extends ModelGenerators {
           maybeChargeReference = Some(chargeReferenceGen.sample.get)
         ),
         createFinancialDocument(
-          open = open,
+          onlyOpenItems = onlyOpenItems,
           sapDocumentNumber = sapDocumentNumberGen.sample.get,
           originalAmount = BigDecimal("4577.44"),
           maybeOutstandingAmount = Some(BigDecimal("2577.44")),
@@ -529,7 +534,7 @@ trait TestData extends ModelGenerators {
           maybeChargeReference = Some(chargeReferenceGen.sample.get)
         ),
         createFinancialDocument(
-          open = open,
+          onlyOpenItems = onlyOpenItems,
           sapDocumentNumber = sapDocumentNumberGen.sample.get,
           originalAmount = BigDecimal("-4577.44"),
           maybeOutstandingAmount = Some(BigDecimal("-2577.44")),
@@ -539,7 +544,7 @@ trait TestData extends ModelGenerators {
           maybeChargeReference = Some(chargeReferenceGen.sample.get)
         ),
         createFinancialDocument(
-          open = open,
+          onlyOpenItems = onlyOpenItems,
           sapDocumentNumber = sapDocumentNumberGen.sample.get,
           originalAmount = BigDecimal("20.56"),
           maybeOutstandingAmount = Some(BigDecimal("20.56")),
@@ -549,7 +554,7 @@ trait TestData extends ModelGenerators {
           maybeChargeReference = Some(chargeReferenceGen.sample.get)
         ),
         createFinancialDocument(
-          open = open,
+          onlyOpenItems = onlyOpenItems,
           sapDocumentNumber = sapDocumentNumberGen.sample.get,
           originalAmount = BigDecimal("20.56"),
           maybeOutstandingAmount = Some(BigDecimal("10.56")),
@@ -559,7 +564,7 @@ trait TestData extends ModelGenerators {
           maybeChargeReference = Some(chargeReferenceGen.sample.get)
         ),
         createFinancialDocument(
-          open = open,
+          onlyOpenItems = onlyOpenItems,
           sapDocumentNumber = sapDocumentNumberGen.sample.get,
           originalAmount = BigDecimal("-1000.00"),
           maybeOutstandingAmount = Some(BigDecimal("-1000.00")),
@@ -569,7 +574,7 @@ trait TestData extends ModelGenerators {
           maybeChargeReference = None
         ),
         createFinancialDocument(
-          open = open,
+          onlyOpenItems = onlyOpenItems,
           sapDocumentNumber = sapDocumentNumberGen.sample.get,
           originalAmount = BigDecimal("-500.00"),
           maybeOutstandingAmount = Some(BigDecimal("-500.00")),
@@ -579,7 +584,7 @@ trait TestData extends ModelGenerators {
           maybeChargeReference = None
         ),
         createFinancialDocument(
-          open = open,
+          onlyOpenItems = onlyOpenItems,
           sapDocumentNumber = sapDocumentNumberGen.sample.get,
           originalAmount = BigDecimal("-50.00"),
           maybeOutstandingAmount = Some(BigDecimal("-50.00")),
