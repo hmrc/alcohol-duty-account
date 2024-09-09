@@ -24,9 +24,12 @@ import play.api.mvc.Result
 import play.api.test.Helpers
 import uk.gov.hmrc.alcoholdutyaccount.base.SpecBase
 import uk.gov.hmrc.alcoholdutyaccount.common.TestData
+import uk.gov.hmrc.alcoholdutyaccount.models.ErrorCodes
+import uk.gov.hmrc.alcoholdutyaccount.models.payments.OpenPayments
 import uk.gov.hmrc.alcoholdutyaccount.service.PaymentsService
 import uk.gov.hmrc.play.bootstrap.backend.http.ErrorResponse
 
+import java.time.LocalDate
 import scala.concurrent.Future
 
 class PaymentsControllerSpec extends SpecBase {
@@ -43,10 +46,44 @@ class PaymentsControllerSpec extends SpecBase {
 
       "return any error returned from the service" in new SetUp {
         when(mockPaymentsService.getOpenPayments(eqTo(appaId))(*))
-          .thenReturn(EitherT.fromEither(Left(ErrorResponse(INTERNAL_SERVER_ERROR, "An error occurred"))))
+          .thenReturn(EitherT.leftT[Future, OpenPayments](ErrorCodes.unexpectedResponse))
 
         val result: Future[Result] = controller.openPayments(appaId)(fakeRequest)
         status(result) mustBe INTERNAL_SERVER_ERROR
+        contentAsJson(result).as[ErrorResponse] mustBe ErrorCodes.unexpectedResponse
+      }
+    }
+
+    "when calling historicPayments" - {
+      "return OK when the service returns success" in new SetUp {
+        mockPaymentsService.getHistoricPayments(eqTo(appaId), eqTo(year))(*) returnsF noHistoricPayments
+
+        val result: Future[Result] = controller.historicPayments(appaId, year)(fakeRequest)
+        status(result) mustBe OK
+        contentAsJson(result) mustBe Json.toJson(noHistoricPayments)
+      }
+
+      "return any error returned from the service" in new SetUp {
+        when(mockPaymentsService.getHistoricPayments(eqTo(appaId), eqTo(year))(*))
+          .thenReturn(EitherT.fromEither(Left(ErrorCodes.unexpectedResponse)))
+
+        val result: Future[Result] = controller.historicPayments(appaId, year)(fakeRequest)
+        status(result) mustBe INTERNAL_SERVER_ERROR
+        contentAsJson(result).as[ErrorResponse] mustBe ErrorCodes.unexpectedResponse
+      }
+
+      "return an error if the year is before the minimum" in new SetUp {
+        val minimumYear = appConfig.minimumHistoricPaymentsYear
+
+        val result: Future[Result] = controller.historicPayments(appaId, minimumYear - 1)(fakeRequest)
+        status(result) mustBe BAD_REQUEST
+        contentAsJson(result).as[ErrorResponse].message mustBe "Bad request made"
+      }
+
+      "return an error if the year is after the current" in new SetUp {
+        val result: Future[Result] = controller.historicPayments(appaId, LocalDate.now().getYear + 1)(fakeRequest)
+        status(result) mustBe BAD_REQUEST
+        contentAsJson(result).as[ErrorResponse].message mustBe "Bad request made"
       }
     }
   }
@@ -54,6 +91,8 @@ class PaymentsControllerSpec extends SpecBase {
   class SetUp extends TestData {
     val mockPaymentsService: PaymentsService = mock[PaymentsService]
     val cc                                   = Helpers.stubControllerComponents()
-    val controller                           = new PaymentsController(fakeAuthorisedAction, mockPaymentsService, cc)
+    val controller                           = new PaymentsController(fakeAuthorisedAction, mockPaymentsService, appConfig, cc)
+
+    val year: Int = 2024
   }
 }

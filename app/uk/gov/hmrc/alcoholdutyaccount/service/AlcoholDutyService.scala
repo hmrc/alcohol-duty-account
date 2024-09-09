@@ -160,7 +160,7 @@ class AlcoholDutyService @Inject() (
   private def getFinancialDataForBtaTile(
     appaId: String
   )(implicit hc: HeaderCarrier): OptionT[Future, FinancialTransactionDocument] = OptionT(
-    financialDataConnector.getFinancialData(appaId).value.map {
+    financialDataConnector.getOnlyOpenFinancialData(appaId).value.map {
       case Left(ErrorResponse(NOT_FOUND, _, _, _)) => Some(FinancialTransactionDocument(Seq.empty))
       case Left(_)                                 => None
       case Right(result)                           => Some(result)

@@ -27,7 +27,7 @@ class PaymentsIntegrationSpec extends ISpecBase with ConnectorTestHelpers {
   "the open payments endpoint should" should {
     "respond with OK if able to fetch open payments" in new SetUp {
       stubAuthorised()
-      stubGetWithParameters(url, parameters, OK, financialDataStubJson)
+      stubGetWithParameters(url, openParameters, OK, financialDataStubJson)
 
       val response = callRoute(
         FakeRequest("GET", routes.PaymentsController.openPayments(appaId).url)
@@ -37,12 +37,12 @@ class PaymentsIntegrationSpec extends ISpecBase with ConnectorTestHelpers {
       status(response) shouldBe OK
       contentAsJson(response).toString shouldBe openPayments
 
-      verifyGetWithParameters(url, parameters)
+      verifyGetWithParameters(url, openParameters)
     }
 
     "respond with INTERNAL_SERVER_ERROR if the data retrieved cannot be parsed" in new SetUp {
       stubAuthorised()
-      stubGetWithParameters(url, parameters, OK, "blah")
+      stubGetWithParameters(url, openParameters, OK, "blah")
 
       val response = callRoute(
         FakeRequest("GET", routes.PaymentsController.openPayments(appaId).url)
@@ -52,12 +52,12 @@ class PaymentsIntegrationSpec extends ISpecBase with ConnectorTestHelpers {
       status(response) shouldBe INTERNAL_SERVER_ERROR
       contentAsJson(response) shouldBe Json.toJson(ErrorResponse(INTERNAL_SERVER_ERROR, "Unexpected Response"))
 
-      verifyGetWithParameters(url, parameters)
+      verifyGetWithParameters(url, openParameters)
     }
 
     "respond with NOT_FOUND if financial data not found for appaId" in new SetUp {
       stubAuthorised()
-      stubGetWithParameters(url, parameters, NOT_FOUND, "")
+      stubGetWithParameters(url, openParameters, NOT_FOUND, "")
 
       val response = callRoute(
         FakeRequest("GET", routes.PaymentsController.openPayments(appaId).url)
@@ -67,12 +67,12 @@ class PaymentsIntegrationSpec extends ISpecBase with ConnectorTestHelpers {
       status(response) shouldBe NOT_FOUND
       contentAsJson(response) shouldBe Json.toJson(ErrorResponse(NOT_FOUND, "Entity not found"))
 
-      verifyGetWithParameters(url, parameters)
+      verifyGetWithParameters(url, openParameters)
     }
 
     "respond with INTERNAL_SERVER_ERROR if error(s) returned from the financial data api call" in new SetUp {
       stubAuthorised()
-      stubGetWithParameters(url, parameters, INTERNAL_SERVER_ERROR, "")
+      stubGetWithParameters(url, openParameters, INTERNAL_SERVER_ERROR, "")
 
       val response = callRoute(
         FakeRequest("GET", routes.PaymentsController.openPayments(appaId).url)
@@ -82,18 +82,91 @@ class PaymentsIntegrationSpec extends ISpecBase with ConnectorTestHelpers {
       status(response) shouldBe INTERNAL_SERVER_ERROR
       contentAsJson(response) shouldBe Json.toJson(ErrorResponse(INTERNAL_SERVER_ERROR, "Unexpected Response"))
 
-      verifyGetWithParameters(url, parameters)
+      verifyGetWithParameters(url, openParameters)
+    }
+  }
+
+  "the historic payments endpoint should" should {
+    "respond with OK if able to fetch historic payments" in new SetUp {
+      stubAuthorised()
+      stubGetWithParameters(url, allParameters, OK, financialDataStubJson)
+
+      val response = callRoute(
+        FakeRequest("GET", routes.PaymentsController.historicPayments(appaId, year).url)
+          .withHeaders("Authorization" -> "Bearer 12345")
+      )
+
+      status(response) shouldBe OK
+      contentAsJson(response).toString shouldBe historicPayments
+
+      verifyGetWithParameters(url, allParameters)
+    }
+
+    "respond with INTERNAL_SERVER_ERROR if the data retrieved cannot be parsed" in new SetUp {
+      stubAuthorised()
+      stubGetWithParameters(url, allParameters, OK, "blah")
+
+      val response = callRoute(
+        FakeRequest("GET", routes.PaymentsController.historicPayments(appaId, year).url)
+          .withHeaders("Authorization" -> "Bearer 12345")
+      )
+
+      status(response) shouldBe INTERNAL_SERVER_ERROR
+      contentAsJson(response) shouldBe Json.toJson(ErrorResponse(INTERNAL_SERVER_ERROR, "Unexpected Response"))
+
+      verifyGetWithParameters(url, allParameters)
+    }
+
+    "respond with NOT_FOUND if financial data not found for appaId" in new SetUp {
+      stubAuthorised()
+      stubGetWithParameters(url, allParameters, NOT_FOUND, "")
+
+      val response = callRoute(
+        FakeRequest("GET", routes.PaymentsController.historicPayments(appaId, year).url)
+          .withHeaders("Authorization" -> "Bearer 12345")
+      )
+
+      status(response) shouldBe NOT_FOUND
+      contentAsJson(response) shouldBe Json.toJson(ErrorResponse(NOT_FOUND, "Entity not found"))
+
+      verifyGetWithParameters(url, allParameters)
+    }
+
+    "respond with INTERNAL_SERVER_ERROR if error(s) returned from the financial data api call" in new SetUp {
+      stubAuthorised()
+      stubGetWithParameters(url, allParameters, INTERNAL_SERVER_ERROR, "")
+
+      val response = callRoute(
+        FakeRequest("GET", routes.PaymentsController.historicPayments(appaId, year).url)
+          .withHeaders("Authorization" -> "Bearer 12345")
+      )
+
+      status(response) shouldBe INTERNAL_SERVER_ERROR
+      contentAsJson(response) shouldBe Json.toJson(ErrorResponse(INTERNAL_SERVER_ERROR, "Unexpected Response"))
+
+      verifyGetWithParameters(url, allParameters)
     }
   }
 
   class SetUp {
     val url       = config.financialDataUrl(appaId)
 
-    val parameters =     Seq(
+    val year = 2024
+
+    val openParameters =     Seq(
       "onlyOpenItems"              -> true.toString,
       "includeLocks"               -> false.toString,
       "calculateAccruedInterest"   -> false.toString,
       "customerPaymentInformation" -> false.toString
+    )
+
+    val allParameters =     Seq(
+      "onlyOpenItems"              -> false.toString,
+      "includeLocks"               -> false.toString,
+      "calculateAccruedInterest"   -> false.toString,
+      "customerPaymentInformation" -> false.toString,
+      "dateFrom"                   -> s"$year-01-01",
+      "dateTo"                     -> s"$year-12-31"
     )
 
     val financialDataStubJson =
@@ -331,11 +404,35 @@ class PaymentsIntegrationSpec extends ISpecBase with ConnectorTestHelpers {
         |          "amount": -500
         |        }
         |      ]
+        |    },
+        |    {
+        |      "chargeType": "Alcohol Duty Repayment Int",
+        |      "mainType": "Alcohol Duty Repayment Int",
+        |      "businessPartner": "$businessPartner",
+        |      "contractAccountCategory": "51",
+        |      "contractAccount": "$contractAccount",
+        |      "contractObjectType": "ZADP",
+        |      "contractObject": "$contractObject",
+        |      "sapDocumentNumber": "899485548080",
+        |      "sapDocumentNumberItem": "0001",
+        |      "chargeReference": "XA69201353871649",
+        |      "mainTransaction": "6076",
+        |      "subTransaction": "6132",
+        |      "originalAmount": -50,
+        |      "outstandingAmount": -50,
+        |      "items": [
+        |        {
+        |          "subItem": "000",
+        |          "dueDate": "2024-03-01",
+        |          "amount": -50
+        |        }
+        |      ]
         |    }
         |  ]
         |}
         |""".stripMargin
 
-    val openPayments = """{"outstandingPayments":[{"transactionType":"LPI","dueDate":"2024-02-01","chargeReference":"XA85353805192234","remainingAmount":20.56},{"transactionType":"Return","dueDate":"2024-09-25","chargeReference":"XA91104208683855","remainingAmount":237.44},{"transactionType":"Return","dueDate":"2024-06-25","chargeReference":"XA95767883826728","remainingAmount":4577.44},{"transactionType":"Return","dueDate":"2024-05-25","chargeReference":"XA07406454540955","remainingAmount":2577.44},{"transactionType":"Return","dueDate":"2024-04-25","chargeReference":"XA15775952652650","remainingAmount":-2577.44},{"transactionType":"LPI","dueDate":"2024-02-01","chargeReference":"XA63139412020838","remainingAmount":10.56}],"totalOutstandingPayments":4846,"unallocatedPayments":[{"paymentDate":"2024-08-01","unallocatedAmount":-1000},{"paymentDate":"2024-08-01","unallocatedAmount":-500}],"totalUnallocatedPayments":-1500,"totalOpenPaymentsAmount":3346}"""
+    val openPayments = """{"outstandingPayments":[{"transactionType":"LPI","dueDate":"2024-02-01","chargeReference":"XA85353805192234","remainingAmount":20.56},{"transactionType":"Return","dueDate":"2024-09-25","chargeReference":"XA91104208683855","remainingAmount":237.44},{"transactionType":"Return","dueDate":"2024-06-25","chargeReference":"XA95767883826728","remainingAmount":4577.44},{"transactionType":"Return","dueDate":"2024-05-25","chargeReference":"XA07406454540955","remainingAmount":2577.44},{"transactionType":"RPI","dueDate":"2024-03-01","chargeReference":"XA69201353871649","remainingAmount":-50},{"transactionType":"Return","dueDate":"2024-04-25","chargeReference":"XA15775952652650","remainingAmount":-2577.44},{"transactionType":"LPI","dueDate":"2024-02-01","chargeReference":"XA63139412020838","remainingAmount":10.56}],"totalOutstandingPayments":4796,"unallocatedPayments":[{"paymentDate":"2024-08-01","unallocatedAmount":-1000},{"paymentDate":"2024-08-01","unallocatedAmount":-500}],"totalUnallocatedPayments":-1500,"totalOpenPaymentsAmount":3296}"""
+    val historicPayments = s"""{"year":$year,"payments":[{"period":"24AB","transactionType":"LPI","chargeReference":"XA63139412020838","amountPaid":10},{"period":"24AD","transactionType":"Return","chargeReference":"XA07406454540955","amountPaid":2000}]}"""
   }
 }

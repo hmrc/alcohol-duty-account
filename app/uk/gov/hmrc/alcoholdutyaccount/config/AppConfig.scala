@@ -32,9 +32,10 @@ class AppConfig @Inject() (config: Configuration, servicesConfig: ServicesConfig
 
   val obligationDataFilterStartDate: String = getConfStringAndThrowIfNotFound("obligation.filterStartDate")
 
-  private val financialDataHost: String   = servicesConfig.baseUrl("financial")
-  val financialDataToken: String          = getConfStringAndThrowIfNotFound("financial.token")
-  val financialDataEnv: String            = getConfStringAndThrowIfNotFound("financial.env")
+  private val financialDataHost: String = servicesConfig.baseUrl("financial")
+  val financialDataToken: String        = getConfStringAndThrowIfNotFound("financial.token")
+  val financialDataEnv: String          = getConfStringAndThrowIfNotFound("financial.env")
+
   private lazy val financialDataUrlPrefix = getConfStringAndThrowIfNotFound("financial.url.financialData")
 
   private val subscriptionHost: String                  = servicesConfig.baseUrl("subscription")
@@ -57,6 +58,9 @@ class AppConfig @Inject() (config: Configuration, servicesConfig: ServicesConfig
 
   def obligationDataUrl(appaId: String): String =
     s"$obligationDataHost$obligationDataUrlPrefix/$idType/$appaId/$regime"
+
+  def minimumHistoricPaymentsYear: Int =
+    config.get[Int]("payments.minimumHistoricPaymentsYear")
 
   private[config] def getConfStringAndThrowIfNotFound(key: String) =
     servicesConfig.getConfString(key, throw new RuntimeException(s"Could not find services config key '$key'"))

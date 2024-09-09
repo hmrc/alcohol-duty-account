@@ -35,8 +35,9 @@ class FinancialDataConnector @Inject() (config: AppConfig, implicit val httpClie
     with Logging {
   override protected val logger: Logger = Logger(this.getClass)
 
-  def getFinancialData(
-    appaId: String
+  private def getFinancialData(
+    appaId: String,
+    queryParams: Seq[(String, String)]
   )(implicit hc: HeaderCarrier): EitherT[Future, ErrorResponse, FinancialTransactionDocument] =
     EitherT {
       val headers: Seq[(String, String)] = Seq(
@@ -49,7 +50,7 @@ class FinancialDataConnector @Inject() (config: AppConfig, implicit val httpClie
       httpClient
         .GET[Either[UpstreamErrorResponse, HttpResponse]](
           url = config.financialDataUrl(appaId),
-          queryParams = getQueryParams,
+          queryParams = queryParams,
           headers = headers
         )
         .map {
@@ -87,11 +88,25 @@ class FinancialDataConnector @Inject() (config: AppConfig, implicit val httpClie
         ErrorCodes.unexpectedResponse
     }
 
-  private def getQueryParams: Seq[(String, String)] =
+  private def getBaseQueryParams(onlyOpenItems: Boolean): Seq[(String, String)] =
     Seq(
-      "onlyOpenItems"              -> true.toString,
+      "onlyOpenItems"              -> onlyOpenItems.toString,
       "includeLocks"               -> false.toString,
       "calculateAccruedInterest"   -> false.toString,
       "customerPaymentInformation" -> false.toString
     )
+
+  private def getOnlyOpenItemsFalseParameters(year: Int): Seq[(String, String)]               =
+    getBaseQueryParams(false) ++ Seq("dateFrom" -> s"$year-01-01", "dateTo" -> s"$year-12-31")
+
+  def getOnlyOpenFinancialData(
+    appaId: String
+  )(implicit hc: HeaderCarrier): EitherT[Future, ErrorResponse, FinancialTransactionDocument] =
+    getFinancialData(appaId, getBaseQueryParams(true))
+
+  def getNotOnlyOpenFinancialData(
+    appaId: String,
+    year: Int
+  )(implicit hc: HeaderCarrier): EitherT[Future, ErrorResponse, FinancialTransactionDocument] =
+    getFinancialData(appaId, getOnlyOpenItemsFalseParameters(year))
 }

@@ -19,9 +19,10 @@ package uk.gov.hmrc.alcoholdutyaccount.common
 import org.scalacheck.Gen
 import play.api.libs.json.{Json, OFormat}
 import uk.gov.hmrc.alcoholdutyaccount.common.generators.ModelGenerators
-import uk.gov.hmrc.alcoholdutyaccount.models.{AdrObligationData, ObligationStatus}
+import uk.gov.hmrc.alcoholdutyaccount.models.{AdrObligationData, ObligationStatus, ReturnPeriod}
 import uk.gov.hmrc.alcoholdutyaccount.models.hods._
-import uk.gov.hmrc.alcoholdutyaccount.models.payments.{OpenPayments, TransactionType}
+import uk.gov.hmrc.alcoholdutyaccount.models.payments.TransactionType.{Return, toMainTransactionType}
+import uk.gov.hmrc.alcoholdutyaccount.models.payments.{HistoricPayments, OpenPayments, TransactionType}
 import uk.gov.hmrc.alcoholdutyaccount.models.subscription.{AdrSubscriptionSummary, AlcoholRegime, ApprovalStatus}
 
 import java.time.{Clock, Instant, LocalDate, ZoneId}
@@ -128,23 +129,6 @@ trait TestData extends ModelGenerators {
     obligations = Seq.empty
   )
 
-  val financialTransaction = FinancialTransaction(
-    sapDocumentNumber = "123456",
-    periodKey = Some("18AA"),
-    chargeReference = Some("X1234567890"),
-    originalAmount = 1000.00,
-    outstandingAmount = Some(50.00),
-    mainTransaction = "1001",
-    subTransaction = "1111",
-    items = Seq(
-      FinancialTransactionItem(
-        subItem = "001",
-        dueDate = None,
-        amount = 50.00
-      )
-    )
-  )
-
   val emptyFinancialDocument = FinancialTransactionDocument(financialTransactions = Seq.empty)
 
   val financialDocumentWithSingleSapDocumentNo = FinancialTransactionDocument(
@@ -153,8 +137,9 @@ trait TestData extends ModelGenerators {
         sapDocumentNumber = "123456",
         periodKey = Some("18AA"),
         chargeReference = Some("X1234567890"),
-        originalAmount = 1000.00,
-        outstandingAmount = Some(50.00),
+        originalAmount = BigDecimal(1000),
+        outstandingAmount = Some(BigDecimal("50")),
+        clearedAmount = Some(BigDecimal("950")),
         mainTransaction = "1001",
         subTransaction = "1111",
         items = Seq(
@@ -169,8 +154,9 @@ trait TestData extends ModelGenerators {
         sapDocumentNumber = "123456",
         periodKey = Some("18AA"),
         chargeReference = Some("X1234567890"),
-        originalAmount = 1000.00,
-        outstandingAmount = Some(50.00),
+        originalAmount = BigDecimal(1000),
+        outstandingAmount = Some(BigDecimal("50")),
+        clearedAmount = Some(BigDecimal("950")),
         mainTransaction = "1001",
         subTransaction = "2222",
         items = Seq(
@@ -184,288 +170,430 @@ trait TestData extends ModelGenerators {
     )
   )
 
-  val financialDocumentWithMultipleSapDocumentNumbers = FinancialTransactionDocument(
+  def createFinancialDocument(
+    onlyOpenItems: Boolean,
+    sapDocumentNumber: String,
+    originalAmount: BigDecimal,
+    maybeOutstandingAmount: Option[BigDecimal],
+    dueDate: LocalDate,
+    transactionType: TransactionType = Return,
+    maybePeriodKey: Option[String] = None,
+    maybeChargeReference: Option[String] = None
+  ) = FinancialTransactionDocument(
     financialTransactions = Seq(
       FinancialTransaction(
-        sapDocumentNumber = "123456",
-        periodKey = Some("18AA"),
-        chargeReference = Some("X1234567890"),
-        originalAmount = 1000.00,
-        outstandingAmount = Some(50.00),
-        mainTransaction = "1001",
-        subTransaction = "1111",
-        items = Seq(
-          FinancialTransactionItem(
-            subItem = "001",
-            dueDate = None,
-            amount = 50.00
+        sapDocumentNumber = sapDocumentNumber,
+        periodKey = maybePeriodKey,
+        chargeReference = maybeChargeReference,
+        originalAmount = originalAmount,
+        outstandingAmount = maybeOutstandingAmount,
+        clearedAmount = maybeOutstandingAmount.fold[Option[BigDecimal]](Some(originalAmount))(outstandingAmount =>
+          if (outstandingAmount == originalAmount) None else Some(originalAmount - outstandingAmount)
+        ),
+        mainTransaction = toMainTransactionType(transactionType),
+        subTransaction = "6132",
+        items = if (maybeOutstandingAmount.isEmpty || maybeOutstandingAmount.contains(originalAmount)) {
+          Seq(
+            FinancialTransactionItem(
+              subItem = "000",
+              dueDate = Some(dueDate),
+              amount = originalAmount
+            )
           )
-        )
-      ),
-      FinancialTransaction(
-        sapDocumentNumber = "123457",
-        periodKey = Some("18AA"),
-        chargeReference = Some("X1234567891"),
-        originalAmount = 1000.00,
-        outstandingAmount = Some(50.00),
-        mainTransaction = "1001",
-        subTransaction = "2222",
-        items = Seq(
-          FinancialTransactionItem(
-            subItem = "002",
-            dueDate = None,
-            amount = 100.00
+        } else if (onlyOpenItems) {
+          Seq(
+            FinancialTransactionItem(
+              subItem = "000",
+              dueDate = Some(dueDate),
+              amount = maybeOutstandingAmount.get
+            )
           )
-        )
+        } else {
+          Seq(
+            FinancialTransactionItem(
+              subItem = "000",
+              dueDate = Some(dueDate),
+              amount = maybeOutstandingAmount.get
+            ),
+            FinancialTransactionItem(
+              subItem = "001",
+              dueDate = Some(dueDate),
+              amount = originalAmount - maybeOutstandingAmount.get
+            )
+          )
+        }
       )
     )
   )
 
-  val financialDocumentMinimal = FinancialTransactionDocument(
-    financialTransactions = Seq(
-      FinancialTransaction(
-        sapDocumentNumber = "123456",
-        periodKey = None,
-        chargeReference = None,
-        originalAmount = 1000.00,
-        outstandingAmount = Some(50.00),
-        mainTransaction = "1001",
-        subTransaction = "2222",
-        items = Seq(
-          FinancialTransactionItem(
-            subItem = "001",
-            dueDate = None,
-            amount = 1000.00
-          )
-        )
-      )
-    )
-  )
-
-  val singleFullyOutstandingReturn: FinancialTransactionDocument =
+  def combineFinancialTransactionDocuments(docs: Seq[FinancialTransactionDocument]): FinancialTransactionDocument =
     FinancialTransactionDocument(
-      financialTransactions = Seq(
-        FinancialTransaction(
-          sapDocumentNumber = sapDocumentNumberGen.sample.get,
-          periodKey = Some(periodKey),
-          chargeReference = Some(chargeReferenceGen.sample.get),
-          originalAmount = BigDecimal("9000"),
-          mainTransaction = TransactionType.toMainTransactionType(TransactionType.Return),
-          subTransaction = "6132",
-          outstandingAmount = Some(BigDecimal("9000")),
-          items = Seq(
-            FinancialTransactionItem(
-              subItem = "000",
-              dueDate = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).dueDate()),
-              amount = BigDecimal("9000")
-            )
-          )
-        )
-      )
+      financialTransactions = docs.map(_.financialTransactions).reduce(_ ++ _)
     )
 
-  val singlePartiallyOutstandingReturn: FinancialTransactionDocument =
-    FinancialTransactionDocument(
-      financialTransactions = Seq(
-        FinancialTransaction(
-          sapDocumentNumber = sapDocumentNumberGen.sample.get,
-          periodKey = Some(periodKey),
-          chargeReference = Some(chargeReferenceGen.sample.get),
-          originalAmount = BigDecimal("9000"),
-          mainTransaction = TransactionType.toMainTransactionType(TransactionType.Return),
-          subTransaction = "6132",
-          outstandingAmount = Some(BigDecimal("5000")),
-          items = Seq(
-            FinancialTransactionItem(
-              subItem = "000",
-              dueDate = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).dueDate()),
-              amount = BigDecimal("5000")
-            )
-          )
-        )
-      )
-    )
-
-  val twoLineItemPartiallyOutstandingReturn: FinancialTransactionDocument = {
+  val singleFullyOutstandingReturn: FinancialTransactionDocument = {
     val sapDocumentNumber = sapDocumentNumberGen.sample.get
     val chargeReference   = chargeReferenceGen.sample.get
-    FinancialTransactionDocument(
-      financialTransactions = Seq(
-        FinancialTransaction(
+
+    createFinancialDocument(
+      onlyOpenItems = true,
+      sapDocumentNumber = sapDocumentNumber,
+      originalAmount = BigDecimal("9000"),
+      maybeOutstandingAmount = Some(BigDecimal("9000")),
+      dueDate = ReturnPeriod.fromPeriodKeyOrThrow(periodKey).dueDate(),
+      transactionType = TransactionType.Return,
+      maybePeriodKey = Some(periodKey),
+      maybeChargeReference = Some(chargeReference)
+    )
+  }
+
+  def singlePartiallyOutstandingReturn(onlyOpenItems: Boolean): FinancialTransactionDocument = {
+    val sapDocumentNumber = sapDocumentNumberGen.sample.get
+    val chargeReference   = chargeReferenceGen.sample.get
+
+    createFinancialDocument(
+      onlyOpenItems = onlyOpenItems,
+      sapDocumentNumber = sapDocumentNumber,
+      originalAmount = BigDecimal("9000"),
+      maybeOutstandingAmount = Some(BigDecimal("5000")),
+      dueDate = ReturnPeriod.fromPeriodKeyOrThrow(periodKey).dueDate(),
+      transactionType = TransactionType.Return,
+      maybePeriodKey = Some(periodKey),
+      maybeChargeReference = Some(chargeReference)
+    )
+  }
+
+  val singlePaidReturn: FinancialTransactionDocument = {
+    val sapDocumentNumber = sapDocumentNumberGen.sample.get
+    val chargeReference   = chargeReferenceGen.sample.get
+
+    createFinancialDocument(
+      onlyOpenItems = false,
+      sapDocumentNumber = sapDocumentNumber,
+      originalAmount = BigDecimal("9000"),
+      maybeOutstandingAmount = None,
+      dueDate = ReturnPeriod.fromPeriodKeyOrThrow(periodKey).dueDate(),
+      transactionType = TransactionType.Return,
+      maybePeriodKey = Some(periodKey),
+      maybeChargeReference = Some(chargeReference)
+    )
+  }
+
+  val singleRefundedReturn: FinancialTransactionDocument = {
+    val sapDocumentNumber = sapDocumentNumberGen.sample.get
+    val chargeReference   = chargeReferenceGen.sample.get
+
+    createFinancialDocument(
+      onlyOpenItems = false,
+      sapDocumentNumber = sapDocumentNumber,
+      originalAmount = BigDecimal("-9000"),
+      maybeOutstandingAmount = None,
+      dueDate = ReturnPeriod.fromPeriodKeyOrThrow(periodKey).dueDate(),
+      transactionType = TransactionType.Return,
+      maybePeriodKey = Some(periodKey),
+      maybeChargeReference = Some(chargeReference)
+    )
+  }
+
+  def twoLineItemPartiallyOutstandingReturn(onlyOpenItems: Boolean): FinancialTransactionDocument = {
+    val sapDocumentNumber = sapDocumentNumberGen.sample.get
+    val chargeReference   = chargeReferenceGen.sample.get
+
+    combineFinancialTransactionDocuments(
+      Seq(
+        createFinancialDocument(
+          onlyOpenItems = onlyOpenItems,
           sapDocumentNumber = sapDocumentNumber,
-          periodKey = Some(periodKey),
-          chargeReference = Some(chargeReference),
           originalAmount = BigDecimal("9000"),
-          mainTransaction = TransactionType.toMainTransactionType(TransactionType.Return),
-          subTransaction = "6132",
-          outstandingAmount = Some(BigDecimal("5000")),
-          items = Seq(
-            FinancialTransactionItem(
-              subItem = "000",
-              dueDate = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).dueDate()),
-              amount = BigDecimal("5000")
-            )
-          )
+          maybeOutstandingAmount = Some(BigDecimal("5000")),
+          dueDate = ReturnPeriod.fromPeriodKeyOrThrow(periodKey).dueDate(),
+          transactionType = TransactionType.Return,
+          maybePeriodKey = Some(periodKey),
+          maybeChargeReference = Some(chargeReference)
         ),
-        FinancialTransaction(
+        createFinancialDocument(
+          onlyOpenItems = onlyOpenItems,
           sapDocumentNumber = sapDocumentNumber,
-          periodKey = Some(periodKey),
-          chargeReference = Some(chargeReference),
           originalAmount = BigDecimal("2000"),
-          mainTransaction = TransactionType.toMainTransactionType(TransactionType.Return),
-          subTransaction = "6132",
-          outstandingAmount = Some(BigDecimal("2000")),
-          items = Seq(
-            FinancialTransactionItem(
-              subItem = "000",
-              dueDate = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).dueDate()),
-              amount = BigDecimal("2000")
-            )
-          )
+          maybeOutstandingAmount = Some(BigDecimal("2000")),
+          dueDate = ReturnPeriod.fromPeriodKeyOrThrow(periodKey).dueDate(),
+          transactionType = TransactionType.Return,
+          maybePeriodKey = Some(periodKey),
+          maybeChargeReference = Some(chargeReference)
         )
       )
     )
   }
 
-  val twoSeparateOutstandingReturnsOnePartiallyPaid: FinancialTransactionDocument =
-    FinancialTransactionDocument(
-      financialTransactions = Seq(
-        FinancialTransaction(
-          sapDocumentNumber = sapDocumentNumberGen.sample.get,
-          periodKey = Some(periodKey),
-          chargeReference = Some(chargeReferenceGen.sample.get),
+  // No outstanding amounts as line items cancel
+  val nilReturnLineItemsCancelling: FinancialTransactionDocument = {
+    val sapDocumentNumber = sapDocumentNumberGen.sample.get
+    val chargeReference   = chargeReferenceGen.sample.get
+
+    combineFinancialTransactionDocuments(
+      Seq(
+        createFinancialDocument(
+          onlyOpenItems = false,
+          sapDocumentNumber = sapDocumentNumber,
           originalAmount = BigDecimal("9000"),
-          mainTransaction = TransactionType.toMainTransactionType(TransactionType.Return),
-          subTransaction = "6132",
-          outstandingAmount = Some(BigDecimal("5000")),
-          items = Seq(
-            FinancialTransactionItem(
-              subItem = "000",
-              dueDate = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).dueDate()),
-              amount = BigDecimal("5000")
-            )
-          )
+          maybeOutstandingAmount = Some(BigDecimal("9000")),
+          dueDate = ReturnPeriod.fromPeriodKeyOrThrow(periodKey).dueDate(),
+          transactionType = TransactionType.Return,
+          maybePeriodKey = Some(periodKey),
+          maybeChargeReference = Some(chargeReference)
         ),
-        FinancialTransaction(
-          sapDocumentNumber = sapDocumentNumberGen.sample.get,
-          periodKey = Some(periodKey2),
-          chargeReference = Some(chargeReferenceGen.sample.get),
-          originalAmount = BigDecimal("2000"),
-          mainTransaction = TransactionType.toMainTransactionType(TransactionType.Return),
-          subTransaction = "6132",
-          outstandingAmount = Some(BigDecimal("2000")),
-          items = Seq(
-            FinancialTransactionItem(
-              subItem = "000",
-              dueDate = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey2).dueDate()),
-              amount = BigDecimal("2000")
-            )
-          )
-        )
-      )
-    )
-
-  val singlePaymentOnAccount: FinancialTransactionDocument =
-    FinancialTransactionDocument(
-      financialTransactions = Seq(
-        FinancialTransaction(
-          sapDocumentNumber = sapDocumentNumberGen.sample.get,
-          periodKey = None,
-          chargeReference = None,
+        createFinancialDocument(
+          onlyOpenItems = false,
+          sapDocumentNumber = sapDocumentNumber,
           originalAmount = BigDecimal("-9000"),
-          mainTransaction = TransactionType.toMainTransactionType(TransactionType.PaymentOnAccount),
-          subTransaction = "6132",
-          outstandingAmount = Some(BigDecimal("-9000")),
-          items = Seq(
-            FinancialTransactionItem(
-              subItem = "000",
-              dueDate = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).periodFromDate()),
-              amount = BigDecimal("-9000")
-            )
-          )
+          maybeOutstandingAmount = Some(BigDecimal("-9000")),
+          dueDate = ReturnPeriod.fromPeriodKeyOrThrow(periodKey).dueDate(),
+          transactionType = TransactionType.Return,
+          maybePeriodKey = Some(periodKey),
+          maybeChargeReference = Some(chargeReference)
         )
       )
     )
+  }
 
-  val twoSeparatePaymentsOnAccount: FinancialTransactionDocument =
-    FinancialTransactionDocument(
-      financialTransactions = Seq(
-        FinancialTransaction(
-          sapDocumentNumber = sapDocumentNumberGen.sample.get,
-          periodKey = None,
-          chargeReference = None,
-          originalAmount = BigDecimal("-5000"),
-          mainTransaction = TransactionType.toMainTransactionType(TransactionType.PaymentOnAccount),
-          subTransaction = "6132",
-          outstandingAmount = Some(BigDecimal("-5000")),
-          items = Seq(
-            FinancialTransactionItem(
-              subItem = "000",
-              dueDate = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).dueDate()),
-              amount = BigDecimal("-5000")
-            )
-          )
+  def twoSeparateOutstandingReturnsOnePartiallyPaid(onlyOpenItems: Boolean): FinancialTransactionDocument = {
+    val sapDocumentNumber  = sapDocumentNumberGen.sample.get
+    val chargeReference    = chargeReferenceGen.sample.get
+    val sapDocumentNumber2 = sapDocumentNumberGen.sample.get
+    val chargeReference2   = chargeReferenceGen.sample.get
+
+    combineFinancialTransactionDocuments(
+      Seq(
+        createFinancialDocument(
+          onlyOpenItems = onlyOpenItems,
+          sapDocumentNumber = sapDocumentNumber,
+          originalAmount = BigDecimal("9000"),
+          maybeOutstandingAmount = Some(BigDecimal("5000")),
+          dueDate = ReturnPeriod.fromPeriodKeyOrThrow(periodKey).dueDate(),
+          transactionType = TransactionType.Return,
+          maybePeriodKey = Some(periodKey),
+          maybeChargeReference = Some(chargeReference)
         ),
-        FinancialTransaction(
-          sapDocumentNumber = sapDocumentNumberGen.sample.get,
-          periodKey = None,
-          chargeReference = None,
+        createFinancialDocument(
+          onlyOpenItems = onlyOpenItems,
+          sapDocumentNumber = sapDocumentNumber2,
+          originalAmount = BigDecimal("2000"),
+          maybeOutstandingAmount = Some(BigDecimal("2000")),
+          dueDate = ReturnPeriod.fromPeriodKeyOrThrow(periodKey2).dueDate(),
+          transactionType = TransactionType.Return,
+          maybePeriodKey = Some(periodKey2),
+          maybeChargeReference = Some(chargeReference2)
+        )
+      )
+    )
+  }
+
+  val twoSeparateReturnsOneFullyPaid: FinancialTransactionDocument = {
+    val sapDocumentNumber  = sapDocumentNumberGen.sample.get
+    val chargeReference    = chargeReferenceGen.sample.get
+    val sapDocumentNumber2 = sapDocumentNumberGen.sample.get
+    val chargeReference2   = chargeReferenceGen.sample.get
+
+    combineFinancialTransactionDocuments(
+      Seq(
+        createFinancialDocument(
+          onlyOpenItems = false,
+          sapDocumentNumber = sapDocumentNumber,
+          originalAmount = BigDecimal("9000"),
+          maybeOutstandingAmount = None,
+          dueDate = ReturnPeriod.fromPeriodKeyOrThrow(periodKey).dueDate(),
+          transactionType = TransactionType.Return,
+          maybePeriodKey = Some(periodKey),
+          maybeChargeReference = Some(chargeReference)
+        ),
+        createFinancialDocument(
+          onlyOpenItems = false,
+          sapDocumentNumber = sapDocumentNumber2,
+          originalAmount = BigDecimal("2000"),
+          maybeOutstandingAmount = Some(BigDecimal("2000")),
+          dueDate = ReturnPeriod.fromPeriodKeyOrThrow(periodKey2).dueDate(),
+          transactionType = TransactionType.Return,
+          maybePeriodKey = Some(periodKey2),
+          maybeChargeReference = Some(chargeReference2)
+        )
+      )
+    )
+  }
+
+  val singlePaymentOnAccount: FinancialTransactionDocument = {
+    val sapDocumentNumber = sapDocumentNumberGen.sample.get
+    val chargeReference   = chargeReferenceGen.sample.get
+
+    createFinancialDocument(
+      onlyOpenItems = false,
+      sapDocumentNumber = sapDocumentNumber,
+      originalAmount = BigDecimal("-9000"),
+      maybeOutstandingAmount = Some(BigDecimal("-9000")),
+      dueDate = ReturnPeriod.fromPeriodKeyOrThrow(periodKey).dueDate(),
+      transactionType = TransactionType.PaymentOnAccount,
+      maybePeriodKey = Some(periodKey),
+      maybeChargeReference = Some(chargeReference)
+    )
+  }
+
+  def twoSeparatePaymentsOnAccount(onlyOpenItems: Boolean): FinancialTransactionDocument = {
+    val sapDocumentNumber  = sapDocumentNumberGen.sample.get
+    val chargeReference    = chargeReferenceGen.sample.get
+    val sapDocumentNumber2 = sapDocumentNumberGen.sample.get
+    val chargeReference2   = chargeReferenceGen.sample.get
+
+    combineFinancialTransactionDocuments(
+      Seq(
+        createFinancialDocument(
+          onlyOpenItems = onlyOpenItems,
+          sapDocumentNumber = sapDocumentNumber,
+          originalAmount = BigDecimal("-5000"),
+          maybeOutstandingAmount = Some(BigDecimal("-5000")),
+          dueDate = ReturnPeriod.fromPeriodKeyOrThrow(periodKey).dueDate(),
+          transactionType = TransactionType.PaymentOnAccount,
+          maybePeriodKey = Some(periodKey),
+          maybeChargeReference = Some(chargeReference)
+        ),
+        createFinancialDocument(
+          onlyOpenItems = onlyOpenItems,
+          sapDocumentNumber = sapDocumentNumber2,
           originalAmount = BigDecimal("-2000"),
-          mainTransaction = TransactionType.toMainTransactionType(TransactionType.PaymentOnAccount),
-          subTransaction = "6132",
-          outstandingAmount = Some(BigDecimal("-2000")),
-          items = Seq(
-            FinancialTransactionItem(
-              subItem = "000",
-              dueDate = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).dueDate()),
-              amount = BigDecimal("-2000")
-            )
-          )
+          maybeOutstandingAmount = Some(BigDecimal("-2000")),
+          dueDate = ReturnPeriod.fromPeriodKeyOrThrow(periodKey2).dueDate(),
+          transactionType = TransactionType.PaymentOnAccount,
+          maybePeriodKey = Some(periodKey2),
+          maybeChargeReference = Some(chargeReference2)
         )
       )
     )
+  }
 
-  val singleFullyOutstandingLPI: FinancialTransactionDocument =
-    FinancialTransactionDocument(
-      financialTransactions = Seq(
-        FinancialTransaction(
-          sapDocumentNumber = sapDocumentNumberGen.sample.get,
-          periodKey = None,
-          chargeReference = chargeReferenceGen.sample,
-          originalAmount = BigDecimal("50"),
-          mainTransaction = TransactionType.toMainTransactionType(TransactionType.LPI),
-          subTransaction = "6132",
-          outstandingAmount = Some(BigDecimal("50")),
-          items = Seq(
-            FinancialTransactionItem(
-              subItem = "000",
-              dueDate = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).periodFromDate()),
-              amount = BigDecimal("50")
-            )
-          )
-        )
-      )
+  val singleFullyOutstandingLPI: FinancialTransactionDocument = {
+    val sapDocumentNumber = sapDocumentNumberGen.sample.get
+    val chargeReference   = chargeReferenceGen.sample.get
+
+    createFinancialDocument(
+      onlyOpenItems = false,
+      sapDocumentNumber = sapDocumentNumber,
+      originalAmount = BigDecimal("50"),
+      maybeOutstandingAmount = Some(BigDecimal("50")),
+      dueDate = ReturnPeriod.fromPeriodKeyOrThrow(periodKey).dueDate(),
+      transactionType = TransactionType.LPI,
+      maybePeriodKey = Some(periodKey),
+      maybeChargeReference = Some(chargeReference)
     )
+  }
 
-  val singleRPI: FinancialTransactionDocument =
-    FinancialTransactionDocument(
-      financialTransactions = Seq(
-        FinancialTransaction(
+  val singleRPI: FinancialTransactionDocument = {
+    val sapDocumentNumber = sapDocumentNumberGen.sample.get
+    val chargeReference   = chargeReferenceGen.sample.get
+
+    createFinancialDocument(
+      onlyOpenItems = false,
+      sapDocumentNumber = sapDocumentNumber,
+      originalAmount = BigDecimal("-50"),
+      maybeOutstandingAmount = Some(BigDecimal("-50")),
+      dueDate = ReturnPeriod.fromPeriodKeyOrThrow(periodKey).dueDate(),
+      transactionType = TransactionType.RPI,
+      maybePeriodKey = Some(periodKey),
+      maybeChargeReference = Some(chargeReference)
+    )
+  }
+
+  def multipleStatuses(onlyOpenItems: Boolean): FinancialTransactionDocument =
+    combineFinancialTransactionDocuments(
+      Seq(
+        createFinancialDocument(
+          onlyOpenItems = onlyOpenItems,
           sapDocumentNumber = sapDocumentNumberGen.sample.get,
-          periodKey = None,
-          chargeReference = chargeReferenceGen.sample,
-          originalAmount = BigDecimal("-50"),
-          mainTransaction = TransactionType.toMainTransactionType(TransactionType.RPI),
-          subTransaction = "6132",
-          outstandingAmount = Some(BigDecimal("-50")),
-          items = Seq(
-            FinancialTransactionItem(
-              subItem = "000",
-              dueDate = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).periodFromDate()),
-              amount = BigDecimal("-50")
-            )
-          )
-        )
+          originalAmount = BigDecimal("237.44"),
+          maybeOutstandingAmount = Some(BigDecimal("237.44")),
+          dueDate = ReturnPeriod.fromPeriodKeyOrThrow("24AH").dueDate(),
+          transactionType = TransactionType.Return,
+          maybePeriodKey = Some("24AH"),
+          maybeChargeReference = Some(chargeReferenceGen.sample.get)
+        ),
+        createFinancialDocument(
+          onlyOpenItems = onlyOpenItems,
+          sapDocumentNumber = sapDocumentNumberGen.sample.get,
+          originalAmount = BigDecimal("4577.44"),
+          maybeOutstandingAmount = Some(BigDecimal("4577.44")),
+          dueDate = ReturnPeriod.fromPeriodKeyOrThrow("24AE").dueDate(),
+          transactionType = TransactionType.Return,
+          maybePeriodKey = Some("24AE"),
+          maybeChargeReference = Some(chargeReferenceGen.sample.get)
+        ),
+        createFinancialDocument(
+          onlyOpenItems = onlyOpenItems,
+          sapDocumentNumber = sapDocumentNumberGen.sample.get,
+          originalAmount = BigDecimal("4577.44"),
+          maybeOutstandingAmount = Some(BigDecimal("2577.44")),
+          dueDate = ReturnPeriod.fromPeriodKeyOrThrow("24AD").dueDate(),
+          transactionType = TransactionType.Return,
+          maybePeriodKey = Some("24AD"),
+          maybeChargeReference = Some(chargeReferenceGen.sample.get)
+        ),
+        createFinancialDocument(
+          onlyOpenItems = onlyOpenItems,
+          sapDocumentNumber = sapDocumentNumberGen.sample.get,
+          originalAmount = BigDecimal("-4577.44"),
+          maybeOutstandingAmount = Some(BigDecimal("-2577.44")),
+          dueDate = ReturnPeriod.fromPeriodKeyOrThrow("24AC").dueDate(),
+          transactionType = TransactionType.Return,
+          maybePeriodKey = Some("24AC"),
+          maybeChargeReference = Some(chargeReferenceGen.sample.get)
+        ),
+        createFinancialDocument(
+          onlyOpenItems = onlyOpenItems,
+          sapDocumentNumber = sapDocumentNumberGen.sample.get,
+          originalAmount = BigDecimal("20.56"),
+          maybeOutstandingAmount = Some(BigDecimal("20.56")),
+          dueDate = ReturnPeriod.fromPeriodKeyOrThrow("24AB").periodFromDate(),
+          transactionType = TransactionType.LPI,
+          maybePeriodKey = None,
+          maybeChargeReference = Some(chargeReferenceGen.sample.get)
+        ),
+        createFinancialDocument(
+          onlyOpenItems = onlyOpenItems,
+          sapDocumentNumber = sapDocumentNumberGen.sample.get,
+          originalAmount = BigDecimal("20.56"),
+          maybeOutstandingAmount = Some(BigDecimal("10.56")),
+          dueDate = ReturnPeriod.fromPeriodKeyOrThrow("24AB").periodFromDate(),
+          transactionType = TransactionType.LPI,
+          maybePeriodKey = None,
+          maybeChargeReference = Some(chargeReferenceGen.sample.get)
+        ),
+        createFinancialDocument(
+          onlyOpenItems = onlyOpenItems,
+          sapDocumentNumber = sapDocumentNumberGen.sample.get,
+          originalAmount = BigDecimal("-1000.00"),
+          maybeOutstandingAmount = Some(BigDecimal("-1000.00")),
+          dueDate = ReturnPeriod.fromPeriodKeyOrThrow("24AH").periodFromDate(),
+          transactionType = TransactionType.PaymentOnAccount,
+          maybePeriodKey = None,
+          maybeChargeReference = None
+        ),
+        createFinancialDocument(
+          onlyOpenItems = onlyOpenItems,
+          sapDocumentNumber = sapDocumentNumberGen.sample.get,
+          originalAmount = BigDecimal("-500.00"),
+          maybeOutstandingAmount = Some(BigDecimal("-500.00")),
+          dueDate = ReturnPeriod.fromPeriodKeyOrThrow("24AH").periodFromDate(),
+          transactionType = TransactionType.PaymentOnAccount,
+          maybePeriodKey = None,
+          maybeChargeReference = None
+        ),
+        createFinancialDocument(
+          onlyOpenItems = onlyOpenItems,
+          sapDocumentNumber = sapDocumentNumberGen.sample.get,
+          originalAmount = BigDecimal("-50.00"),
+          maybeOutstandingAmount = Some(BigDecimal("-50.00")),
+          dueDate = ReturnPeriod.fromPeriodKeyOrThrow("24AA").periodFromDate(),
+          transactionType = TransactionType.RPI,
+          maybePeriodKey = None,
+          maybeChargeReference = None
+        ),
+        nilReturnLineItemsCancelling
       )
     )
 
@@ -510,12 +638,17 @@ trait TestData extends ModelGenerators {
   val adrMultipleOpenData =
     Seq(adrObligationDetails, adrObligationDetailsOpen2)
 
-  val noOpenPayments = OpenPayments(
+  val noOpenPayments: OpenPayments = OpenPayments(
     outstandingPayments = Seq.empty,
     totalOutstandingPayments = BigDecimal(0),
     unallocatedPayments = Seq.empty,
     totalUnallocatedPayments = BigDecimal(0),
     totalOpenPaymentsAmount = BigDecimal(0)
+  )
+
+  val noHistoricPayments: HistoricPayments = HistoricPayments(
+    year = 2024,
+    payments = Seq.empty
   )
 
   case class DownstreamErrorDetails(code: String, message: String, logID: String)

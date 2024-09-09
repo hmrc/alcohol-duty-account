@@ -38,6 +38,7 @@ case class FinancialTransaction(
   subTransaction: String,
   originalAmount: BigDecimal,
   outstandingAmount: Option[BigDecimal],
+  clearedAmount: Option[BigDecimal],
   items: Seq[FinancialTransactionItem]
 )
 

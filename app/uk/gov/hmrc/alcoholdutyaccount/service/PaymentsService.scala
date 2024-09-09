@@ -20,14 +20,15 @@ import cats.data.EitherT
 import cats.implicits._
 import play.api.Logging
 import uk.gov.hmrc.alcoholdutyaccount.connectors.FinancialDataConnector
+import uk.gov.hmrc.alcoholdutyaccount.models.ReturnPeriod
 import uk.gov.hmrc.alcoholdutyaccount.models.ErrorCodes
 import uk.gov.hmrc.alcoholdutyaccount.models.hods.{FinancialTransaction, FinancialTransactionDocument, FinancialTransactionItem}
 import uk.gov.hmrc.alcoholdutyaccount.models.payments.TransactionType.{PaymentOnAccount, RPI}
-import uk.gov.hmrc.alcoholdutyaccount.models.payments.{OpenPayment, OpenPayments, OutstandingPayment, TransactionType, UnallocatedPayment}
+import uk.gov.hmrc.alcoholdutyaccount.models.payments.{HistoricPayment, HistoricPayments, OpenPayment, OpenPayments, OutstandingPayment, TransactionType, UnallocatedPayment}
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.bootstrap.backend.http.ErrorResponse
 
-import java.time.LocalDate
+import java.time.{LocalDate, YearMonth}
 import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -37,6 +38,7 @@ class PaymentsService @Inject() (
     extends Logging {
   private[service] case class FinancialTransactionData(
     transactionType: TransactionType,
+    maybePeriodKey: Option[String],
     dueDate: LocalDate,
     maybeChargeReference: Option[String]
   )
@@ -79,7 +81,8 @@ class PaymentsService @Inject() (
     sapDocumentNumber: String,
     financialTransactionsForDocument: Seq[FinancialTransaction],
     mainTransactionType: String,
-    chargeReference: Option[String],
+    maybePeriodKey: Option[String],
+    maybeChargeReference: Option[String],
     dueDate: LocalDate
   ): Either[ErrorResponse, Unit] =
     // Will need to identity check most fields on the first lines item so that due dates are also checked on all its items
@@ -91,7 +94,8 @@ class PaymentsService @Inject() (
         } else {
           Right(
             mainTransactionType == financialTransaction.mainTransaction &&
-              chargeReference == financialTransaction.chargeReference &&
+              maybePeriodKey == financialTransaction.periodKey &&
+              maybeChargeReference == financialTransaction.chargeReference &&
               financialTransaction.items.forall(_.dueDate.fold(false)(_.isEqual(dueDate)))
           )
         }
@@ -101,7 +105,7 @@ class PaymentsService @Inject() (
       .filterOrElse(
         _.forall(identity), {
           logger.warn(
-            s"Not all chargeReferences, mainTransactions and/or dueDates matched against the first entry of financial transaction $sapDocumentNumber."
+            s"Not all chargeReferences, periodKeys, mainTransactions and/or dueDates matched against the first entry of financial transaction $sapDocumentNumber."
           )
           ErrorCodes.unexpectedResponse
         }
@@ -110,7 +114,8 @@ class PaymentsService @Inject() (
 
   private def getTransactionTypeAndWarnIfOpenRPI(
     sapDocumentNumber: String,
-    mainTransactionType: String
+    mainTransactionType: String,
+    onlyOpenItems: Boolean
   ): Either[ErrorResponse, TransactionType] =
     TransactionType
       .fromMainTransactionType(mainTransactionType)
@@ -120,7 +125,7 @@ class PaymentsService @Inject() (
         )
         Left(ErrorCodes.unexpectedResponse)
       } { transactionType =>
-        if (transactionType == RPI) {
+        if (transactionType == RPI && onlyOpenItems) {
           logger.warn(
             s"Unexpected RPI in open payments on financial transaction $sapDocumentNumber."
           )
@@ -129,11 +134,13 @@ class PaymentsService @Inject() (
         Right(transactionType)
       }
 
-  private def warnIfPaymentOnAccountAmountsDontMatch(
+  private def warnIfPaymentOnAccountAndAmountsDontMatch(
     sapDocumentNumber: String,
+    transactionType: TransactionType,
     financialTransactionsForDocument: Seq[FinancialTransaction]
   ): Unit =
     if (
+      transactionType == PaymentOnAccount &&
       financialTransactionsForDocument.exists(financialTransactionLineItem =>
         financialTransactionLineItem.outstandingAmount.contains(financialTransactionLineItem.originalAmount)
       )
@@ -143,33 +150,55 @@ class PaymentsService @Inject() (
       )
     }
 
+  private def warnIfRPIAndIsPositive(
+    sapDocumentNumber: String,
+    transactionType: TransactionType,
+    financialTransactionsForDocument: Seq[FinancialTransaction]
+  ): Unit =
+    if (
+      transactionType == RPI &&
+      financialTransactionsForDocument.exists(financialTransactionLineItem =>
+        financialTransactionLineItem.outstandingAmount.exists(_ > 0) || financialTransactionLineItem.originalAmount > 0
+      )
+    ) {
+      logger.warn(
+        s"Expected original and outstanding amounts of an RPI to be non-positive on financial transaction $sapDocumentNumber."
+      )
+    }
+
   private[service] def validateAndGetFinancialTransactionData(
     sapDocumentNumber: String,
-    financialTransactionsForDocument: Seq[FinancialTransaction]
+    financialTransactionsForDocument: Seq[FinancialTransaction],
+    onlyOpenItems: Boolean
   ): Either[ErrorResponse, FinancialTransactionData] =
     // Various data has to be consistent across line items, so we need the first to obtain the data to compare against the rest
     for {
       firstFinancialTransactionLineItem <-
         getFirstFinancialTransactionLineItem(sapDocumentNumber, financialTransactionsForDocument)
       mainTransactionType                = firstFinancialTransactionLineItem.mainTransaction
+      maybePeriodKey                     = firstFinancialTransactionLineItem.periodKey
       maybeChargeReference               = firstFinancialTransactionLineItem.chargeReference
       dueDate                           <- getFirstItemDueDate(sapDocumentNumber, firstFinancialTransactionLineItem)
       _                                 <- validateFinancialLineItems(
                                              sapDocumentNumber,
                                              financialTransactionsForDocument,
                                              mainTransactionType,
+                                             maybePeriodKey,
                                              maybeChargeReference,
                                              dueDate
                                            )
-      transactionType                   <- getTransactionTypeAndWarnIfOpenRPI(sapDocumentNumber, mainTransactionType)
-      _                                  = warnIfPaymentOnAccountAmountsDontMatch(sapDocumentNumber, financialTransactionsForDocument)
+      transactionType                   <- getTransactionTypeAndWarnIfOpenRPI(sapDocumentNumber, mainTransactionType, onlyOpenItems)
+      _                                  =
+        warnIfPaymentOnAccountAndAmountsDontMatch(sapDocumentNumber, transactionType, financialTransactionsForDocument)
+      _                                  = warnIfRPIAndIsPositive(sapDocumentNumber, transactionType, financialTransactionsForDocument)
     } yield FinancialTransactionData(
       transactionType,
+      maybePeriodKey,
       dueDate,
       maybeChargeReference
     )
 
-  private def calculatedTotalBalance(
+  private def calculateTotalBalance(
     outstandingPayments: Seq[OutstandingPayment],
     unallocatedPayments: Seq[UnallocatedPayment]
   ): PaymentTotals = {
@@ -217,7 +246,11 @@ class PaymentsService @Inject() (
         financialTransactionDocument.financialTransactions
           .groupBy(_.sapDocumentNumber)
           .map { case (sapDocumentNumber, financialTransactionsForDocument) =>
-            validateAndGetFinancialTransactionData(sapDocumentNumber, financialTransactionsForDocument)
+            validateAndGetFinancialTransactionData(
+              sapDocumentNumber,
+              financialTransactionsForDocument,
+              onlyOpenItems = true
+            )
               .map {
                 val outstandingAmount = calculateOutstandingAmount(financialTransactionsForDocument)
                 buildOpenPayment(_, outstandingAmount)
@@ -240,7 +273,7 @@ class PaymentsService @Inject() (
           }
       }
 
-    val paymentTotals = calculatedTotalBalance(outstandingPayments, unallocatedPayments)
+    val paymentTotals = calculateTotalBalance(outstandingPayments, unallocatedPayments)
 
     OpenPayments(
       outstandingPayments = outstandingPayments,
@@ -255,7 +288,73 @@ class PaymentsService @Inject() (
     appaId: String
   )(implicit hc: HeaderCarrier): EitherT[Future, ErrorResponse, OpenPayments] =
     for {
-      financialTransactionDocument <- financialDataConnector.getFinancialData(appaId)
+      financialTransactionDocument <- financialDataConnector.getOnlyOpenFinancialData(appaId)
       openPayments                 <- extractOpenPayments(financialTransactionDocument)
     } yield buildOpenPaymentsPayload(openPayments)
+
+  private def isTransactionFullyOpen(financialTransaction: FinancialTransaction): Boolean =
+    financialTransaction.clearedAmount.isEmpty
+
+  private[service] def calculateTotalAmountPaid(
+    financialTransactionsForDocument: Seq[FinancialTransaction]
+  ): BigDecimal =
+    financialTransactionsForDocument
+      .map(transaction =>
+        if (TransactionType.isRPI(transaction.mainTransaction)) {
+          transaction.originalAmount
+        } else {
+          transaction.clearedAmount.getOrElse(BigDecimal(0))
+        }
+      )
+      .sum
+
+  private def extractHistoricPayments(
+    financialTransactionDocument: FinancialTransactionDocument
+  ): EitherT[Future, ErrorResponse, List[HistoricPayment]] =
+    EitherT.fromEither(
+      financialTransactionDocument.financialTransactions
+        .filter(transaction =>
+          TransactionType.isRPI(transaction.mainTransaction) ||
+            !(TransactionType.isPaymentOnAccount(transaction.mainTransaction) || isTransactionFullyOpen(transaction))
+        )
+        .groupBy(_.sapDocumentNumber)
+        .map { case (sapDocumentNumber, financialTransactionsForDocument) =>
+          validateAndGetFinancialTransactionData(
+            sapDocumentNumber,
+            financialTransactionsForDocument,
+            onlyOpenItems = false
+          )
+            .map { financialTransactionData =>
+              val totalAmountPaid = calculateTotalAmountPaid(financialTransactionsForDocument)
+
+              if (totalAmountPaid > 0 && financialTransactionData.transactionType != RPI) {
+                Some(
+                  HistoricPayment(
+                    period = financialTransactionData.maybePeriodKey
+                      .flatMap(ReturnPeriod.fromPeriodKey)
+                      .getOrElse(ReturnPeriod(YearMonth.from(financialTransactionData.dueDate))),
+                    transactionType = financialTransactionData.transactionType,
+                    chargeReference = financialTransactionData.maybeChargeReference,
+                    amountPaid = totalAmountPaid
+                  )
+                )
+              } else {
+                None
+              }
+            }
+        }
+        .toList
+        .sequence
+        .map(_.flatten)
+    )
+
+  def getHistoricPayments(
+    appaId: String,
+    year: Int
+  )(implicit hc: HeaderCarrier): EitherT[Future, ErrorResponse, HistoricPayments] =
+    for {
+      financialTransactionDocument <-
+        financialDataConnector.getNotOnlyOpenFinancialData(appaId = appaId, year = year)
+      historicPayments             <- extractHistoricPayments(financialTransactionDocument)
+    } yield HistoricPayments(year, historicPayments)
 }

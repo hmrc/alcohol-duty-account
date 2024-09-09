@@ -42,7 +42,8 @@ class SpecBaseWithConfigOverrides extends SpecBase {
     "microservice.services.financial.url.financialData"          -> "/enterprise/financial-data",
     "downstream-apis.idType"                                     -> "ZAD",
     "downstream-apis.regime"                                     -> "AD",
-    "enrolment.serviceName"                                      -> "HMRC-AD-ORG"
+    "enrolment.serviceName"                                      -> "HMRC-AD-ORG",
+    "payments.minimumHistoricPaymentsYear"                       -> 2024
   )
 }
 
@@ -118,4 +119,11 @@ class AppConfigSpec extends SpecBaseWithConfigOverrides {
       a[RuntimeException] shouldBe thrownBy(appConfig.getConfStringAndThrowIfNotFound("blah"))
     }
   }
+
+  "for payments" - {
+    "minimumHistoricPaymentsYear should return a year" - {
+      appConfig.minimumHistoricPaymentsYear mustBe 2024
+    }
+  }
+
 }
