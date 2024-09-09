@@ -19,7 +19,9 @@ package uk.gov.hmrc.alcoholdutyaccount.controllers
 import cats.implicits._
 import play.api.libs.json.Json
 import play.api.mvc.{Action, AnyContent, ControllerComponents}
+import uk.gov.hmrc.alcoholdutyaccount.config.AppConfig
 import uk.gov.hmrc.alcoholdutyaccount.controllers.actions.AuthorisedAction
+import uk.gov.hmrc.alcoholdutyaccount.models.ErrorCodes
 import uk.gov.hmrc.alcoholdutyaccount.service.AlcoholDutyService
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 import uk.gov.hmrc.play.bootstrap.backend.http.ErrorResponse
@@ -32,6 +34,7 @@ import scala.util.matching.Regex
 class AlcoholDutyController @Inject() (
   authorise: AuthorisedAction,
   alcoholDutyService: AlcoholDutyService,
+  appConfig: AppConfig,
   cc: ControllerComponents
 )(implicit ec: ExecutionContext)
     extends BackendController(cc)
@@ -64,12 +67,16 @@ class AlcoholDutyController @Inject() (
   }
 
   def btaTileData(alcoholDutyReference: String): Action[AnyContent] = authorise.async { implicit request =>
-    alcoholDutyService
-      .getAlcoholDutyCardData(alcoholDutyReference)
-      .fold(
-        error,
-        alcoholDutyCardData => Ok(Json.toJson(alcoholDutyCardData))
-      )
+    if (appConfig.btaServiceAvailable) {
+      alcoholDutyService
+        .getAlcoholDutyCardData(alcoholDutyReference)
+        .fold(
+          error,
+          alcoholDutyCardData => Ok(Json.toJson(alcoholDutyCardData))
+        )
+    } else {
+      Future.successful(error(ErrorCodes.serviceUnavailable))
+    }
   }
 
   def obligationDetails(alcoholDutyReference: String): Action[AnyContent] = Action.async { implicit request =>

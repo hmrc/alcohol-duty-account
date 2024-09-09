@@ -3,6 +3,10 @@
 
 This is the backend microservice that provides account information for Alcohol Duty Service, e.g. financial data and obligations.
 
+## Shuttering the service
+
+This is done by setting features.bta-service-available to false. The service will then return 503 when attempting to get bta tile data
+
 ## API Endpoints
 
 - [Get BTA tile data](api-docs/get-bta-tile-data.md): `GET /alcohol-duty-account/bta-tile-data`

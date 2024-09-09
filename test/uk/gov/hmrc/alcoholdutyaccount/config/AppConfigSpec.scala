@@ -43,7 +43,8 @@ class SpecBaseWithConfigOverrides extends SpecBase {
     "downstream-apis.idType"                                     -> "ZAD",
     "downstream-apis.regime"                                     -> "AD",
     "enrolment.serviceName"                                      -> "HMRC-AD-ORG",
-    "payments.minimumHistoricPaymentsYear"                       -> 2024
+    "payments.minimumHistoricPaymentsYear"                       -> 2024,
+    "features.btaServiceAvailable"                               -> true
   )
 }
 
@@ -121,8 +122,14 @@ class AppConfigSpec extends SpecBaseWithConfigOverrides {
   }
 
   "for payments" - {
-    "minimumHistoricPaymentsYear should return a year" - {
+    "minimumHistoricPaymentsYear should return a year" in {
       appConfig.minimumHistoricPaymentsYear mustBe 2024
+    }
+  }
+
+  "for features" - {
+    "btaServiceAvailable should return whether the service is available" in {
+      appConfig.btaServiceAvailable mustBe true
     }
   }
 
