@@ -5,7 +5,7 @@ This is the backend microservice that provides account information for Alcohol D
 
 ## Shuttering the BTA tile
 
-This is done by setting features.bta-service-available in config to false. The service will then return 503 when attempting to get bta tile data
+BTA doesn't shutter the tiles individually. Instead, the shuttering is done by setting features.bta-service-available in config to false. The service will then return 503 when attempting to get bta tile data and BTA will display relevant tile.
 
 ## API Endpoints
 
