@@ -186,6 +186,6 @@ The status prioritisation will be as below:
 
 This response can occur when a call is made by any consumer without an authorized session that has an ADR enrolment.
 
-## Shuttering the service
+## Shuttering the BTA tile
 
 This is done by setting features.bta-service-available in config to false. The service will then return 503 when attempting to get bta tile data.

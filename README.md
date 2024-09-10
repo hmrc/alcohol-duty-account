@@ -3,7 +3,7 @@
 
 This is the backend microservice that provides account information for Alcohol Duty Service, e.g. financial data and obligations.
 
-## Shuttering the service
+## Shuttering the BTA tile
 
 This is done by setting features.bta-service-available in config to false. The service will then return 503 when attempting to get bta tile data
 
