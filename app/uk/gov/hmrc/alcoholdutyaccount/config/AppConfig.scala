@@ -62,6 +62,8 @@ class AppConfig @Inject() (config: Configuration, servicesConfig: ServicesConfig
   def minimumHistoricPaymentsYear: Int =
     config.get[Int]("payments.minimumHistoricPaymentsYear")
 
+  def btaServiceAvailable: Boolean = config.get[Boolean]("features.bta-service-available")
+
   private[config] def getConfStringAndThrowIfNotFound(key: String) =
     servicesConfig.getConfString(key, throw new RuntimeException(s"Could not find services config key '$key'"))
 }

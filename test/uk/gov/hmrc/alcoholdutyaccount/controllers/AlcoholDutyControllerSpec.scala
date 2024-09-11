@@ -18,13 +18,13 @@ package uk.gov.hmrc.alcoholdutyaccount.controllers
 
 import cats.data.EitherT
 import org.mockito.ArgumentMatchersSugar.{*, eqTo}
-
 import play.api.test.Helpers
 import org.mockito.cats.IdiomaticMockitoCats.StubbingOpsCats
 import play.api.libs.json.Json
 import play.api.mvc.Result
 import uk.gov.hmrc.alcoholdutyaccount.base.SpecBase
 import uk.gov.hmrc.alcoholdutyaccount.common.TestData
+import uk.gov.hmrc.alcoholdutyaccount.config.AppConfig
 import uk.gov.hmrc.alcoholdutyaccount.models.AlcoholDutyCardData
 import uk.gov.hmrc.alcoholdutyaccount.models.subscription.ApprovalStatus.Approved
 import uk.gov.hmrc.alcoholdutyaccount.models._
@@ -108,7 +108,8 @@ class AlcoholDutyControllerSpec extends SpecBase {
   }
 
   "GET /bta-tile-data" - {
-    "return 200 when is called with a valid appaId" in new SetUp {
+    "return 200 when is called with a valid appaId and available" in new SetUp {
+      when(appConfig.btaServiceAvailable).thenReturn(true)
       alcoholDutyService.getAlcoholDutyCardData(*)(*) returnsF cardData
 
       val result: Future[Result] = controller.btaTileData(appaId)(fakeRequest)
@@ -117,6 +118,8 @@ class AlcoholDutyControllerSpec extends SpecBase {
     }
 
     "return 400 when is called with an invalid appaId" in new SetUp {
+      when(appConfig.btaServiceAvailable).thenReturn(true)
+
       val expectedError = ErrorResponse(BAD_REQUEST, "Invalid alcohol duty reference")
 
       when(alcoholDutyService.getAlcoholDutyCardData(*)(*)).thenReturn(EitherT.fromEither(Left(expectedError)))
@@ -125,12 +128,23 @@ class AlcoholDutyControllerSpec extends SpecBase {
       status(result) mustBe BAD_REQUEST
       contentAsJson(result) mustBe Json.toJson(expectedError)
     }
+
+    "return 503 when shuttered" in new SetUp {
+      when(appConfig.btaServiceAvailable).thenReturn(false)
+
+      alcoholDutyService.getAlcoholDutyCardData(*)(*) returnsF cardData
+
+      val result: Future[Result] = controller.btaTileData(appaId)(fakeRequest)
+      status(result) mustBe SERVICE_UNAVAILABLE
+      contentAsJson(result) mustBe Json.toJson(ErrorCodes.serviceUnavailable)
+    }
   }
 
-  class SetUp extends TestData {
+  class SetUp {
+    val appConfig                              = mock[AppConfig]
     val alcoholDutyService: AlcoholDutyService = mock[AlcoholDutyService]
     val cc                                     = Helpers.stubControllerComponents()
-    val controller                             = new AlcoholDutyController(fakeAuthorisedAction, alcoholDutyService, cc)
+    val controller                             = new AlcoholDutyController(fakeAuthorisedAction, alcoholDutyService, appConfig, cc)
 
     val badPeriodKey = "blah"
 
