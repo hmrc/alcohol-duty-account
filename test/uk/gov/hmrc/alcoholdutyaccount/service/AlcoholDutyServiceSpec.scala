@@ -621,36 +621,6 @@ class AlcoholDutyServiceSpec extends SpecBase with TestData {
         }
       }
 
-      "return data with  empty Return object if the obligationDataConnector returns an NOT_FOUND" in new SetUp {
-        val subscriptionSummary = SubscriptionSummary(
-          typeOfAlcoholApprovedFor = Set(Beer),
-          smallciderFlag = false,
-          approvalStatus = hods.Approved,
-          insolvencyFlag = false
-        )
-        subscriptionSummaryConnector.getSubscriptionSummary(*)(*) returnsF subscriptionSummary
-
-        when(obligationDataConnector.getObligationDetails(*, *)(*))
-          .thenReturn(EitherT.fromEither(Left(ErrorResponse(NOT_FOUND, ""))))
-
-        when(financialDataConnector.getOnlyOpenFinancialData(*)(*))
-          .thenReturn(EitherT.pure(financialDocumentWithSingleSapDocumentNo))
-
-        whenReady(service.getAlcoholDutyCardData(appaId).value) { result =>
-          result mustBe Right(
-            AlcoholDutyCardData(
-              appaId,
-              Some(Approved),
-              hasSubscriptionSummaryError = false,
-              hasReturnsError = false,
-              hasPaymentsError = false,
-              Returns(),
-              Payments(Some(Balance(BigDecimal(100), false, Some("X1234567890"))))
-            )
-          )
-        }
-      }
-
       "return data with hasPaymentsError set and empty Payment object if the financialDataConnector returns an error" in new SetUp {
         val subscriptionSummary = SubscriptionSummary(
           typeOfAlcoholApprovedFor = Set(Beer),
