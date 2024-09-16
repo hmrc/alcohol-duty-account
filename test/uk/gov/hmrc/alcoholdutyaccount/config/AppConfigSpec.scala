@@ -116,10 +116,6 @@ class AppConfigSpec extends SpecBaseWithConfigOverrides {
     "for regime" in {
       appConfig.regime mustBe "AD"
     }
-
-    "for contractObjectType" in {
-      appConfig.contractObjectType mustBe "ZADP"
-    }
   }
 
   "should return the enrolment service name" in {

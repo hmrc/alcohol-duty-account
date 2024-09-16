@@ -154,6 +154,23 @@ class PaymentsServiceSpec extends SpecBase {
           }
         }
 
+        "should ignore payments on account that have no contract object type" in new SetUp {
+          when(mockFinancialDataConnector.getOnlyOpenFinancialData(appaId))
+            .thenReturn(EitherT.pure[Future, ErrorResponse](singlePaymentOnAccountNoContractObjectType))
+
+          whenReady(paymentsService.getOpenPayments(appaId).value) {
+            _ mustBe Right(
+              OpenPayments(
+                outstandingPayments = Seq.empty,
+                totalOutstandingPayments = BigDecimal("0"),
+                unallocatedPayments = Seq.empty,
+                totalUnallocatedPayments = BigDecimal("0"),
+                totalOpenPaymentsAmount = BigDecimal("0")
+              )
+            )
+          }
+        }
+
         "should ignore payments on account that are not contract object type ZADP" in new SetUp {
           when(mockFinancialDataConnector.getOnlyOpenFinancialData(appaId))
             .thenReturn(EitherT.pure[Future, ErrorResponse](singlePaymentOnAccountNotZADP))
@@ -761,22 +778,21 @@ class PaymentsServiceSpec extends SpecBase {
   }
 
   class SetUp {
-    val contractObjectType = "ZADP"
-
     val mockFinancialDataConnector = mock[FinancialDataConnector]
-    val mockAppConfig              = mock[AppConfig]
 
-    when(mockAppConfig.contractObjectType).thenReturn(contractObjectType)
-
-    val paymentsService = new PaymentsService(mockFinancialDataConnector, mockAppConfig)
+    val paymentsService = new PaymentsService(mockFinancialDataConnector)
 
     val year = 2024
 
     val singlePartiallyOutstandingReturnOpen      = singlePartiallyOutstandingReturn(onlyOpenItems = true)
     val twoLineItemPartiallyOutstandingReturnOpen = twoLineItemPartiallyOutstandingReturn(onlyOpenItems = true)
 
+    val singlePaymentOnAccountNoContractObjectType = singlePaymentOnAccount.copy(financialTransactions =
+      singlePaymentOnAccount.financialTransactions.map(_.copy(contractObjectType = None))
+    )
+
     val singlePaymentOnAccountNotZADP = singlePaymentOnAccount.copy(financialTransactions =
-      singlePaymentOnAccount.financialTransactions.map(_.copy(contractObjectType = "blah"))
+      singlePaymentOnAccount.financialTransactions.map(_.copy(contractObjectType = Some("blah")))
     )
 
     // Test edge case which shouldn't happen as payments on account should reduce original amount

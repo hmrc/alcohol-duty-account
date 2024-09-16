@@ -34,8 +34,7 @@ import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
 
 class PaymentsService @Inject() (
-  financialDataConnector: FinancialDataConnector,
-  appConfig: AppConfig
+  financialDataConnector: FinancialDataConnector
 )(implicit ec: ExecutionContext)
     extends Logging {
   private[service] case class FinancialTransactionData(
@@ -50,6 +49,8 @@ class PaymentsService @Inject() (
     totalUnallocatedPayments: BigDecimal,
     totalOpenPaymentsAmount: BigDecimal
   )
+
+  private val contractObjectType = "ZADP"
 
   private def getFirstFinancialTransactionLineItem(
     sapDocumentNumber: String,
@@ -249,7 +250,7 @@ class PaymentsService @Inject() (
           .filter(transaction => // Ignore payments on account that aren't ZADP
             !TransactionType.isPaymentOnAccount(
               transaction.mainTransaction
-            ) || transaction.contractObjectType == appConfig.contractObjectType
+            ) || transaction.contractObjectType.contains(contractObjectType)
           )
           .groupBy(_.sapDocumentNumber)
           .map { case (sapDocumentNumber, financialTransactionsForDocument) =>

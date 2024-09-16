@@ -34,7 +34,7 @@ case class FinancialTransaction(
   sapDocumentNumber: String,
   periodKey: Option[String],
   chargeReference: Option[String],
-  contractObjectType: String,
+  contractObjectType: Option[String],
   mainTransaction: String,
   subTransaction: String,
   originalAmount: BigDecimal,
