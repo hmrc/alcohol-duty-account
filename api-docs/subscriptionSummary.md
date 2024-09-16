@@ -10,6 +10,10 @@ Calls to this API must be made by an authenticated and authorised user with an A
 
 **URL Params**: `alcoholDutyReference` - String
 
+| Parameter Name       | Type   | Description    | Notes                     |
+|----------------------|--------|----------------|---------------------------|
+| alcoholDutyReference | String | The appa Id    |                           |
+
 **Required Request Headers**:
 
 | Header Name   | Header Value   | Description                                |

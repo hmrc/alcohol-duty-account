@@ -8,7 +8,12 @@ Calls to this API must be made by an authenticated and authorised user with an A
 
 **Method**: `GET`
 
-**URL Params**: `appaId` - String, `year` - Integer - the year to query (only can query one at a time)
+**URL Params**:
+
+| Parameter Name | Type    | Description        | Notes                                       |
+|----------------|---------|--------------------|---------------------------------------------|
+| appaId         | String  | The appa Id        |                                             |
+| year           | Integer | The year to query  | Only a single year can be queried at a time |
 
 **Required Request Headers**:
 
@@ -26,6 +31,8 @@ Calls to this API must be made by an authenticated and authorised user with an A
 
 The response body returns items which have been paid or part-paid payments relating to the year where the amount is above 0 (i.e. not Nil or owing to the user).
 There is nothing to distinguish whether a payment is part or fully paid. Part paid items will also be returned in open payments.
+
+If NOT_FOUND is returned by the downstream API, an empty array of payments is returned.
 
 | Field Name               | Description                                  | Data Type       | Mandatory/Optional | Notes                                         |
 |--------------------------|----------------------------------------------|-----------------|--------------------|-----------------------------------------------|
@@ -60,15 +67,21 @@ There is nothing to distinguish whether a payment is part or fully paid. Part pa
 }
 ```
 
+***No outstanding payments found for that year: ***
+
+```json
+{
+"year": 2024,
+"payments": []
+}
+```
+
 ### Responses
 **Code**: `400 BAD_REQUEST`
 This response can occur when year is before 2024 or after the current year
 
 **Code**: `401 UNAUTHORIZED`
 This response can occur when a call is made by any consumer without an authorized session that has an ADR enrolment.
-
-**Code**: `404 NOT_FOUND`
-This response can occur when the alcoholDutyReference (appaId) is not found
 
 **Code**: `500 INTERNAL_SERVER_ERROR`
 This response can occur if the downstream query to the API fails, the response cannot be parsed or the data is in error

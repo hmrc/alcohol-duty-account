@@ -10,6 +10,10 @@ Calls to this API must be made by an authenticated and authorised user with an A
 
 **URL Params**: `alcoholDutyReference` - String
 
+| Parameter Name        | Type   | Description  | Notes      |
+|-----------------------|--------|--------------|------------|
+| alcoholDutyReference  | String |  The appa Id |            |
+
 **Required Request Headers**:
 
 | Header Name   | Header Value   | Description                                |
@@ -25,6 +29,8 @@ Calls to this API must be made by an authenticated and authorised user with an A
 **Response Body**
 
 The response body returns an array of obligations (each containing the following fields)
+
+If NOT_FOUND is returned by the downstream API, an empty array is returned.
 
 | Field Name | Description                                        | Data Type | Mandatory/Optional | Notes                       |
 |------------|----------------------------------------------------|-----------|--------------------|-----------------------------|
@@ -57,9 +63,12 @@ The response body returns an array of obligations (each containing the following
 ]
 ```
 
-### Responses
-**Code**: `404 NOT_FOUND`
-This response can occur when the alcoholDutyReference (appaId) is not found
+***No obligation details found: ***
 
+```json
+[]
+```
+
+### Responses
 **Code**: `500 INTERNAL_SERVER_ERROR`
 This response can occur if the downstream query to the API fails or the response cannot be parsed

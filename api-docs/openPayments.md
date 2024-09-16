@@ -9,6 +9,10 @@ Calls to this API must be made by an authenticated and authorised user with an A
 
 **URL Params**: `appaId` - String
 
+| Parameter Name | Type   | Description    | Notes                     |
+|----------------|--------|----------------|---------------------------|
+| appaId         | String | The appa Id    |                           |
+
 **Required Request Headers**:
 
 | Header Name   | Header Value   | Description                                |
@@ -24,6 +28,8 @@ Calls to this API must be made by an authenticated and authorised user with an A
 **Response Body**
 
 The response body returns outstanding payments, their total, unallocated payments, their total, and the balance
+
+If NOT_FOUND is returned by the downstream API, empty arrays of outstandingPayments and unallocated payments are returned.
 
 | Field Name                            | Description                                  | Data Type                  | Mandatory/Optional | Notes                                                      |
 |---------------------------------------|----------------------------------------------|----------------------------|--------------------|------------------------------------------------------------|
@@ -106,12 +112,21 @@ The response body returns outstanding payments, their total, unallocated payment
 }
 ```
 
+***No outstanding payments found: ***
+
+```json
+{
+  "outstandingPayments": [],
+  "totalOutstandingPayments": 0,
+  "unallocatedPayments": [],
+  "totalUnallocatedPayments": 0,
+  "totalOpenPaymentsAmount": 0
+}
+```
+
 ### Responses
 **Code**: `401 UNAUTHORIZED`
 This response can occur when a call is made by any consumer without an authorized session that has an ADR enrolment.
-
-**Code**: `404 NOT_FOUND`
-This response can occur when the alcoholDutyReference (appaId) is not found
 
 **Code**: `500 INTERNAL_SERVER_ERROR`
 This response can occur if the downstream query to the API fails, the response cannot be parsed or the data is in error

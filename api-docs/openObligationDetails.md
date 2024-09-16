@@ -10,6 +10,11 @@ Calls to this API must be made by an authenticated and authorised user with an A
 
 **URL Params**: `alcoholDutyReference` - String, `periodKey` - String YYAM (year, A, month A-L)
 
+| Parameter Name       | Type   | Description    | Notes                     |
+|----------------------|--------|----------------|---------------------------|
+| alcoholDutyReference | String | The appa Id    |                           |
+| periodKey            | String | The period key | YYAM (year, A, month A-L) |
+
 **Required Request Headers**:
 
 | Header Name   | Header Value   | Description                                |
@@ -25,6 +30,9 @@ Calls to this API must be made by an authenticated and authorised user with an A
 **Response Body**
 
 The response body returns an obligations
+
+Unlike obligationDetails If NOT_FOUND is returned by the downstream API, or there is no open obligations for the period key, NOT_FOUND is returned.
+The usecase is when an open return has been selected, so NOT_FOUND is an error.
 
 | Field Name | Description                                        | Data Type | Mandatory/Optional | Notes                     |
 |------------|----------------------------------------------------|-----------|--------------------|---------------------------|
