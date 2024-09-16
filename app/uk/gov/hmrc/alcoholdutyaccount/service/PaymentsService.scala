@@ -19,6 +19,7 @@ package uk.gov.hmrc.alcoholdutyaccount.service
 import cats.data.EitherT
 import cats.implicits._
 import play.api.Logging
+import uk.gov.hmrc.alcoholdutyaccount.config.AppConfig
 import uk.gov.hmrc.alcoholdutyaccount.connectors.FinancialDataConnector
 import uk.gov.hmrc.alcoholdutyaccount.models.ReturnPeriod
 import uk.gov.hmrc.alcoholdutyaccount.models.ErrorCodes
@@ -33,7 +34,8 @@ import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
 
 class PaymentsService @Inject() (
-  financialDataConnector: FinancialDataConnector
+  financialDataConnector: FinancialDataConnector,
+  appConfig: AppConfig
 )(implicit ec: ExecutionContext)
     extends Logging {
   private[service] case class FinancialTransactionData(
@@ -244,6 +246,11 @@ class PaymentsService @Inject() (
     EitherT {
       Future.successful(
         financialTransactionDocument.financialTransactions
+          .filter(transaction => // Ignore payments on account that aren't ZADP
+            !TransactionType.isPaymentOnAccount(
+              transaction.mainTransaction
+            ) || transaction.contractObjectType == appConfig.contractObjectType
+          )
           .groupBy(_.sapDocumentNumber)
           .map { case (sapDocumentNumber, financialTransactionsForDocument) =>
             validateAndGetFinancialTransactionData(

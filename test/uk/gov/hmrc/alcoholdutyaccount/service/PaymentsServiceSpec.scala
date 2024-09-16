@@ -18,6 +18,7 @@ package uk.gov.hmrc.alcoholdutyaccount.service
 
 import cats.data.EitherT
 import uk.gov.hmrc.alcoholdutyaccount.base.SpecBase
+import uk.gov.hmrc.alcoholdutyaccount.config.AppConfig
 import uk.gov.hmrc.alcoholdutyaccount.connectors.FinancialDataConnector
 import uk.gov.hmrc.alcoholdutyaccount.models.{ErrorCodes, ReturnPeriod}
 import uk.gov.hmrc.alcoholdutyaccount.models.hods.FinancialTransactionDocument
@@ -150,6 +151,23 @@ class PaymentsServiceSpec extends SpecBase {
               openPayments.unallocatedPayments mustBe Seq.empty
               openPayments.totalUnallocatedPayments mustBe BigDecimal("0")
               openPayments.totalOpenPaymentsAmount mustBe BigDecimal("7000")
+          }
+        }
+
+        "should ignore payments on account that are not contract object type ZADP" in new SetUp {
+          when(mockFinancialDataConnector.getOnlyOpenFinancialData(appaId))
+            .thenReturn(EitherT.pure[Future, ErrorResponse](singlePaymentOnAccountNotZADP))
+
+          whenReady(paymentsService.getOpenPayments(appaId).value) {
+            _ mustBe Right(
+              OpenPayments(
+                outstandingPayments = Seq.empty,
+                totalOutstandingPayments = BigDecimal("0"),
+                unallocatedPayments = Seq.empty,
+                totalUnallocatedPayments = BigDecimal("0"),
+                totalOpenPaymentsAmount = BigDecimal("0")
+              )
+            )
           }
         }
 
@@ -735,8 +753,6 @@ class PaymentsServiceSpec extends SpecBase {
   "when calling calculateTotalAmountPaid" - {
     "and there is no clearedAmount and it's not an RPI" - {
       "it should count it as 0 (coverage)" in new SetUp {
-        val sapDocumentNumber = sapDocumentNumberGen.sample.get
-
         paymentsService.calculateTotalAmountPaid(singleFullyOutstandingReturn.financialTransactions) mustBe BigDecimal(
           "0"
         )
@@ -745,13 +761,23 @@ class PaymentsServiceSpec extends SpecBase {
   }
 
   class SetUp {
+    val contractObjectType = "ZADP"
+
     val mockFinancialDataConnector = mock[FinancialDataConnector]
-    val paymentsService            = new PaymentsService(mockFinancialDataConnector)
+    val mockAppConfig              = mock[AppConfig]
+
+    when(mockAppConfig.contractObjectType).thenReturn(contractObjectType)
+
+    val paymentsService = new PaymentsService(mockFinancialDataConnector, mockAppConfig)
 
     val year = 2024
 
     val singlePartiallyOutstandingReturnOpen      = singlePartiallyOutstandingReturn(onlyOpenItems = true)
     val twoLineItemPartiallyOutstandingReturnOpen = twoLineItemPartiallyOutstandingReturn(onlyOpenItems = true)
+
+    val singlePaymentOnAccountNotZADP = singlePaymentOnAccount.copy(financialTransactions =
+      singlePaymentOnAccount.financialTransactions.map(_.copy(contractObjectType = "blah"))
+    )
 
     // Test edge case which shouldn't happen as payments on account should reduce original amount
     val onePartiallyPaidReturnLineItemAndOnePartiallyAllocatedPaymentOnAccount: FinancialTransactionDocument =
