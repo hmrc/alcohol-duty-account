@@ -175,7 +175,7 @@ class AlcoholDutyServiceSpec extends SpecBase with TestData {
 
     "extractPayments should" - {
       "return an empty Payments object if there are no financial transactions" in new SetUp {
-        val result = service.extractPayments(emptyFinancialDocument)
+        val result = service.extractPayments(emptyFinancialDocument.financialTransactions)
         result mustBe Payments()
       }
 
@@ -186,7 +186,7 @@ class AlcoholDutyServiceSpec extends SpecBase with TestData {
               financialTransaction
             )
           )
-          val result                       = service.extractPayments(financialTransactionDocument)
+          val result                       = service.extractPayments(financialTransactionDocument.financialTransactions)
           result mustBe
             Payments(
               balance = Some(
@@ -207,7 +207,7 @@ class AlcoholDutyServiceSpec extends SpecBase with TestData {
             )
           )
 
-          val result = service.extractPayments(financialTransactionDocument)
+          val result = service.extractPayments(financialTransactionDocument.financialTransactions)
           result mustBe
             Payments(
               balance = Some(
@@ -229,7 +229,7 @@ class AlcoholDutyServiceSpec extends SpecBase with TestData {
             )
           )
 
-          val result = service.extractPayments(financialTransactionDocument)
+          val result = service.extractPayments(financialTransactionDocument.financialTransactions)
           result mustBe
             Payments(
               balance = Some(
@@ -251,7 +251,7 @@ class AlcoholDutyServiceSpec extends SpecBase with TestData {
           )
 
           val result =
-            service.extractPayments(financialTransactionDocument)
+            service.extractPayments(financialTransactionDocument.financialTransactions)
 
           result mustBe
             Payments(
@@ -274,7 +274,7 @@ class AlcoholDutyServiceSpec extends SpecBase with TestData {
           )
 
           val result =
-            service.extractPayments(financialTransactionDocument)
+            service.extractPayments(financialTransactionDocument.financialTransactions)
 
           result mustBe
             Payments(
@@ -347,7 +347,7 @@ class AlcoholDutyServiceSpec extends SpecBase with TestData {
               )
             )
           )
-          val result                                = service.extractPayments(financialDocumentMultipleTransactions)
+          val result                                = service.extractPayments(financialDocumentMultipleTransactions.financialTransactions)
           result mustBe
             Payments(
               balance = Some(
@@ -420,7 +420,7 @@ class AlcoholDutyServiceSpec extends SpecBase with TestData {
                 )
               )
             )
-            val result                                = service.extractPayments(financialDocumentMultipleTransactions)
+            val result                                = service.extractPayments(financialDocumentMultipleTransactions.financialTransactions)
             result mustBe
               Payments(
                 balance = Some(
@@ -486,6 +486,15 @@ class AlcoholDutyServiceSpec extends SpecBase with TestData {
 
         service.getPaymentInformation(appaId).onComplete { result =>
           result mustBe Success(Some(Payments(Some(Balance(BigDecimal(100), false, Some("X1234567890"))))))
+        }
+      }
+
+      "filter any payments on account that are not of contractObjectType ZADP" in new SetUp {
+        when(financialDataConnector.getOnlyOpenFinancialData(*)(*))
+          .thenReturn(EitherT.pure(singlePaymentOnAccountNotZADP))
+
+        service.getPaymentInformation(appaId).onComplete { result =>
+          result mustBe Success(Some(Payments()))
         }
       }
     }
@@ -770,6 +779,10 @@ class AlcoholDutyServiceSpec extends SpecBase with TestData {
           amount = 50.00
         )
       )
+    )
+
+    val singlePaymentOnAccountNotZADP = singlePaymentOnAccount.copy(financialTransactions =
+      singlePaymentOnAccount.financialTransactions.map(_.copy(contractObjectType = Some("blah")))
     )
   }
 }
