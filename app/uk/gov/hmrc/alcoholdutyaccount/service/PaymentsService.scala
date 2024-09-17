@@ -19,7 +19,6 @@ package uk.gov.hmrc.alcoholdutyaccount.service
 import cats.data.EitherT
 import cats.implicits._
 import play.api.Logging
-import uk.gov.hmrc.alcoholdutyaccount.config.AppConfig
 import uk.gov.hmrc.alcoholdutyaccount.connectors.FinancialDataConnector
 import uk.gov.hmrc.alcoholdutyaccount.models.ReturnPeriod
 import uk.gov.hmrc.alcoholdutyaccount.models.ErrorCodes

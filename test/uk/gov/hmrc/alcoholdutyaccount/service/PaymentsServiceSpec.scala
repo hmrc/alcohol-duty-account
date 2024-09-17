@@ -18,7 +18,6 @@ package uk.gov.hmrc.alcoholdutyaccount.service
 
 import cats.data.EitherT
 import uk.gov.hmrc.alcoholdutyaccount.base.SpecBase
-import uk.gov.hmrc.alcoholdutyaccount.config.AppConfig
 import uk.gov.hmrc.alcoholdutyaccount.connectors.FinancialDataConnector
 import uk.gov.hmrc.alcoholdutyaccount.models.{ErrorCodes, ReturnPeriod}
 import uk.gov.hmrc.alcoholdutyaccount.models.hods.FinancialTransactionDocument
