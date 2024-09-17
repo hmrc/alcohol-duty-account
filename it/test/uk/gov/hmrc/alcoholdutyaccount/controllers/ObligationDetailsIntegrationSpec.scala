@@ -20,6 +20,7 @@ import play.api.libs.json.Json
 import play.api.test.FakeRequest
 import uk.gov.hmrc.alcoholdutyaccount.base.ISpecBase
 import uk.gov.hmrc.alcoholdutyaccount.common.TestData
+import uk.gov.hmrc.alcoholdutyaccount.models.AdrObligationData
 import uk.gov.hmrc.alcoholdutyaccount.models.hods.{Fulfilled, Open}
 import uk.gov.hmrc.http.HeaderNames
 import uk.gov.hmrc.play.bootstrap.backend.http.ErrorResponse
@@ -62,7 +63,7 @@ class ObligationDetailsIntegrationSpec extends ISpecBase {
       verifyGetWithParametersAndHeaders(url, expectedQueryParamsOpen, expectedHeaders)
     }
 
-    "respond with NOT_FOUND if no obligation data" in new SetUp {
+    "respond with an empty obligations document if no open obligation data" in new SetUp {
       stubAuthorised()
       stubGetWithParameters(url, expectedQueryParamsOpen, NOT_FOUND, notFoundErrorMessage)
 
@@ -72,7 +73,7 @@ class ObligationDetailsIntegrationSpec extends ISpecBase {
       )
 
       status(response)        shouldBe NOT_FOUND
-      contentAsJson(response) shouldBe Json.toJson(ErrorResponse(NOT_FOUND, "Obligation data not found"))
+      contentAsJson(response) shouldBe Json.toJson(ErrorResponse(NOT_FOUND, s"Obligation details not found for period key $periodKey"))
 
       verifyGetWithParametersAndHeaders(url, expectedQueryParamsOpen, expectedHeaders)
     }
@@ -165,7 +166,7 @@ class ObligationDetailsIntegrationSpec extends ISpecBase {
       verifyGetWithParametersAndHeaders(url, expectedQueryParamsNoStatus, expectedHeaders)
     }
 
-    "respond with NOT_FOUND if no obligation data" in new SetUp {
+    "respond with no obligations if no obligation data" in new SetUp {
       stubAuthorised()
 
       stubGetWithParameters(url, expectedQueryParamsNoStatus, NOT_FOUND, notFoundErrorMessage)
@@ -175,8 +176,8 @@ class ObligationDetailsIntegrationSpec extends ISpecBase {
           .withHeaders("Authorization" -> "Bearer 12345")
       )
 
-      status(response)        shouldBe NOT_FOUND
-      contentAsJson(response) shouldBe Json.toJson(ErrorResponse(NOT_FOUND, "Obligation data not found"))
+      status(response)        shouldBe OK
+      contentAsJson(response) shouldBe Json.toJson(Seq.empty[AdrObligationData])
 
       verifyGetWithParametersAndHeaders(url, expectedQueryParamsNoStatus, expectedHeaders)
     }

@@ -66,6 +66,10 @@ class FinancialDataConnector @Inject() (config: AppConfig, implicit val httpClie
                 logger.warn(s"Parsing failed for financial transaction document for appaId $appaId", exception)
                 Left(ErrorCodes.unexpectedResponse)
             }
+          case Left(error)
+              if error.statusCode == NOT_FOUND => // Since this is (also) returned for no entries present, return an empty document
+            logger.info(s"No financial data found for appaId $appaId")
+            Right(FinancialTransactionDocument.emptyDocument)
           case Left(error)     =>
             Left(processErrors(appaId, error))
         }
@@ -75,18 +79,14 @@ class FinancialDataConnector @Inject() (config: AppConfig, implicit val httpClie
         }
     }
 
-  private def processErrors(appaId: String, error: UpstreamErrorResponse): ErrorResponse =
-    error.statusCode match {
-      case NOT_FOUND =>
-        logger.info(s"No financial data found for appaId $appaId")
-        ErrorCodes.entityNotFound
-      case status    =>
-        logger.warn(
-          s"An error status $status was returned while trying to fetch financial transaction document appaId $appaId",
-          error
-        )
-        ErrorCodes.unexpectedResponse
-    }
+  private def processErrors(appaId: String, error: UpstreamErrorResponse): ErrorResponse = {
+    logger.warn(
+      s"An error status ${error.statusCode} was returned while trying to fetch financial transaction document appaId $appaId",
+      error
+    )
+
+    ErrorCodes.unexpectedResponse
+  }
 
   private def getBaseQueryParams(onlyOpenItems: Boolean): Seq[(String, String)] =
     Seq(

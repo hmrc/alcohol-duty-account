@@ -50,4 +50,6 @@ case class FinancialTransactionDocument(financialTransactions: Seq[FinancialTran
 
 object FinancialTransactionDocument {
   implicit val format: Format[FinancialTransactionDocument] = Json.format[FinancialTransactionDocument]
+
+  def emptyDocument: FinancialTransactionDocument = FinancialTransactionDocument(Seq.empty)
 }
