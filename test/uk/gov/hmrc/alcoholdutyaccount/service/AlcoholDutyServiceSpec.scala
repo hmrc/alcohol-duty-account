@@ -489,6 +489,15 @@ class AlcoholDutyServiceSpec extends SpecBase with TestData {
         }
       }
 
+      "filter any payments on account that are missing contractObjectType" in new SetUp {
+        when(financialDataConnector.getOnlyOpenFinancialData(*)(*))
+          .thenReturn(EitherT.pure(singlePaymentOnAccountNoContractObjectType))
+
+        service.getPaymentInformation(appaId).onComplete { result =>
+          result mustBe Success(Some(Payments()))
+        }
+      }
+
       "filter any payments on account that are not of contractObjectType ZADP" in new SetUp {
         when(financialDataConnector.getOnlyOpenFinancialData(*)(*))
           .thenReturn(EitherT.pure(singlePaymentOnAccountNotZADP))
@@ -779,6 +788,10 @@ class AlcoholDutyServiceSpec extends SpecBase with TestData {
           amount = 50.00
         )
       )
+    )
+
+    val singlePaymentOnAccountNoContractObjectType = singlePaymentOnAccount.copy(financialTransactions =
+      singlePaymentOnAccount.financialTransactions.map(_.copy(contractObjectType = None))
     )
 
     val singlePaymentOnAccountNotZADP = singlePaymentOnAccount.copy(financialTransactions =
