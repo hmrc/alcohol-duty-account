@@ -24,6 +24,7 @@ import uk.gov.hmrc.alcoholdutyaccount.connectors.{FinancialDataConnector, Obliga
 import uk.gov.hmrc.alcoholdutyaccount.models.subscription.ApprovalStatus.{DeRegistered, Revoked, SmallCiderProducer}
 import uk.gov.hmrc.alcoholdutyaccount.models._
 import uk.gov.hmrc.alcoholdutyaccount.models.hods.{FinancialTransaction, FinancialTransactionDocument, ObligationData, ObligationDetails, ObligationStatus, Open, SubscriptionSummary}
+import uk.gov.hmrc.alcoholdutyaccount.models.payments.TransactionType
 import uk.gov.hmrc.alcoholdutyaccount.models.subscription.{AdrSubscriptionSummary, ApprovalStatus}
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.bootstrap.backend.http.ErrorResponse
@@ -161,20 +162,26 @@ class AlcoholDutyService @Inject() (
     }
   )
 
+  private def removeNonZADPPaymentsOnAccount(
+    financialTransactions: Seq[FinancialTransaction]
+  ): Seq[FinancialTransaction] =
+    financialTransactions.filter(financialTransaction =>
+      !TransactionType.isPaymentOnAccount(financialTransaction.mainTransaction) ||
+        financialTransaction.contractObjectType.contains("ZADP")
+    )
+
   private[service] def getPaymentInformation(
     alcoholDutyReference: String
   )(implicit hc: HeaderCarrier): Future[Option[Payments]] =
     getFinancialDataForBtaTile(alcoholDutyReference)
-      .fold {
-        Option.empty[Payments]
-      } { financialData =>
-        Some(extractPayments(financialData))
-      }
+      .fold(Option.empty[Payments])(financialData =>
+        Some(extractPayments(removeNonZADPPaymentsOnAccount(financialData.financialTransactions)))
+      )
 
-  private[service] def extractPayments(financialDocument: FinancialTransactionDocument): Payments = {
+  private[service] def extractPayments(financialTransactions: Seq[FinancialTransaction]): Payments = {
     val transactionsBySapDocumentNumber: Map[String, Seq[FinancialTransaction]] =
-      financialDocument.financialTransactions.groupBy(_.sapDocumentNumber)
-    val totalPaymentAmount: BigDecimal                                          = financialDocument.financialTransactions.flatMap(_.outstandingAmount).sum
+      financialTransactions.groupBy(_.sapDocumentNumber)
+    val totalPaymentAmount: BigDecimal                                          = financialTransactions.flatMap(_.outstandingAmount).sum
 
     transactionsBySapDocumentNumber.size match {
       case 0 => Payments()
@@ -187,7 +194,7 @@ class AlcoholDutyService @Inject() (
             If there is one group of transactions by sapDocumentNumber but those group of transactions don't have a charge reference or the same charge references,
             we still return isMultiplePaymentDue = true because we'd want the user to pay with appaid in that case (as there is no charge ref found for payment)
          */
-        val (chargeReferenceToUse: Option[String], isMultiplePaymentsDue: Boolean) =
+        val (chargeReferenceToUse, isMultiplePaymentsDue) =
           if (chargeReferences.size == 1 && chargeReferences.head.isDefined) {
             (chargeReferences.head, false)
           } else {
