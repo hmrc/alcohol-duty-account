@@ -144,7 +144,7 @@ class PaymentsService @Inject() (
     if (
       transactionType == PaymentOnAccount &&
       financialTransactionsForDocument.exists(financialTransactionLineItem =>
-        financialTransactionLineItem.outstandingAmount.contains(financialTransactionLineItem.originalAmount)
+        !financialTransactionLineItem.outstandingAmount.contains(financialTransactionLineItem.originalAmount)
       )
     ) {
       logger.warn(

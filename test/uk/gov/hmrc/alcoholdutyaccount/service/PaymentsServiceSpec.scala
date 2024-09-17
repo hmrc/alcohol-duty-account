@@ -209,6 +209,28 @@ class PaymentsServiceSpec extends SpecBase {
           }
         }
 
+        "should warn when processing a single fully unallocated payment on account where original and outstanding amounts don't match (coverage)" in new SetUp {
+          when(mockFinancialDataConnector.getOnlyOpenFinancialData(appaId))
+            .thenReturn(EitherT.pure[Future, ErrorResponse](singlePaymentOnAccountAmountMismatch))
+
+          whenReady(paymentsService.getOpenPayments(appaId).value) {
+            _ mustBe Right(
+              OpenPayments(
+                outstandingPayments = Seq.empty,
+                totalOutstandingPayments = BigDecimal("0"),
+                unallocatedPayments = Seq(
+                  UnallocatedPayment(
+                    paymentDate = singlePaymentOnAccount.financialTransactions.head.items.head.dueDate.get,
+                    unallocatedAmount = BigDecimal("-1000")
+                  )
+                ),
+                totalUnallocatedPayments = BigDecimal("-1000"),
+                totalOpenPaymentsAmount = BigDecimal("-1000")
+              )
+            )
+          }
+        }
+
         "when processing two separate payments on account" in new SetUp { // This probably won't happen, but check it can be handled
           val twoSeparatePaymentsOnAccountOpen = twoSeparatePaymentsOnAccount(true)
 
@@ -785,6 +807,10 @@ class PaymentsServiceSpec extends SpecBase {
 
     val singlePartiallyOutstandingReturnOpen      = singlePartiallyOutstandingReturn(onlyOpenItems = true)
     val twoLineItemPartiallyOutstandingReturnOpen = twoLineItemPartiallyOutstandingReturn(onlyOpenItems = true)
+
+    val singlePaymentOnAccountAmountMismatch = singlePaymentOnAccount.copy(financialTransactions =
+      singlePaymentOnAccount.financialTransactions.map(_.copy(outstandingAmount = Some(BigDecimal("-1000"))))
+    )
 
     val singlePaymentOnAccountNoContractObjectType = singlePaymentOnAccount.copy(financialTransactions =
       singlePaymentOnAccount.financialTransactions.map(_.copy(contractObjectType = None))
