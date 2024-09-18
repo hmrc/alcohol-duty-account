@@ -65,10 +65,10 @@ class ObligationDataConnectorSpec extends SpecBase with ScalaFutures with Connec
       }
     }
 
-    "return not found if obligation data object cannot be found" in new SetUp {
+    "return no obligations if obligation data object cannot be found" in new SetUp {
       stubGetWithParameters(url, expectedQueryParamsOpen, NOT_FOUND, notFoundErrorMessage)
       whenReady(connector.getObligationDetails(appaId, Some(obligationFilterOpen)).value) { result =>
-        result mustBe Left(ErrorResponse(NOT_FOUND, "Obligation data not found"))
+        result mustBe Right(noObligations)
         verifyGetWithParameters(url, expectedQueryParamsOpen)
       }
     }

@@ -125,11 +125,9 @@ trait TestData extends ModelGenerators {
     )
   )
 
-  val obligationDataEmpty = ObligationData(
-    obligations = Seq.empty
-  )
+  val noObligations = ObligationData.noObligations
 
-  val emptyFinancialDocument = FinancialTransactionDocument(financialTransactions = Seq.empty)
+  val emptyFinancialDocument = FinancialTransactionDocument.emptyDocument
 
   val financialDocumentWithSingleSapDocumentNo = FinancialTransactionDocument(
     financialTransactions = Seq(
@@ -137,6 +135,7 @@ trait TestData extends ModelGenerators {
         sapDocumentNumber = "123456",
         periodKey = Some("18AA"),
         chargeReference = Some("X1234567890"),
+        contractObjectType = Some("ZADP"),
         originalAmount = BigDecimal(1000),
         outstandingAmount = Some(BigDecimal("50")),
         clearedAmount = Some(BigDecimal("950")),
@@ -154,6 +153,7 @@ trait TestData extends ModelGenerators {
         sapDocumentNumber = "123456",
         periodKey = Some("18AA"),
         chargeReference = Some("X1234567890"),
+        contractObjectType = Some("ZADP"),
         originalAmount = BigDecimal(1000),
         outstandingAmount = Some(BigDecimal("50")),
         clearedAmount = Some(BigDecimal("950")),
@@ -185,6 +185,7 @@ trait TestData extends ModelGenerators {
         sapDocumentNumber = sapDocumentNumber,
         periodKey = maybePeriodKey,
         chargeReference = maybeChargeReference,
+        contractObjectType = Some("ZADP"),
         originalAmount = originalAmount,
         outstandingAmount = maybeOutstandingAmount,
         clearedAmount = maybeOutstandingAmount.fold[Option[BigDecimal]](Some(originalAmount))(outstandingAmount =>

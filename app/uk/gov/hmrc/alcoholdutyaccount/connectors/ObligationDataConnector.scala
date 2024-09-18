@@ -70,6 +70,10 @@ class ObligationDataConnector @Inject() (
                 logger.warn(s"Unable to parse obligation data for appaId $appaId", exception)
                 Left(ErrorResponse(INTERNAL_SERVER_ERROR, "Unable to parse obligation data"))
             }
+          case Left(error)
+              if error.statusCode == NOT_FOUND => // This is not necessarily an error, just no obligations were returned
+            logger.info(s"No obligation data found for appaId $appaId")
+            Right(ObligationData.noObligations)
           case Left(error)     => Left(processError(error, appaId))
         }
         .recoverWith { case e: Exception =>
@@ -92,16 +96,12 @@ class ObligationDataConnector @Inject() (
     }
   }
 
-  private def processError(error: UpstreamErrorResponse, alcoholDutyReference: String): ErrorResponse =
-    error.statusCode match {
-      case NOT_FOUND =>
-        logger.info(s"No obligation data found for appaId $alcoholDutyReference")
-        ErrorResponse(NOT_FOUND, "Obligation data not found")
-      case _         =>
-        logger.warn(
-          s"An error was returned while trying to fetch obligation data appaId $alcoholDutyReference",
-          error
-        )
-        ErrorResponse(INTERNAL_SERVER_ERROR, "An error occurred")
-    }
+  private def processError(error: UpstreamErrorResponse, appaId: String): ErrorResponse = {
+    logger.warn(
+      s"An error was returned while trying to fetch obligation data appaId $appaId",
+      error
+    )
+
+    ErrorResponse(INTERNAL_SERVER_ERROR, "An error occurred")
+  }
 }

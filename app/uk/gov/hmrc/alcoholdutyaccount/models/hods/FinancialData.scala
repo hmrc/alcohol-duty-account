@@ -34,6 +34,7 @@ case class FinancialTransaction(
   sapDocumentNumber: String,
   periodKey: Option[String],
   chargeReference: Option[String],
+  contractObjectType: Option[String],
   mainTransaction: String,
   subTransaction: String,
   originalAmount: BigDecimal,
@@ -50,4 +51,6 @@ case class FinancialTransactionDocument(financialTransactions: Seq[FinancialTran
 
 object FinancialTransactionDocument {
   implicit val format: Format[FinancialTransactionDocument] = Json.format[FinancialTransactionDocument]
+
+  def emptyDocument: FinancialTransactionDocument = FinancialTransactionDocument(Seq.empty)
 }

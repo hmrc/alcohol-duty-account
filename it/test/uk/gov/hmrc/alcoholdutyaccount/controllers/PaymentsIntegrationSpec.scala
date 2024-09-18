@@ -55,7 +55,7 @@ class PaymentsIntegrationSpec extends ISpecBase with ConnectorTestHelpers {
       verifyGetWithParameters(url, openParameters)
     }
 
-    "respond with NOT_FOUND if financial data not found for appaId" in new SetUp {
+    "respond with an empty document if financial data not found for appaId" in new SetUp {
       stubAuthorised()
       stubGetWithParameters(url, openParameters, NOT_FOUND, "")
 
@@ -64,8 +64,8 @@ class PaymentsIntegrationSpec extends ISpecBase with ConnectorTestHelpers {
           .withHeaders("Authorization" -> "Bearer 12345")
       )
 
-      status(response) shouldBe NOT_FOUND
-      contentAsJson(response) shouldBe Json.toJson(ErrorResponse(NOT_FOUND, "Entity not found"))
+      status(response) shouldBe OK
+      contentAsJson(response).toString shouldBe noOpenPayments
 
       verifyGetWithParameters(url, openParameters)
     }
@@ -117,7 +117,7 @@ class PaymentsIntegrationSpec extends ISpecBase with ConnectorTestHelpers {
       verifyGetWithParameters(url, allParameters)
     }
 
-    "respond with NOT_FOUND if financial data not found for appaId" in new SetUp {
+    "respond with an empty document if financial data not found for appaId" in new SetUp {
       stubAuthorised()
       stubGetWithParameters(url, allParameters, NOT_FOUND, "")
 
@@ -126,8 +126,8 @@ class PaymentsIntegrationSpec extends ISpecBase with ConnectorTestHelpers {
           .withHeaders("Authorization" -> "Bearer 12345")
       )
 
-      status(response) shouldBe NOT_FOUND
-      contentAsJson(response) shouldBe Json.toJson(ErrorResponse(NOT_FOUND, "Entity not found"))
+      status(response) shouldBe OK
+      contentAsJson(response).toString shouldBe noHistoricPayments
 
       verifyGetWithParameters(url, allParameters)
     }
@@ -434,5 +434,7 @@ class PaymentsIntegrationSpec extends ISpecBase with ConnectorTestHelpers {
 
     val openPayments = """{"outstandingPayments":[{"transactionType":"LPI","dueDate":"2024-02-01","chargeReference":"XA85353805192234","remainingAmount":20.56},{"transactionType":"Return","dueDate":"2024-09-25","chargeReference":"XA91104208683855","remainingAmount":237.44},{"transactionType":"Return","dueDate":"2024-06-25","chargeReference":"XA95767883826728","remainingAmount":4577.44},{"transactionType":"Return","dueDate":"2024-05-25","chargeReference":"XA07406454540955","remainingAmount":2577.44},{"transactionType":"RPI","dueDate":"2024-03-01","chargeReference":"XA69201353871649","remainingAmount":-50},{"transactionType":"Return","dueDate":"2024-04-25","chargeReference":"XA15775952652650","remainingAmount":-2577.44},{"transactionType":"LPI","dueDate":"2024-02-01","chargeReference":"XA63139412020838","remainingAmount":10.56}],"totalOutstandingPayments":4796,"unallocatedPayments":[{"paymentDate":"2024-08-01","unallocatedAmount":-1000},{"paymentDate":"2024-08-01","unallocatedAmount":-500}],"totalUnallocatedPayments":-1500,"totalOpenPaymentsAmount":3296}"""
     val historicPayments = s"""{"year":$year,"payments":[{"period":"24AB","transactionType":"LPI","chargeReference":"XA63139412020838","amountPaid":10},{"period":"24AD","transactionType":"Return","chargeReference":"XA07406454540955","amountPaid":2000}]}"""
+    val noOpenPayments = """{"outstandingPayments":[],"totalOutstandingPayments":0,"unallocatedPayments":[],"totalUnallocatedPayments":0,"totalOpenPaymentsAmount":0}"""
+    val noHistoricPayments = s"""{"year":$year,"payments":[]}"""
   }
 }
