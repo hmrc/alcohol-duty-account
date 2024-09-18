@@ -23,7 +23,6 @@ import play.api.libs.json.Json
 import play.api.mvc.Result
 import play.api.test.Helpers
 import uk.gov.hmrc.alcoholdutyaccount.base.SpecBase
-import uk.gov.hmrc.alcoholdutyaccount.common.TestData
 import uk.gov.hmrc.alcoholdutyaccount.models.ErrorCodes
 import uk.gov.hmrc.alcoholdutyaccount.models.payments.OpenPayments
 import uk.gov.hmrc.alcoholdutyaccount.service.PaymentsService

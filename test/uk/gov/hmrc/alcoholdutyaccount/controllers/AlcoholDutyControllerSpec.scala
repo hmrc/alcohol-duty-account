@@ -23,7 +23,6 @@ import org.mockito.cats.IdiomaticMockitoCats.StubbingOpsCats
 import play.api.libs.json.Json
 import play.api.mvc.Result
 import uk.gov.hmrc.alcoholdutyaccount.base.SpecBase
-import uk.gov.hmrc.alcoholdutyaccount.common.TestData
 import uk.gov.hmrc.alcoholdutyaccount.config.AppConfig
 import uk.gov.hmrc.alcoholdutyaccount.models.AlcoholDutyCardData
 import uk.gov.hmrc.alcoholdutyaccount.models.subscription.ApprovalStatus.Approved

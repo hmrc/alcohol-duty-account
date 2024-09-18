@@ -735,7 +735,6 @@ class PaymentsServiceSpec extends SpecBase {
   "when calling calculateTotalAmountPaid" - {
     "and there is no clearedAmount and it's not an RPI" - {
       "it should count it as 0 (coverage)" in new SetUp {
-        val sapDocumentNumber = sapDocumentNumberGen.sample.get
 
         paymentsService.calculateTotalAmountPaid(singleFullyOutstandingReturn.financialTransactions) mustBe BigDecimal(
           "0"

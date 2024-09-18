@@ -98,7 +98,7 @@ class FinancialDataConnectorSpec extends SpecBase with ScalaFutures with Connect
   }
 
   class SetUp extends ConnectorFixture with TestData {
-    val connector = new FinancialDataConnector(config = config, httpClient = httpClient)
+    val connector = new FinancialDataConnector(config = config, httpClient = httpClientV2)
     val url       = appConfig.financialDataUrl(appaId)
 
     val year: Int = 2024
