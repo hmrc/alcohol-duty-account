@@ -65,23 +65,9 @@ trait SpecBase
     "auditing.enabled" -> false
   ) ++ configOverrides
 
-//  val mockHttpClient: HttpClientV2   = mock[HttpClientV2]
-//  val requestBuilder: RequestBuilder = mock[RequestBuilder]
-//  when(mockHttpClient.get(any[URL])(any[HeaderCarrier])).thenReturn(requestBuilder)
-//  when(mockHttpClient.post(any[URL])(any[HeaderCarrier])).thenReturn(requestBuilder)
-//  when(mockHttpClient.put(any[URL])(any[HeaderCarrier])).thenReturn(requestBuilder)
-//  when(requestBuilder.withBody(any[JsValue])(any(), any(), any())).thenReturn(requestBuilder)
-//  when(requestBuilder.setHeader(any[(String, String)])).thenReturn(requestBuilder)
-//  when(requestBuilder.transform(any())).thenReturn(requestBuilder)
-
-//  def requestBuilderExecute[A]: Future[A]     = requestBuilder.execute[A](any[HttpReads[A]], any[ExecutionContext])
   override def fakeApplication(): Application =
     GuiceApplicationBuilder()
       .configure(additionalAppConfig)
-//      .overrides(
-//        api.inject.bind[HttpClientV2].toInstance(mockHttpClient),
-//        api.inject.bind[RequestBuilder].toInstance(requestBuilder)
-//      )
       .build()
 
   val cc: ControllerComponents                         = stubControllerComponents()
