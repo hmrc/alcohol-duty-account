@@ -29,9 +29,9 @@ Calls to this API must be made by an authenticated and authorised user with an A
 
 **Response Body**
 
-The response body returns an obligations
+The response body returns the obligation details
 
-Unlike obligationDetails If NOT_FOUND is returned by the downstream API, or there is no open obligations for the period key, NOT_FOUND is returned.
+Unlike [obligationDetails](obligationDetails.md) If NOT_FOUND is returned by the downstream API, or there is no open obligations for the period key, NOT_FOUND is returned.
 The usecase is when an open return has been selected, so NOT_FOUND is an error.
 
 | Field Name | Description                                        | Data Type | Mandatory/Optional | Notes                     |
@@ -40,11 +40,11 @@ The usecase is when an open return has been selected, so NOT_FOUND is an error.
 | fromDate   | The date from which the period applies             | Date      | Mandatory          | YYYY-MM-DD                |
 | toDate     | The date to which the period applies               | Date      | Mandatory          | YYYY-MM-DD                |
 | dueDate    | The date the return is due to be filed and paid by | Date      | Mandatory          |                           |
-| periodKey  | The periodKey of the obligation                    | Date      | Mandatory          | YYAM (year, A, month A-L) |
+| periodKey  | The period key of the obligation                   | Date      | Mandatory          | YYAM (year, A, month A-L) |
 
 **Response Body Examples**
 
-***The obligation: ***
+***The obligation:***
 
 ```json
 {

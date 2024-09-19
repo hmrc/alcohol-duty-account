@@ -38,11 +38,11 @@ If NOT_FOUND is returned by the downstream API, an empty array is returned.
 | fromDate   | The date from which the period applies             | Date      | Mandatory          | YYYY-MM-DD                  |
 | toDate     | The date to which the period applies               | Date      | Mandatory          | YYYY-MM-DD                  |
 | dueDate    | The date the return is due to be filed and paid by | Date      | Mandatory          | YYYY-MM-DD                  |
-| periodKey  | The periodKey of the obligation                    | Date      | Mandatory          | YYAM (year, 'A', month A-L) |
+| periodKey  | The period key of the obligation                   | Date      | Mandatory          | YYAM (year, 'A', month A-L) |
 
 **Response Body Examples**
 
-***Two obligations returned, one open, one fulfilled: ***
+***Two obligations returned, one open, one fulfilled:***
 
 ```json
 [
@@ -63,7 +63,7 @@ If NOT_FOUND is returned by the downstream API, an empty array is returned.
 ]
 ```
 
-***No obligation details found: ***
+***No obligation details found:***
 
 ```json
 []

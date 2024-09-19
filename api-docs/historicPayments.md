@@ -45,7 +45,7 @@ If NOT_FOUND is returned by the downstream API, an empty array of payments is re
 
 **Response Body Examples**
 
-***A (part) paid return and (part) paid LPI: ***
+***A (part) paid return and (part) paid LPI:***
 
 ```json
 {
@@ -67,7 +67,7 @@ If NOT_FOUND is returned by the downstream API, an empty array of payments is re
 }
 ```
 
-***No outstanding payments found for that year: ***
+***No outstanding payments found for that year:***
 
 ```json
 {

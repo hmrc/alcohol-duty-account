@@ -1,7 +1,7 @@
 # Get Subscription Data Summary
 
 
-Returns the Alcohol Duty data subscription data used to determine if the user can or should fill in a return and which regimes they are subscribed for.
+Returns the Alcohol Duty data subscription data used to determine if the user can or should fill in a return, and which regimes they are subscribed for.
 Calls to this API must be made by an authenticated and authorised user with an ADR enrolment in order for the data to be returned.
 
 **URL**: `/alcohol-duty-account/subscriptionSummary/:alcoholDutyReference`
@@ -28,10 +28,10 @@ Calls to this API must be made by an authenticated and authorised user with an A
 
 **Response Body**
 
-| Field Name                            | Description                              | Data Type  | Mandatory/Optional  | Notes                                                          |
-|---------------------------------------|------------------------------------------|------------|---------------------|----------------------------------------------------------------|
-| approvalStatus                        | The current approval status of the user  | Enum       | Mandatory           | Approved, Insolvent, DeRegistered, Revoked, SmallCiderProducer |
-| regimes                               | The regimes the user is subscribed       | Set(Enum)  | Mandatory           | Beer, Cider, Wine, Spirits, OtherFermentedProduct              |
+| Field Name                            | Description                             | Data Type  | Mandatory/Optional  | Notes                                                          |
+|---------------------------------------|-----------------------------------------|------------|---------------------|----------------------------------------------------------------|
+| approvalStatus                        | The current approval status of the user | Enum       | Mandatory           | Approved, Insolvent, DeRegistered, Revoked, SmallCiderProducer |
+| regimes                               | The regimes the user is subscribed for  | Set(Enum)  | Mandatory           | Beer, Cider, Wine, Spirits, OtherFermentedProduct              |
 
 **Response Body Examples**
 

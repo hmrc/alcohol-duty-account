@@ -1,6 +1,6 @@
 # Get Open Payments
 
-Returns the payments which haven't yet been paid or refunded, included unallocated payments
+Returns the payments which haven't yet been paid or refunded, included unallocated payments.
 Calls to this API must be made by an authenticated and authorised user with an ADR enrolment in order for the data to be returned.
 
 **URL**: `/alcohol-duty-account/producers/:appaId/payments/open`
@@ -48,7 +48,7 @@ If NOT_FOUND is returned by the downstream API, empty arrays of outstandingPayme
 
 **Response Body Examples**
 
-***An outstanding return and an unallocated payment: ***
+***An outstanding return and an unallocated payment:***
 
 ```json
 {
@@ -72,7 +72,7 @@ If NOT_FOUND is returned by the downstream API, empty arrays of outstandingPayme
 }
 ```
 
-***An outstanding return, RPI (not expecting these to appear but will be returned if so), an LPI and a couple of unallocated payments: ***
+***An outstanding return, RPI (not expecting these to appear but will be returned if so), an LPI, and a couple of unallocated payments:***
 
 ```json
 {
@@ -112,7 +112,7 @@ If NOT_FOUND is returned by the downstream API, empty arrays of outstandingPayme
 }
 ```
 
-***No outstanding payments found: ***
+***No outstanding payments found:***
 
 ```json
 {
