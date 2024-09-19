@@ -38,7 +38,7 @@ If NOT_FOUND is returned by the downstream API, an empty array is returned.
 | fromDate   | The date from which the period applies             | Date      | Mandatory          | YYYY-MM-DD                  |
 | toDate     | The date to which the period applies               | Date      | Mandatory          | YYYY-MM-DD                  |
 | dueDate    | The date the return is due to be filed and paid by | Date      | Mandatory          | YYYY-MM-DD                  |
-| periodKey  | The period key of the obligation                   | Date      | Mandatory          | YYAM (year, 'A', month A-L) |
+| periodKey  | The period key of the obligation                   | String    | Mandatory          | YYAM (year, 'A', month A-L) |
 
 **Response Body Examples**
 
