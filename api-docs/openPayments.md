@@ -7,7 +7,7 @@ Calls to this API must be made by an authenticated and authorised user with an A
 
 **Method**: `GET`
 
-**URL Params**: `appaId` - String
+**URL Params**
 
 | Parameter Name | Type   | Description    | Notes                     |
 |----------------|--------|----------------|---------------------------|
@@ -31,19 +31,19 @@ The response body returns outstanding payments, their total, unallocated payment
 
 If NOT_FOUND is returned by the downstream API, empty arrays of outstandingPayments and unallocated payments are returned.
 
-| Field Name                            | Description                                  | Data Type                  | Mandatory/Optional | Notes                                                      |
-|---------------------------------------|----------------------------------------------|----------------------------|--------------------|------------------------------------------------------------|
-| outstandingPayments                   | The outstanding payments array               | Array(OutstandingPayments) | Mandatory          |                                                            |
-| outstandingPayments.transactionType   | The type of transaction this refers to       | Enum                       | Mandatory          | Return, PaymentOnAccount, LPI, RPI                         |
-| outstandingPayments.dueDate           | The date the payment is due (or applied)     | Date                       | Mandatory          | YYYY-MM-DD                                                 |
-| outstandingPayments.chargeReference   | The charge reference if applicable           | String                     | Optional           |                                                            |
-| outstandingPayments.remainingAmount   | The remaining amount to pay                  | Numeric                    | Mandatory          | Positive if a debt, negative if a credit                   |
-| totalOutstandingPayments              | The total amount of the outstanding payments | Numeric                    | Mandatory          |                                                            |
-| unallocatedPayments                   | The unallocated payments array               | Array(UnallocatedPayments) | Mandatory          |                                                            |
-| unallocatedPayments.paymentDate       | The date of the payment                      | Date                       | Mandatory          | YYYY-MM-DD                                                 |
-| unallocatedPayments.unallocatedAmount | The total amount unallocated                 | Numeric                    | Mandatory          | As it's a credit, the amount is negative                   |
-| totalUnallocatedPayments              | The total of the unallocated payments        | Numeric                    | Mandatory          |                                                            |
-| totalOpenPaymentsAmount               | The balance between the amounts              | Numeric                    | Mandatory          | = totalOutstandingPayments - abs(totalUnallocatedPayments) |
+| Field Name                            | Description                                  | Data Type     | Mandatory/Optional | Notes                                                      |
+|---------------------------------------|----------------------------------------------|---------------|--------------------|------------------------------------------------------------|
+| outstandingPayments                   | The outstanding payments array               | Array(Items)  | Mandatory          |                                                            |
+| outstandingPayments.transactionType   | The type of transaction this refers to       | Enum          | Mandatory          | Return, PaymentOnAccount, LPI, RPI                         |
+| outstandingPayments.dueDate           | The date the payment is due (or applied)     | Date          | Mandatory          | YYYY-MM-DD                                                 |
+| outstandingPayments.chargeReference   | The charge reference if applicable           | String        | Optional           |                                                            |
+| outstandingPayments.remainingAmount   | The remaining amount to pay                  | Numeric       | Mandatory          | Positive if a debt, negative if a credit                   |
+| totalOutstandingPayments              | The total amount of the outstanding payments | Numeric       | Mandatory          |                                                            |
+| unallocatedPayments                   | The unallocated payments array               | Array(Items)  | Mandatory          |                                                            |
+| unallocatedPayments.paymentDate       | The date of the payment                      | Date          | Mandatory          | YYYY-MM-DD                                                 |
+| unallocatedPayments.unallocatedAmount | The total amount unallocated                 | Numeric       | Mandatory          | As it's a credit, the amount is negative                   |
+| totalUnallocatedPayments              | The total of the unallocated payments        | Numeric       | Mandatory          |                                                            |
+| totalOpenPaymentsAmount               | The balance between the amounts              | Numeric       | Mandatory          | = totalOutstandingPayments - abs(totalUnallocatedPayments) |
 
 
 **Response Body Examples**

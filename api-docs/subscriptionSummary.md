@@ -8,7 +8,7 @@ Calls to this API must be made by an authenticated and authorised user with an A
 
 **Method**: `GET`
 
-**URL Params**: `alcoholDutyReference` - String
+**URL Params**
 
 | Parameter Name       | Type   | Description    | Notes                     |
 |----------------------|--------|----------------|---------------------------|
@@ -28,10 +28,10 @@ Calls to this API must be made by an authenticated and authorised user with an A
 
 **Response Body**
 
-| Field Name                            | Description                                                                                              | Data Type  | Mandatory/Optional                                                             | Notes                                |
-|---------------------------------------|----------------------------------------------------------------------------------------------------------|------------|--------------------------------------------------------------------------------|--------------------------------------|
-| approvalStatus                        | The current approval status of the user (Approved, Insolvent, DeRegistered, Revoked, SmallCiderProducer) | Enum       | Mandatory                                                                      |                                      |
-| regimes                               | The regimes the user is subscribed (Beer, Cider, Wine, Spirits, OtherFermentedProduct)                   | Set(Enum)  | Mandatory                                                                      |                                      |
+| Field Name                            | Description                              | Data Type  | Mandatory/Optional  | Notes                                                          |
+|---------------------------------------|------------------------------------------|------------|---------------------|----------------------------------------------------------------|
+| approvalStatus                        | The current approval status of the user  | Enum       | Mandatory           | Approved, Insolvent, DeRegistered, Revoked, SmallCiderProducer |
+| regimes                               | The regimes the user is subscribed       | Set(Enum)  | Mandatory           | Beer, Cider, Wine, Spirits, OtherFermentedProduct              |
 
 **Response Body Examples**
 

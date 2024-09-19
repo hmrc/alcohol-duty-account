@@ -8,7 +8,7 @@ Calls to this API must be made by an authenticated and authorised user with an A
 
 **Method**: `GET`
 
-**URL Params**:
+**URL Params**
 
 | Parameter Name | Type    | Description        | Notes                                       |
 |----------------|---------|--------------------|---------------------------------------------|
@@ -34,14 +34,14 @@ There is nothing to distinguish whether a payment is part or fully paid. Part pa
 
 If NOT_FOUND is returned by the downstream API, an empty array of payments is returned.
 
-| Field Name               | Description                                  | Data Type       | Mandatory/Optional | Notes                                         |
-|--------------------------|----------------------------------------------|-----------------|--------------------|-----------------------------------------------|
-| year                     | The year queried                             | Integer         | Mandatory          |                                               |
-| payments                 | An array of payments                         | Array(Payments) | Mandatory          | Only those paid or part paid (amountPaid > 0) |
-| payments.period          | The period this relates to (as a period key) | String          | Mandatory          | YYAM (year, 'A,' month A-L)                   |
-| payments.transactionType | The type of transaction this refers to       | Enum            | Mandatory          | Return, LPI, RPI                              |
-| payments.chargeReference | The charge reference if applicable           | String          | Optional           |                                               |
-| payments.amountPaid      | The amount paid                              | Numeric         | Mandatory          |                                               |
+| Field Name               | Description                                  | Data Type    | Mandatory/Optional | Notes                                         |
+|--------------------------|----------------------------------------------|--------------|--------------------|-----------------------------------------------|
+| year                     | The year queried                             | Integer      | Mandatory          |                                               |
+| payments                 | An array of payments                         | Array(Items) | Mandatory          | Only those paid or part paid (amountPaid > 0) |
+| payments.period          | The period this relates to (as a period key) | String       | Mandatory          | YYAM (year, 'A,' month A-L)                   |
+| payments.transactionType | The type of transaction this refers to       | Enum         | Mandatory          | Return, LPI, RPI                              |
+| payments.chargeReference | The charge reference if applicable           | String       | Optional           |                                               |
+| payments.amountPaid      | The amount paid                              | Numeric      | Mandatory          |                                               |
 
 **Response Body Examples**
 

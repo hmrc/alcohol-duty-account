@@ -1,13 +1,14 @@
 # Get BTA Tile Data
 
 Returns the Alcohol Duty data required in order to display the different possible states on the Business Tax Account ADR tile.
+
 Calls to this API must be made by an authenticated and authorised user with an ADR enrolment in order for the data to be returned.
 
 **URL**: `/alcohol-duty-account/bta-tile-data/:alcoholDutyReference`
 
 **Method**: `GET`
 
-**URL Params**: `alcoholDutyReference` - String
+**URL Parameters**
 
 | Parameter Name       | Type    | Description        | Notes                                       |
 |----------------------|---------|--------------------|---------------------------------------------|

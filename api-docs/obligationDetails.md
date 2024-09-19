@@ -8,7 +8,7 @@ Calls to this API must be made by an authenticated and authorised user with an A
 
 **Method**: `GET`
 
-**URL Params**: `alcoholDutyReference` - String
+**URL Params**
 
 | Parameter Name        | Type   | Description  | Notes      |
 |-----------------------|--------|--------------|------------|
