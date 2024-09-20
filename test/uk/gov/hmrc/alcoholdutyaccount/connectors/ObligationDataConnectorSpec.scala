@@ -92,7 +92,8 @@ class ObligationDataConnectorSpec extends SpecBase with ScalaFutures with Connec
   }
 
   class SetUp extends ConnectorFixture with TestData {
-    val connector                        = new ObligationDataConnector(config = config, httpClient = httpClient)
+    val connector = new ObligationDataConnector(config = config, httpClient = httpClientV2)
+
     private val dateFilterHeadersHeaders = Seq("from" -> "2023-09-01", "to" -> LocalDate.now(ZoneOffset.UTC).toString)
     val expectedQueryParamsOpen          = Seq("status" -> Open.value)
 

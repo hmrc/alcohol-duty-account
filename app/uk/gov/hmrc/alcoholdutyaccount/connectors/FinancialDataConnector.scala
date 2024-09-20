@@ -22,14 +22,15 @@ import play.api.{Logger, Logging}
 import uk.gov.hmrc.alcoholdutyaccount.config.AppConfig
 import uk.gov.hmrc.alcoholdutyaccount.models.ErrorCodes
 import uk.gov.hmrc.alcoholdutyaccount.models.hods.FinancialTransactionDocument
-import uk.gov.hmrc.http.{HeaderCarrier, HeaderNames, HttpClient, HttpReadsInstances, HttpResponse, UpstreamErrorResponse}
+import uk.gov.hmrc.http.client.HttpClientV2
+import uk.gov.hmrc.http.{HeaderCarrier, HeaderNames, HttpReadsInstances, HttpResponse, StringContextOps, UpstreamErrorResponse}
 import uk.gov.hmrc.play.bootstrap.backend.http.ErrorResponse
 
 import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
 
-class FinancialDataConnector @Inject() (config: AppConfig, implicit val httpClient: HttpClient)(implicit
+class FinancialDataConnector @Inject() (config: AppConfig, implicit val httpClient: HttpClientV2)(implicit
   ec: ExecutionContext
 ) extends HttpReadsInstances
     with Logging {
@@ -48,11 +49,9 @@ class FinancialDataConnector @Inject() (config: AppConfig, implicit val httpClie
       logger.info(s"Fetching financial transaction document for appaId $appaId")
 
       httpClient
-        .GET[Either[UpstreamErrorResponse, HttpResponse]](
-          url = config.financialDataUrl(appaId),
-          queryParams = queryParams,
-          headers = headers
-        )
+        .get(url"${config.financialDataUrl(appaId)}?$queryParams")
+        .setHeader(headers: _*)
+        .execute[Either[UpstreamErrorResponse, HttpResponse]]
         .map {
           case Right(response) =>
             Try {

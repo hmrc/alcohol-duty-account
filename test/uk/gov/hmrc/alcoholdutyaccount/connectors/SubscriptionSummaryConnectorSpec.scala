@@ -79,7 +79,7 @@ class SubscriptionSummaryConnectorSpec extends SpecBase with ScalaFutures with C
 
   class SetUp extends ConnectorFixture {
     val headers   = new HIPHeaders(fakeUUIDGenerator, appConfig, clock)
-    val connector = new SubscriptionSummaryConnector(config = config, headers = headers, httpClient = httpClient)
+    val connector = new SubscriptionSummaryConnector(config = config, headers = headers, httpClient = httpClientV2)
     lazy val url  = appConfig.getSubscriptionUrl(appaId)
   }
 }

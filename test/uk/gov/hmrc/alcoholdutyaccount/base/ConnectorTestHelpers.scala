@@ -21,10 +21,10 @@ import play.api.inject.guice.GuiceApplicationBuilder
 import uk.gov.hmrc.alcoholdutyaccount.common.WireMockHelper
 import uk.gov.hmrc.alcoholdutyaccount.config.AppConfig
 import uk.gov.hmrc.http.HeaderCarrier
-import uk.gov.hmrc.http.test.{HttpClientSupport, WireMockSupport}
+import uk.gov.hmrc.http.test.{HttpClientV2Support, WireMockSupport}
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 
-trait ConnectorTestHelpers extends WireMockSupport with HttpClientSupport with WireMockHelper {
+trait ConnectorTestHelpers extends WireMockSupport with HttpClientV2Support with WireMockHelper {
   this: Suite =>
 
   protected val endpointName: String

@@ -21,7 +21,8 @@ import play.api.{Logger, Logging}
 import play.api.http.Status.{INTERNAL_SERVER_ERROR, NOT_FOUND}
 import uk.gov.hmrc.alcoholdutyaccount.config.AppConfig
 import uk.gov.hmrc.alcoholdutyaccount.models.hods.{ObligationData, ObligationStatus, Open}
-import uk.gov.hmrc.http.{HttpClient, _}
+import uk.gov.hmrc.http.client.HttpClientV2
+import uk.gov.hmrc.http._
 import uk.gov.hmrc.play.bootstrap.backend.http.ErrorResponse
 
 import java.time.{LocalDate, ZoneId}
@@ -31,7 +32,7 @@ import scala.util.{Failure, Success, Try}
 
 class ObligationDataConnector @Inject() (
   config: AppConfig,
-  implicit val httpClient: HttpClient
+  implicit val httpClient: HttpClientV2
 )(implicit ec: ExecutionContext)
     extends HttpReadsInstances
     with Logging {
@@ -50,12 +51,12 @@ class ObligationDataConnector @Inject() (
 
       logger.info(s"Fetching all open obligation data for appaId $appaId")
 
+      val queryParams = getQueryParams(obligationStatusFilter)
+
       httpClient
-        .GET[Either[UpstreamErrorResponse, HttpResponse]](
-          url = config.obligationDataUrl(appaId),
-          queryParams = getQueryParams(obligationStatusFilter),
-          headers = headers
-        )
+        .get(url"${config.obligationDataUrl(appaId)}?$queryParams")
+        .setHeader(headers: _*)
+        .execute[Either[UpstreamErrorResponse, HttpResponse]]
         .map {
           case Right(response) =>
             Try {
