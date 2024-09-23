@@ -153,6 +153,40 @@ class PaymentsServiceSpec extends SpecBase {
           }
         }
 
+        "should ignore payments on account that have no contract object type" in new SetUp {
+          when(mockFinancialDataConnector.getOnlyOpenFinancialData(appaId))
+            .thenReturn(EitherT.pure[Future, ErrorResponse](singlePaymentOnAccountNoContractObjectType))
+
+          whenReady(paymentsService.getOpenPayments(appaId).value) {
+            _ mustBe Right(
+              OpenPayments(
+                outstandingPayments = Seq.empty,
+                totalOutstandingPayments = BigDecimal("0"),
+                unallocatedPayments = Seq.empty,
+                totalUnallocatedPayments = BigDecimal("0"),
+                totalOpenPaymentsAmount = BigDecimal("0")
+              )
+            )
+          }
+        }
+
+        "should ignore payments on account that are not contract object type ZADP" in new SetUp {
+          when(mockFinancialDataConnector.getOnlyOpenFinancialData(appaId))
+            .thenReturn(EitherT.pure[Future, ErrorResponse](singlePaymentOnAccountNotZADP))
+
+          whenReady(paymentsService.getOpenPayments(appaId).value) {
+            _ mustBe Right(
+              OpenPayments(
+                outstandingPayments = Seq.empty,
+                totalOutstandingPayments = BigDecimal("0"),
+                unallocatedPayments = Seq.empty,
+                totalUnallocatedPayments = BigDecimal("0"),
+                totalOpenPaymentsAmount = BigDecimal("0")
+              )
+            )
+          }
+        }
+
         "when processing a single fully unallocated payment on account" in new SetUp {
           when(mockFinancialDataConnector.getOnlyOpenFinancialData(appaId))
             .thenReturn(EitherT.pure[Future, ErrorResponse](singlePaymentOnAccount))
@@ -170,6 +204,28 @@ class PaymentsServiceSpec extends SpecBase {
                 ),
                 totalUnallocatedPayments = BigDecimal("-9000"),
                 totalOpenPaymentsAmount = BigDecimal("-9000")
+              )
+            )
+          }
+        }
+
+        "should warn when processing a single fully unallocated payment on account where original and outstanding amounts don't match (coverage)" in new SetUp {
+          when(mockFinancialDataConnector.getOnlyOpenFinancialData(appaId))
+            .thenReturn(EitherT.pure[Future, ErrorResponse](singlePaymentOnAccountAmountMismatch))
+
+          whenReady(paymentsService.getOpenPayments(appaId).value) {
+            _ mustBe Right(
+              OpenPayments(
+                outstandingPayments = Seq.empty,
+                totalOutstandingPayments = BigDecimal("0"),
+                unallocatedPayments = Seq(
+                  UnallocatedPayment(
+                    paymentDate = singlePaymentOnAccount.financialTransactions.head.items.head.dueDate.get,
+                    unallocatedAmount = BigDecimal("-1000")
+                  )
+                ),
+                totalUnallocatedPayments = BigDecimal("-1000"),
+                totalOpenPaymentsAmount = BigDecimal("-1000")
               )
             )
           }
@@ -735,8 +791,6 @@ class PaymentsServiceSpec extends SpecBase {
   "when calling calculateTotalAmountPaid" - {
     "and there is no clearedAmount and it's not an RPI" - {
       "it should count it as 0 (coverage)" in new SetUp {
-        val sapDocumentNumber = sapDocumentNumberGen.sample.get
-
         paymentsService.calculateTotalAmountPaid(singleFullyOutstandingReturn.financialTransactions) mustBe BigDecimal(
           "0"
         )
@@ -746,12 +800,25 @@ class PaymentsServiceSpec extends SpecBase {
 
   class SetUp {
     val mockFinancialDataConnector = mock[FinancialDataConnector]
-    val paymentsService            = new PaymentsService(mockFinancialDataConnector)
+
+    val paymentsService = new PaymentsService(mockFinancialDataConnector)
 
     val year = 2024
 
     val singlePartiallyOutstandingReturnOpen      = singlePartiallyOutstandingReturn(onlyOpenItems = true)
     val twoLineItemPartiallyOutstandingReturnOpen = twoLineItemPartiallyOutstandingReturn(onlyOpenItems = true)
+
+    val singlePaymentOnAccountAmountMismatch = singlePaymentOnAccount.copy(financialTransactions =
+      singlePaymentOnAccount.financialTransactions.map(_.copy(outstandingAmount = Some(BigDecimal("-1000"))))
+    )
+
+    val singlePaymentOnAccountNoContractObjectType = singlePaymentOnAccount.copy(financialTransactions =
+      singlePaymentOnAccount.financialTransactions.map(_.copy(contractObjectType = None))
+    )
+
+    val singlePaymentOnAccountNotZADP = singlePaymentOnAccount.copy(financialTransactions =
+      singlePaymentOnAccount.financialTransactions.map(_.copy(contractObjectType = Some("blah")))
+    )
 
     // Test edge case which shouldn't happen as payments on account should reduce original amount
     val onePartiallyPaidReturnLineItemAndOnePartiallyAllocatedPaymentOnAccount: FinancialTransactionDocument =

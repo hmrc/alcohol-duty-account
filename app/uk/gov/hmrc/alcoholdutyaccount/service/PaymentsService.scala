@@ -49,6 +49,8 @@ class PaymentsService @Inject() (
     totalOpenPaymentsAmount: BigDecimal
   )
 
+  private val contractObjectType = "ZADP"
+
   private def getFirstFinancialTransactionLineItem(
     sapDocumentNumber: String,
     financialTransactionsForDocument: Seq[FinancialTransaction]
@@ -142,7 +144,7 @@ class PaymentsService @Inject() (
     if (
       transactionType == PaymentOnAccount &&
       financialTransactionsForDocument.exists(financialTransactionLineItem =>
-        financialTransactionLineItem.outstandingAmount.contains(financialTransactionLineItem.originalAmount)
+        !financialTransactionLineItem.outstandingAmount.contains(financialTransactionLineItem.originalAmount)
       )
     ) {
       logger.warn(
@@ -244,6 +246,11 @@ class PaymentsService @Inject() (
     EitherT {
       Future.successful(
         financialTransactionDocument.financialTransactions
+          .filter(transaction => // Ignore payments on account that aren't ZADP
+            !TransactionType.isPaymentOnAccount(
+              transaction.mainTransaction
+            ) || transaction.contractObjectType.contains(contractObjectType)
+          )
           .groupBy(_.sapDocumentNumber)
           .map { case (sapDocumentNumber, financialTransactionsForDocument) =>
             validateAndGetFinancialTransactionData(

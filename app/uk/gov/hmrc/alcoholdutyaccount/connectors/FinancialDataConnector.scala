@@ -22,14 +22,15 @@ import play.api.{Logger, Logging}
 import uk.gov.hmrc.alcoholdutyaccount.config.AppConfig
 import uk.gov.hmrc.alcoholdutyaccount.models.ErrorCodes
 import uk.gov.hmrc.alcoholdutyaccount.models.hods.FinancialTransactionDocument
-import uk.gov.hmrc.http.{HeaderCarrier, HeaderNames, HttpClient, HttpReadsInstances, HttpResponse, UpstreamErrorResponse}
+import uk.gov.hmrc.http.client.HttpClientV2
+import uk.gov.hmrc.http.{HeaderCarrier, HeaderNames, HttpReadsInstances, HttpResponse, StringContextOps, UpstreamErrorResponse}
 import uk.gov.hmrc.play.bootstrap.backend.http.ErrorResponse
 
 import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
 
-class FinancialDataConnector @Inject() (config: AppConfig, implicit val httpClient: HttpClient)(implicit
+class FinancialDataConnector @Inject() (config: AppConfig, implicit val httpClient: HttpClientV2)(implicit
   ec: ExecutionContext
 ) extends HttpReadsInstances
     with Logging {
@@ -48,11 +49,9 @@ class FinancialDataConnector @Inject() (config: AppConfig, implicit val httpClie
       logger.info(s"Fetching financial transaction document for appaId $appaId")
 
       httpClient
-        .GET[Either[UpstreamErrorResponse, HttpResponse]](
-          url = config.financialDataUrl(appaId),
-          queryParams = queryParams,
-          headers = headers
-        )
+        .get(url"${config.financialDataUrl(appaId)}?$queryParams")
+        .setHeader(headers: _*)
+        .execute[Either[UpstreamErrorResponse, HttpResponse]]
         .map {
           case Right(response) =>
             Try {
@@ -66,6 +65,10 @@ class FinancialDataConnector @Inject() (config: AppConfig, implicit val httpClie
                 logger.warn(s"Parsing failed for financial transaction document for appaId $appaId", exception)
                 Left(ErrorCodes.unexpectedResponse)
             }
+          case Left(error)
+              if error.statusCode == NOT_FOUND => // Since this is (also) returned for no entries present, return an empty document
+            logger.info(s"No financial data found for appaId $appaId")
+            Right(FinancialTransactionDocument.emptyDocument)
           case Left(error)     =>
             Left(processErrors(appaId, error))
         }
@@ -75,18 +78,14 @@ class FinancialDataConnector @Inject() (config: AppConfig, implicit val httpClie
         }
     }
 
-  private def processErrors(appaId: String, error: UpstreamErrorResponse): ErrorResponse =
-    error.statusCode match {
-      case NOT_FOUND =>
-        logger.info(s"No financial data found for appaId $appaId")
-        ErrorCodes.entityNotFound
-      case status    =>
-        logger.warn(
-          s"An error status $status was returned while trying to fetch financial transaction document appaId $appaId",
-          error
-        )
-        ErrorCodes.unexpectedResponse
-    }
+  private def processErrors(appaId: String, error: UpstreamErrorResponse): ErrorResponse = {
+    logger.warn(
+      s"An error status ${error.statusCode} was returned while trying to fetch financial transaction document appaId $appaId",
+      error
+    )
+
+    ErrorCodes.unexpectedResponse
+  }
 
   private def getBaseQueryParams(onlyOpenItems: Boolean): Seq[(String, String)] =
     Seq(

@@ -175,7 +175,7 @@ class AlcoholDutyServiceSpec extends SpecBase with TestData {
 
     "extractPayments should" - {
       "return an empty Payments object if there are no financial transactions" in new SetUp {
-        val result = service.extractPayments(emptyFinancialDocument)
+        val result = service.extractPayments(emptyFinancialDocument.financialTransactions)
         result mustBe Payments()
       }
 
@@ -186,7 +186,7 @@ class AlcoholDutyServiceSpec extends SpecBase with TestData {
               financialTransaction
             )
           )
-          val result                       = service.extractPayments(financialTransactionDocument)
+          val result                       = service.extractPayments(financialTransactionDocument.financialTransactions)
           result mustBe
             Payments(
               balance = Some(
@@ -207,7 +207,7 @@ class AlcoholDutyServiceSpec extends SpecBase with TestData {
             )
           )
 
-          val result = service.extractPayments(financialTransactionDocument)
+          val result = service.extractPayments(financialTransactionDocument.financialTransactions)
           result mustBe
             Payments(
               balance = Some(
@@ -229,7 +229,7 @@ class AlcoholDutyServiceSpec extends SpecBase with TestData {
             )
           )
 
-          val result = service.extractPayments(financialTransactionDocument)
+          val result = service.extractPayments(financialTransactionDocument.financialTransactions)
           result mustBe
             Payments(
               balance = Some(
@@ -251,7 +251,7 @@ class AlcoholDutyServiceSpec extends SpecBase with TestData {
           )
 
           val result =
-            service.extractPayments(financialTransactionDocument)
+            service.extractPayments(financialTransactionDocument.financialTransactions)
 
           result mustBe
             Payments(
@@ -274,7 +274,7 @@ class AlcoholDutyServiceSpec extends SpecBase with TestData {
           )
 
           val result =
-            service.extractPayments(financialTransactionDocument)
+            service.extractPayments(financialTransactionDocument.financialTransactions)
 
           result mustBe
             Payments(
@@ -295,6 +295,7 @@ class AlcoholDutyServiceSpec extends SpecBase with TestData {
                 sapDocumentNumber = "123456",
                 periodKey = Some("18AA"),
                 chargeReference = Some("XM002610011594"),
+                contractObjectType = Some("ZADP"),
                 originalAmount = BigDecimal(1000),
                 outstandingAmount = Some(BigDecimal(50)),
                 clearedAmount = Some(BigDecimal(950)),
@@ -312,6 +313,7 @@ class AlcoholDutyServiceSpec extends SpecBase with TestData {
                 sapDocumentNumber = "123457",
                 periodKey = Some("18AB"),
                 chargeReference = Some("XM002610011595"),
+                contractObjectType = Some("ZADP"),
                 originalAmount = BigDecimal(2000),
                 outstandingAmount = Some(BigDecimal(100)),
                 clearedAmount = Some(BigDecimal(900)),
@@ -329,6 +331,7 @@ class AlcoholDutyServiceSpec extends SpecBase with TestData {
                 sapDocumentNumber = "123456",
                 periodKey = Some("18AA"),
                 chargeReference = Some("XM002610011594"),
+                contractObjectType = Some("ZADP"),
                 originalAmount = BigDecimal(3000),
                 outstandingAmount = Some(BigDecimal(200)),
                 clearedAmount = Some(BigDecimal(2800)),
@@ -344,7 +347,7 @@ class AlcoholDutyServiceSpec extends SpecBase with TestData {
               )
             )
           )
-          val result                                = service.extractPayments(financialDocumentMultipleTransactions)
+          val result                                = service.extractPayments(financialDocumentMultipleTransactions.financialTransactions)
           result mustBe
             Payments(
               balance = Some(
@@ -365,6 +368,7 @@ class AlcoholDutyServiceSpec extends SpecBase with TestData {
                   sapDocumentNumber = "123456",
                   periodKey = Some("18AA"),
                   chargeReference = Some("XM002610011594"),
+                  contractObjectType = Some("ZADP"),
                   originalAmount = BigDecimal(1000),
                   outstandingAmount = Some(BigDecimal(50)),
                   clearedAmount = Some(BigDecimal(950)),
@@ -382,6 +386,7 @@ class AlcoholDutyServiceSpec extends SpecBase with TestData {
                   sapDocumentNumber = "123457",
                   periodKey = Some("18AB"),
                   chargeReference = None,
+                  contractObjectType = Some("ZADP"),
                   originalAmount = BigDecimal(2000),
                   outstandingAmount = Some(BigDecimal(100)),
                   clearedAmount = Some(BigDecimal(1900)),
@@ -399,6 +404,7 @@ class AlcoholDutyServiceSpec extends SpecBase with TestData {
                   sapDocumentNumber = "123456",
                   periodKey = Some("18AA"),
                   chargeReference = Some("XM002610011594"),
+                  contractObjectType = Some("ZADP"),
                   originalAmount = BigDecimal(3000),
                   outstandingAmount = Some(BigDecimal(200)),
                   clearedAmount = Some(BigDecimal(2800)),
@@ -414,7 +420,7 @@ class AlcoholDutyServiceSpec extends SpecBase with TestData {
                 )
               )
             )
-            val result                                = service.extractPayments(financialDocumentMultipleTransactions)
+            val result                                = service.extractPayments(financialDocumentMultipleTransactions.financialTransactions)
             result mustBe
               Payments(
                 balance = Some(
@@ -480,6 +486,24 @@ class AlcoholDutyServiceSpec extends SpecBase with TestData {
 
         service.getPaymentInformation(appaId).onComplete { result =>
           result mustBe Success(Some(Payments(Some(Balance(BigDecimal(100), false, Some("X1234567890"))))))
+        }
+      }
+
+      "filter any payments on account that are missing contractObjectType" in new SetUp {
+        when(financialDataConnector.getOnlyOpenFinancialData(*)(*))
+          .thenReturn(EitherT.pure(singlePaymentOnAccountNoContractObjectType))
+
+        service.getPaymentInformation(appaId).onComplete { result =>
+          result mustBe Success(Some(Payments()))
+        }
+      }
+
+      "filter any payments on account that are not of contractObjectType ZADP" in new SetUp {
+        when(financialDataConnector.getOnlyOpenFinancialData(*)(*))
+          .thenReturn(EitherT.pure(singlePaymentOnAccountNotZADP))
+
+        service.getPaymentInformation(appaId).onComplete { result =>
+          result mustBe Success(Some(Payments()))
         }
       }
     }
@@ -621,36 +645,6 @@ class AlcoholDutyServiceSpec extends SpecBase with TestData {
         }
       }
 
-      "return data with  empty Return object if the obligationDataConnector returns an NOT_FOUND" in new SetUp {
-        val subscriptionSummary = SubscriptionSummary(
-          typeOfAlcoholApprovedFor = Set(Beer),
-          smallciderFlag = false,
-          approvalStatus = hods.Approved,
-          insolvencyFlag = false
-        )
-        subscriptionSummaryConnector.getSubscriptionSummary(*)(*) returnsF subscriptionSummary
-
-        when(obligationDataConnector.getObligationDetails(*, *)(*))
-          .thenReturn(EitherT.fromEither(Left(ErrorResponse(NOT_FOUND, ""))))
-
-        when(financialDataConnector.getOnlyOpenFinancialData(*)(*))
-          .thenReturn(EitherT.pure(financialDocumentWithSingleSapDocumentNo))
-
-        whenReady(service.getAlcoholDutyCardData(appaId).value) { result =>
-          result mustBe Right(
-            AlcoholDutyCardData(
-              appaId,
-              Some(Approved),
-              hasSubscriptionSummaryError = false,
-              hasReturnsError = false,
-              hasPaymentsError = false,
-              Returns(),
-              Payments(Some(Balance(BigDecimal(100), false, Some("X1234567890"))))
-            )
-          )
-        }
-      }
-
       "return data with hasPaymentsError set and empty Payment object if the financialDataConnector returns an error" in new SetUp {
         val subscriptionSummary = SubscriptionSummary(
           typeOfAlcoholApprovedFor = Set(Beer),
@@ -781,6 +775,7 @@ class AlcoholDutyServiceSpec extends SpecBase with TestData {
       sapDocumentNumber = "123456",
       periodKey = Some("18AA"),
       chargeReference = Some("X1234567890"),
+      contractObjectType = Some("ZADP"),
       originalAmount = BigDecimal(1000),
       outstandingAmount = Some(BigDecimal(50)),
       clearedAmount = Some(BigDecimal(950)),
@@ -793,6 +788,14 @@ class AlcoholDutyServiceSpec extends SpecBase with TestData {
           amount = 50.00
         )
       )
+    )
+
+    val singlePaymentOnAccountNoContractObjectType = singlePaymentOnAccount.copy(financialTransactions =
+      singlePaymentOnAccount.financialTransactions.map(_.copy(contractObjectType = None))
+    )
+
+    val singlePaymentOnAccountNotZADP = singlePaymentOnAccount.copy(financialTransactions =
+      singlePaymentOnAccount.financialTransactions.map(_.copy(contractObjectType = Some("blah")))
     )
   }
 }

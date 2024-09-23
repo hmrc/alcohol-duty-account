@@ -53,19 +53,19 @@ class FinancialDataConnectorSpec extends SpecBase with ScalaFutures with Connect
         }
       }
 
+      "returns an empty document if the financial transaction document cannot be found" in new SetUp {
+        stubGetWithParameters(url, expectedOpenQueryParams, NOT_FOUND, "")
+        whenReady(connector.getOnlyOpenFinancialData(appaId).value) { result =>
+          result mustBe Right(emptyFinancialDocument)
+          verifyGetWithParameters(url, expectedOpenQueryParams)
+        }
+      }
+
       "return an error" - {
         "if the data retrieved cannot be parsed" in new SetUp {
           stubGetWithParameters(url, expectedOpenQueryParams, OK, "blah")
           whenReady(connector.getOnlyOpenFinancialData(appaId).value) { result =>
             result mustBe Left(ErrorCodes.unexpectedResponse)
-            verifyGetWithParameters(url, expectedOpenQueryParams)
-          }
-        }
-
-        "if the financial transaction document cannot be found" in new SetUp {
-          stubGetWithParameters(url, expectedOpenQueryParams, NOT_FOUND, "")
-          whenReady(connector.getOnlyOpenFinancialData(appaId).value) { result =>
-            result mustBe Left(ErrorCodes.entityNotFound)
             verifyGetWithParameters(url, expectedOpenQueryParams)
           }
         }
@@ -98,7 +98,7 @@ class FinancialDataConnectorSpec extends SpecBase with ScalaFutures with Connect
   }
 
   class SetUp extends ConnectorFixture with TestData {
-    val connector = new FinancialDataConnector(config = config, httpClient = httpClient)
+    val connector = new FinancialDataConnector(config = config, httpClient = httpClientV2)
     val url       = appConfig.financialDataUrl(appaId)
 
     val year: Int = 2024

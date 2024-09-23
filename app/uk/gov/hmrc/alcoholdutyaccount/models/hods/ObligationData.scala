@@ -26,6 +26,8 @@ case class ObligationData(
 
 object ObligationData {
   implicit val format: Format[ObligationData] = Json.format[ObligationData]
+
+  def noObligations: ObligationData = ObligationData(Seq.empty)
 }
 
 sealed trait ObligationStatus {

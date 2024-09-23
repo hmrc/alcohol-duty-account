@@ -22,6 +22,7 @@ import play.api.http.Status.{BAD_REQUEST, INTERNAL_SERVER_ERROR, NOT_FOUND}
 import uk.gov.hmrc.alcoholdutyaccount.config.AppConfig
 import uk.gov.hmrc.alcoholdutyaccount.connectors.helpers.HIPHeaders
 import uk.gov.hmrc.alcoholdutyaccount.models.hods.{SubscriptionSummary, SubscriptionSummarySuccess}
+import uk.gov.hmrc.http.client.HttpClientV2
 import uk.gov.hmrc.http._
 import uk.gov.hmrc.play.bootstrap.backend.http.ErrorResponse
 
@@ -32,7 +33,7 @@ import scala.util.{Failure, Success, Try}
 class SubscriptionSummaryConnector @Inject() (
   config: AppConfig,
   headers: HIPHeaders,
-  implicit val httpClient: HttpClient
+  implicit val httpClient: HttpClientV2
 )(implicit ec: ExecutionContext)
     extends HttpReadsInstances
     with Logging {
@@ -45,10 +46,9 @@ class SubscriptionSummaryConnector @Inject() (
       logger.info(s"Fetching subscription summary for appaId $appaId")
 
       httpClient
-        .GET[Either[UpstreamErrorResponse, HttpResponse]](
-          url = config.getSubscriptionUrl(appaId),
-          headers = headers.subscriptionHeaders()
-        )
+        .get(url"${config.getSubscriptionUrl(appaId)}")
+        .setHeader(headers.subscriptionHeaders(): _*)
+        .execute[Either[UpstreamErrorResponse, HttpResponse]]
         .map {
           case Right(response) =>
             Try {

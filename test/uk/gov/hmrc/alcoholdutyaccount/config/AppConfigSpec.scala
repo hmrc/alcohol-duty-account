@@ -42,6 +42,7 @@ class SpecBaseWithConfigOverrides extends SpecBase {
     "microservice.services.financial.url.financialData"          -> "/enterprise/financial-data",
     "downstream-apis.idType"                                     -> "ZAD",
     "downstream-apis.regime"                                     -> "AD",
+    "downstream-apis.contractObjectType"                         -> "ZADP",
     "enrolment.serviceName"                                      -> "HMRC-AD-ORG",
     "payments.minimumHistoricPaymentsYear"                       -> 2024,
     "features.btaServiceAvailable"                               -> true
@@ -104,6 +105,16 @@ class AppConfigSpec extends SpecBaseWithConfigOverrides {
 
     "should return the env" in {
       appConfig.financialDataEnv mustBe "financial env"
+    }
+  }
+
+  "should return the config relating to downstream APIs" - {
+    "for idType" in {
+      appConfig.idType mustBe "ZAD"
+    }
+
+    "for regime" in {
+      appConfig.regime mustBe "AD"
     }
   }
 

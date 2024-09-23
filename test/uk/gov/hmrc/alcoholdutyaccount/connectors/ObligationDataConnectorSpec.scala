@@ -65,10 +65,10 @@ class ObligationDataConnectorSpec extends SpecBase with ScalaFutures with Connec
       }
     }
 
-    "return not found if obligation data object cannot be found" in new SetUp {
+    "return no obligations if obligation data object cannot be found" in new SetUp {
       stubGetWithParameters(url, expectedQueryParamsOpen, NOT_FOUND, notFoundErrorMessage)
       whenReady(connector.getObligationDetails(appaId, Some(obligationFilterOpen)).value) { result =>
-        result mustBe Left(ErrorResponse(NOT_FOUND, "Obligation data not found"))
+        result mustBe Right(noObligations)
         verifyGetWithParameters(url, expectedQueryParamsOpen)
       }
     }
@@ -92,7 +92,8 @@ class ObligationDataConnectorSpec extends SpecBase with ScalaFutures with Connec
   }
 
   class SetUp extends ConnectorFixture with TestData {
-    val connector                        = new ObligationDataConnector(config = config, httpClient = httpClient)
+    val connector = new ObligationDataConnector(config = config, httpClient = httpClientV2)
+
     private val dateFilterHeadersHeaders = Seq("from" -> "2023-09-01", "to" -> LocalDate.now(ZoneOffset.UTC).toString)
     val expectedQueryParamsOpen          = Seq("status" -> Open.value)
 

@@ -21,7 +21,8 @@ import play.api.{Logger, Logging}
 import play.api.http.Status.{INTERNAL_SERVER_ERROR, NOT_FOUND}
 import uk.gov.hmrc.alcoholdutyaccount.config.AppConfig
 import uk.gov.hmrc.alcoholdutyaccount.models.hods.{ObligationData, ObligationStatus, Open}
-import uk.gov.hmrc.http.{HttpClient, _}
+import uk.gov.hmrc.http.client.HttpClientV2
+import uk.gov.hmrc.http._
 import uk.gov.hmrc.play.bootstrap.backend.http.ErrorResponse
 
 import java.time.{LocalDate, ZoneId}
@@ -31,7 +32,7 @@ import scala.util.{Failure, Success, Try}
 
 class ObligationDataConnector @Inject() (
   config: AppConfig,
-  implicit val httpClient: HttpClient
+  implicit val httpClient: HttpClientV2
 )(implicit ec: ExecutionContext)
     extends HttpReadsInstances
     with Logging {
@@ -50,12 +51,12 @@ class ObligationDataConnector @Inject() (
 
       logger.info(s"Fetching all open obligation data for appaId $appaId")
 
+      val queryParams = getQueryParams(obligationStatusFilter)
+
       httpClient
-        .GET[Either[UpstreamErrorResponse, HttpResponse]](
-          url = config.obligationDataUrl(appaId),
-          queryParams = getQueryParams(obligationStatusFilter),
-          headers = headers
-        )
+        .get(url"${config.obligationDataUrl(appaId)}?$queryParams")
+        .setHeader(headers: _*)
+        .execute[Either[UpstreamErrorResponse, HttpResponse]]
         .map {
           case Right(response) =>
             Try {
@@ -69,6 +70,10 @@ class ObligationDataConnector @Inject() (
                 logger.warn(s"Unable to parse obligation data for appaId $appaId", exception)
                 Left(ErrorResponse(INTERNAL_SERVER_ERROR, "Unable to parse obligation data"))
             }
+          case Left(error)
+              if error.statusCode == NOT_FOUND => // This is not necessarily an error, just no obligations were returned
+            logger.info(s"No obligation data found for appaId $appaId")
+            Right(ObligationData.noObligations)
           case Left(error)     => Left(processError(error, appaId))
         }
         .recoverWith { case e: Exception =>
@@ -91,16 +96,12 @@ class ObligationDataConnector @Inject() (
     }
   }
 
-  private def processError(error: UpstreamErrorResponse, alcoholDutyReference: String): ErrorResponse =
-    error.statusCode match {
-      case NOT_FOUND =>
-        logger.info(s"No obligation data found for appaId $alcoholDutyReference")
-        ErrorResponse(NOT_FOUND, "Obligation data not found")
-      case _         =>
-        logger.warn(
-          s"An error was returned while trying to fetch obligation data appaId $alcoholDutyReference",
-          error
-        )
-        ErrorResponse(INTERNAL_SERVER_ERROR, "An error occurred")
-    }
+  private def processError(error: UpstreamErrorResponse, appaId: String): ErrorResponse = {
+    logger.warn(
+      s"An error was returned while trying to fetch obligation data appaId $appaId",
+      error
+    )
+
+    ErrorResponse(INTERNAL_SERVER_ERROR, "An error occurred")
+  }
 }
