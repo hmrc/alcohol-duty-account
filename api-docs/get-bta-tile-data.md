@@ -199,6 +199,7 @@ This response can occur when a call is made by any consumer without an authorize
 #### Service unavailable response
 
 **Code**: `503 SERVICE_UNAVAILABLE`
+
 **Response body**: 
 ```json
 {"statusCode":503,"message":"Service unavailable"}
