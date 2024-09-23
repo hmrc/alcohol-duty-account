@@ -189,13 +189,20 @@ The status prioritisation will be as below:
 1. SmallCiderProducer
 1. Approved - Insolvent
 
-### Unauthorized response
+### Error response
+#### Unauthorized response
 
 **Code**: `401 UNAUTHORIZED`
 
 This response can occur when a call is made by any consumer without an authorized session that has an ADR enrolment.
 
+#### Service unavailable response
+
 **Code**: `503 SERVICE_UNAVAILABLE`
+**Response body**: 
+```json
+{"statusCode":503,"message":"Service unavailable"}
+```
 
 This response occurs when the service is shuttered. See below.
 
