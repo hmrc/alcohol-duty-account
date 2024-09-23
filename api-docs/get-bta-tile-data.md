@@ -20,6 +20,10 @@ Calls to this API must be made by an authenticated and authorised user with an A
 |---------------|----------------|--------------------------------------------|
 | Authorization | Bearer {TOKEN} | A valid bearer token from the auth service |
 
+***Example request:***
+
+/alcohol-duty-account/bta-tile-data/AP0000000001
+
 ## Responses
 
 ### Success response
