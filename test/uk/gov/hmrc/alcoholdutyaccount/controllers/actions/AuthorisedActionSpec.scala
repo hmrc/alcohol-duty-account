@@ -111,7 +111,7 @@ class AuthorisedActionSpec extends SpecBase {
           eqTo(authorisedEnrolments)
         )(any(), any())
       )
-        .thenReturn(Future.successful(emptyEnrolments))
+        .thenReturn(Future.successful(enrolmentsWithoutAppaId))
 
       intercept[IllegalStateException] {
         await(authorisedAction.invokeBlock(fakeRequest, testAction))

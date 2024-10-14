@@ -26,7 +26,7 @@ class FakeAuthorisedAction(bodyParsers: PlayBodyParsers) extends AuthorisedActio
   override def parser: BodyParser[AnyContent] = bodyParsers.defaultBodyParser
 
   override def invokeBlock[A](request: Request[A], block: IdentifierRequest[A] => Future[Result]): Future[Result] =
-    block(IdentifierRequest(request, null))
+    block(IdentifierRequest(request, "appaId"))
 
   override protected def executionContext: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
 
