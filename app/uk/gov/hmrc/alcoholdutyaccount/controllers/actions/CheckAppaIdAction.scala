@@ -39,7 +39,7 @@ class CheckAppaIdActionImpl private[actions] (appaId: String)(implicit val execu
       )
       Left(
         Unauthorized(
-          Json.toJson(ErrorCodes.unautorisedRequest)
+          Json.toJson(ErrorCodes.unauthorisedRequest)
         )
       )
     } else {

@@ -24,5 +24,5 @@ object ErrorCodes {
   val entityNotFound: ErrorResponse     = ErrorResponse(NOT_FOUND, "Entity not found")
   val serviceUnavailable: ErrorResponse = ErrorResponse(SERVICE_UNAVAILABLE, "Service unavailable")
   val unexpectedResponse: ErrorResponse = ErrorResponse(INTERNAL_SERVER_ERROR, "Unexpected Response")
-  val unautorisedRequest: ErrorResponse = ErrorResponse(UNAUTHORIZED, "Unauthorised request")
+  val unauthorisedRequest: ErrorResponse = ErrorResponse(UNAUTHORIZED, "Unauthorised request")
 }
