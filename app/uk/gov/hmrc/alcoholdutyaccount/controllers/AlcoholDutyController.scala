@@ -20,7 +20,7 @@ import cats.implicits._
 import play.api.libs.json.Json
 import play.api.mvc.{Action, AnyContent, ControllerComponents}
 import uk.gov.hmrc.alcoholdutyaccount.config.AppConfig
-import uk.gov.hmrc.alcoholdutyaccount.controllers.actions.AuthorisedAction
+import uk.gov.hmrc.alcoholdutyaccount.controllers.actions.{AuthorisedAction, CheckAppaIdAction}
 import uk.gov.hmrc.alcoholdutyaccount.models.ErrorCodes
 import uk.gov.hmrc.alcoholdutyaccount.service.AlcoholDutyService
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
@@ -33,6 +33,7 @@ import scala.util.matching.Regex
 @Singleton()
 class AlcoholDutyController @Inject() (
   authorise: AuthorisedAction,
+  checkAppaId: CheckAppaIdAction,
   alcoholDutyService: AlcoholDutyService,
   appConfig: AppConfig,
   cc: ControllerComponents
@@ -42,17 +43,18 @@ class AlcoholDutyController @Inject() (
 
   val returnPeriodPattern: Regex = """^(\d{2}A[A-L])$""".r
 
-  def subscriptionSummary(alcoholDutyReference: String): Action[AnyContent] = authorise.async { implicit request =>
-    alcoholDutyService
-      .getSubscriptionSummary(alcoholDutyReference)
-      .fold(
-        error,
-        subscriptionSummary => Ok(Json.toJson(subscriptionSummary))
-      )
-  }
+  def subscriptionSummary(alcoholDutyReference: String): Action[AnyContent] =
+    (authorise andThen checkAppaId(alcoholDutyReference)).async { implicit request =>
+      alcoholDutyService
+        .getSubscriptionSummary(alcoholDutyReference)
+        .fold(
+          error,
+          subscriptionSummary => Ok(Json.toJson(subscriptionSummary))
+        )
+    }
 
-  def openObligationDetails(alcoholDutyReference: String, periodKey: String): Action[AnyContent] = authorise.async {
-    implicit request =>
+  def openObligationDetails(alcoholDutyReference: String, periodKey: String): Action[AnyContent] =
+    (authorise andThen checkAppaId(alcoholDutyReference)).async { implicit request =>
       periodKey match {
         case returnPeriodPattern(_) =>
           alcoholDutyService
@@ -64,27 +66,29 @@ class AlcoholDutyController @Inject() (
         case _                      => Future.successful(BadRequest(Json.toJson(ErrorResponse(BAD_REQUEST, "Invalid Period Key"))))
       }
 
-  }
-
-  def btaTileData(alcoholDutyReference: String): Action[AnyContent] = authorise.async { implicit request =>
-    if (appConfig.btaServiceAvailable) {
-      alcoholDutyService
-        .getAlcoholDutyCardData(alcoholDutyReference)
-        .fold(
-          error,
-          alcoholDutyCardData => Ok(Json.toJson(alcoholDutyCardData))
-        )
-    } else {
-      Future.successful(error(ErrorCodes.serviceUnavailable))
     }
-  }
 
-  def obligationDetails(alcoholDutyReference: String): Action[AnyContent] = Action.async { implicit request =>
-    alcoholDutyService
-      .getObligations(alcoholDutyReference, None)
-      .fold(
-        err => error(err),
-        obligationDetails => Ok(Json.toJson(obligationDetails))
-      )
-  }
+  def btaTileData(alcoholDutyReference: String): Action[AnyContent] =
+    (authorise andThen checkAppaId(alcoholDutyReference)).async { implicit request =>
+      if (appConfig.btaServiceAvailable) {
+        alcoholDutyService
+          .getAlcoholDutyCardData(alcoholDutyReference)
+          .fold(
+            error,
+            alcoholDutyCardData => Ok(Json.toJson(alcoholDutyCardData))
+          )
+      } else {
+        Future.successful(error(ErrorCodes.serviceUnavailable))
+      }
+    }
+
+  def obligationDetails(alcoholDutyReference: String): Action[AnyContent] =
+    (authorise andThen checkAppaId(alcoholDutyReference)).async { implicit request =>
+      alcoholDutyService
+        .getObligations(alcoholDutyReference, None)
+        .fold(
+          err => error(err),
+          obligationDetails => Ok(Json.toJson(obligationDetails))
+        )
+    }
 }

@@ -143,7 +143,8 @@ class AlcoholDutyControllerSpec extends SpecBase {
     val appConfig                              = mock[AppConfig]
     val alcoholDutyService: AlcoholDutyService = mock[AlcoholDutyService]
     val cc                                     = Helpers.stubControllerComponents()
-    val controller                             = new AlcoholDutyController(fakeAuthorisedAction, alcoholDutyService, appConfig, cc)
+    val controller                             =
+      new AlcoholDutyController(fakeAuthorisedAction, fakeCheckAppaIdAction, alcoholDutyService, appConfig, cc)
 
     val badPeriodKey = "blah"
 

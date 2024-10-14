@@ -26,7 +26,7 @@ class PaymentsIntegrationSpec extends ISpecBase with ConnectorTestHelpers {
 
   "the open payments endpoint should" should {
     "respond with OK if able to fetch open payments" in new SetUp {
-      stubAuthorised()
+      stubAuthorised(appaId)
       stubGetWithParameters(url, openParameters, OK, financialDataStubJson)
 
       val response = callRoute(
@@ -41,7 +41,7 @@ class PaymentsIntegrationSpec extends ISpecBase with ConnectorTestHelpers {
     }
 
     "respond with INTERNAL_SERVER_ERROR if the data retrieved cannot be parsed" in new SetUp {
-      stubAuthorised()
+      stubAuthorised(appaId)
       stubGetWithParameters(url, openParameters, OK, "blah")
 
       val response = callRoute(
@@ -56,7 +56,7 @@ class PaymentsIntegrationSpec extends ISpecBase with ConnectorTestHelpers {
     }
 
     "respond with an empty document if financial data not found for appaId" in new SetUp {
-      stubAuthorised()
+      stubAuthorised(appaId)
       stubGetWithParameters(url, openParameters, NOT_FOUND, "")
 
       val response = callRoute(
@@ -71,7 +71,7 @@ class PaymentsIntegrationSpec extends ISpecBase with ConnectorTestHelpers {
     }
 
     "respond with INTERNAL_SERVER_ERROR if error(s) returned from the financial data api call" in new SetUp {
-      stubAuthorised()
+      stubAuthorised(appaId)
       stubGetWithParameters(url, openParameters, INTERNAL_SERVER_ERROR, "")
 
       val response = callRoute(
@@ -88,7 +88,7 @@ class PaymentsIntegrationSpec extends ISpecBase with ConnectorTestHelpers {
 
   "the historic payments endpoint should" should {
     "respond with OK if able to fetch historic payments" in new SetUp {
-      stubAuthorised()
+      stubAuthorised(appaId)
       stubGetWithParameters(url, allParameters, OK, financialDataStubJson)
 
       val response = callRoute(
@@ -103,7 +103,7 @@ class PaymentsIntegrationSpec extends ISpecBase with ConnectorTestHelpers {
     }
 
     "respond with INTERNAL_SERVER_ERROR if the data retrieved cannot be parsed" in new SetUp {
-      stubAuthorised()
+      stubAuthorised(appaId)
       stubGetWithParameters(url, allParameters, OK, "blah")
 
       val response = callRoute(
@@ -118,7 +118,7 @@ class PaymentsIntegrationSpec extends ISpecBase with ConnectorTestHelpers {
     }
 
     "respond with an empty document if financial data not found for appaId" in new SetUp {
-      stubAuthorised()
+      stubAuthorised(appaId)
       stubGetWithParameters(url, allParameters, NOT_FOUND, "")
 
       val response = callRoute(
@@ -133,7 +133,7 @@ class PaymentsIntegrationSpec extends ISpecBase with ConnectorTestHelpers {
     }
 
     "respond with INTERNAL_SERVER_ERROR if error(s) returned from the financial data api call" in new SetUp {
-      stubAuthorised()
+      stubAuthorised(appaId)
       stubGetWithParameters(url, allParameters, INTERNAL_SERVER_ERROR, "")
 
       val response = callRoute(

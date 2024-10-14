@@ -21,13 +21,14 @@ import uk.gov.hmrc.alcoholdutyaccount.models.requests.IdentifierRequest
 
 import scala.concurrent.{ExecutionContext, Future}
 
-class FakeAuthorisedAction(bodyParsers: PlayBodyParsers) extends AuthorisedAction {
-
-  override def parser: BodyParser[AnyContent] = bodyParsers.defaultBodyParser
-
-  override def invokeBlock[A](request: Request[A], block: IdentifierRequest[A] => Future[Result]): Future[Result] =
-    block(IdentifierRequest(request, null))
+class FakeCheckAppaIdActionImpl private[actions] extends ActionRefiner[IdentifierRequest, IdentifierRequest] {
+  override protected def refine[A](request: IdentifierRequest[A]): Future[Either[Result, IdentifierRequest[A]]] =
+    Future.successful(Right(request))
 
   override protected def executionContext: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
+}
 
+class FakeCheckAppaIdAction extends CheckAppaIdAction()(scala.concurrent.ExecutionContext.Implicits.global) {
+  override def apply(appaId: String): ActionRefiner[IdentifierRequest, IdentifierRequest] =
+    new FakeCheckAppaIdActionImpl()
 }

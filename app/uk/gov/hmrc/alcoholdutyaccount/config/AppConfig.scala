@@ -49,6 +49,7 @@ class AppConfig @Inject() (config: Configuration, servicesConfig: ServicesConfig
   val regime: String = config.get[String]("downstream-apis.regime")
 
   val enrolmentServiceName: String = config.get[String]("enrolment.serviceName")
+  val enrolmentIdentifierKey       = config.get[String]("enrolment.identifierKey")
 
   def getSubscriptionUrl(appaId: String): String =
     s"$subscriptionHost$subscriptionGetSubscriptionUrlPrefix/$regime/$idType/$appaId"

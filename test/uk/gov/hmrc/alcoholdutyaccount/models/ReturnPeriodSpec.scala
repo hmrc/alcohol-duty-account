@@ -62,7 +62,7 @@ class ReturnPeriodSpec extends SpecBase {
       }
     }
 
-    "throw an error when the period key is inbalid and fromPeriodKeyOrThrow is called" - {
+    "throw an error when the period key is invalid and fromPeriodKeyOrThrow is called" - {
       an[IllegalArgumentException] mustBe thrownBy(ReturnPeriod.fromPeriodKeyOrThrow("24A@"))
     }
 

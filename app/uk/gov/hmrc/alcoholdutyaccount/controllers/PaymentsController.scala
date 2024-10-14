@@ -21,7 +21,7 @@ import play.api.Logging
 import play.api.libs.json.Json
 import play.api.mvc.{Action, AnyContent, ControllerComponents}
 import uk.gov.hmrc.alcoholdutyaccount.config.AppConfig
-import uk.gov.hmrc.alcoholdutyaccount.controllers.actions.AuthorisedAction
+import uk.gov.hmrc.alcoholdutyaccount.controllers.actions.{AuthorisedAction, CheckAppaIdAction}
 import uk.gov.hmrc.alcoholdutyaccount.models.ErrorCodes
 import uk.gov.hmrc.alcoholdutyaccount.service.PaymentsService
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
@@ -33,6 +33,7 @@ import scala.concurrent.{ExecutionContext, Future}
 
 class PaymentsController @Inject() (
   authorise: AuthorisedAction,
+  checkAppaId: CheckAppaIdAction,
   paymentsService: PaymentsService,
   appConfig: AppConfig,
   cc: ControllerComponents
@@ -44,7 +45,7 @@ class PaymentsController @Inject() (
   private lazy val minimumHistoricPaymentsYear: Int = appConfig.minimumHistoricPaymentsYear
 
   def openPayments(appaId: String): Action[AnyContent] =
-    authorise.async { implicit request =>
+    (authorise andThen checkAppaId(appaId)).async { implicit request =>
       paymentsService
         .getOpenPayments(appaId)
         .fold(
@@ -68,7 +69,7 @@ class PaymentsController @Inject() (
     }
 
   def historicPayments(appaId: String, year: Int): Action[AnyContent] =
-    authorise.async { implicit request =>
+    (authorise andThen checkAppaId(appaId)).async { implicit request =>
       val historicPayments = for {
         _                <- validateYear(year)
         historicPayments <- paymentsService.getHistoricPayments(appaId, year)
