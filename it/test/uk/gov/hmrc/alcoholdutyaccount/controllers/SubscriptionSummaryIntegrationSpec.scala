@@ -27,7 +27,7 @@ class SubscriptionSummaryIntegrationSpec extends ISpecBase with ConnectorTestHel
 
   "the subscription summary endpoint should" should {
     "respond with OK if able to fetch subscription summary data" in new SetUp {
-      stubAuthorised()
+      stubAuthorised(appaId)
       stubGet(url, OK, Json.toJson(SubscriptionSummarySuccess(approvedSubscriptionSummary)).toString)
 
       val response = callRoute(
@@ -42,7 +42,7 @@ class SubscriptionSummaryIntegrationSpec extends ISpecBase with ConnectorTestHel
     }
 
     "respond with INTERNAL_SERVER_ERROR if the data retrieved cannot be parsed" in new SetUp {
-      stubAuthorised()
+      stubAuthorised(appaId)
       stubGet(url, OK, "blah")
 
       val response = callRoute(
@@ -57,7 +57,7 @@ class SubscriptionSummaryIntegrationSpec extends ISpecBase with ConnectorTestHel
     }
 
     "respond with BAD_REQUEST if a bad request" in new SetUp {
-      stubAuthorised()
+      stubAuthorised(appaId)
       stubGet(url, BAD_REQUEST, "")
 
       val response = callRoute(
@@ -72,7 +72,7 @@ class SubscriptionSummaryIntegrationSpec extends ISpecBase with ConnectorTestHel
     }
 
     "respond with NOT_FOUND if subscription summary not found" in new SetUp {
-      stubAuthorised()
+      stubAuthorised(appaId)
       stubGet(url, NOT_FOUND, "")
 
       val response = callRoute(
@@ -87,7 +87,7 @@ class SubscriptionSummaryIntegrationSpec extends ISpecBase with ConnectorTestHel
     }
 
     "respond with INTERNAL_SERVER_ERROR if error(s) returned from the subscription summary api call" in new SetUp {
-      stubAuthorised()
+      stubAuthorised(appaId)
       stubGet(url, INTERNAL_SERVER_ERROR, "")
 
       val response = callRoute(

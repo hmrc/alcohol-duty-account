@@ -90,7 +90,8 @@ class PaymentsControllerSpec extends SpecBase {
   class SetUp {
     val mockPaymentsService: PaymentsService = mock[PaymentsService]
     val cc                                   = Helpers.stubControllerComponents()
-    val controller                           = new PaymentsController(fakeAuthorisedAction, mockPaymentsService, appConfig, cc)
+    val controller                           =
+      new PaymentsController(fakeAuthorisedAction, fakeCheckAppaIdAction, mockPaymentsService, appConfig, cc)
 
     val year: Int = 2024
   }

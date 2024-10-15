@@ -32,7 +32,7 @@ class ObligationDetailsIntegrationSpec extends ISpecBase {
 
   "the open obligation details endpoint should" should {
     "respond with OK if able to fetch data that matches the period key" in new SetUp {
-      stubAuthorised()
+      stubAuthorised(appaId)
       stubGetWithParameters(url, expectedQueryParamsOpen, OK, Json.toJson(obligationDataSingleOpen).toString)
 
       val response = callRoute(
@@ -47,7 +47,7 @@ class ObligationDetailsIntegrationSpec extends ISpecBase {
     }
 
     "respond with INTERNAL_SERVER_ERROR if the data retrieved cannot be parsed" in new SetUp {
-      stubAuthorised()
+      stubAuthorised(appaId)
       stubGetWithParameters(url, expectedQueryParamsOpen, OK, "blah")
 
       val response = callRoute(
@@ -64,7 +64,7 @@ class ObligationDetailsIntegrationSpec extends ISpecBase {
     }
 
     "respond with an empty obligations document if no open obligation data" in new SetUp {
-      stubAuthorised()
+      stubAuthorised(appaId)
       stubGetWithParameters(url, expectedQueryParamsOpen, NOT_FOUND, notFoundErrorMessage)
 
       val response = callRoute(
@@ -81,7 +81,7 @@ class ObligationDetailsIntegrationSpec extends ISpecBase {
     "respond with NOT_FOUND if the period key doesn't match any open obligation details" in new SetUp {
       val testPeriodKey = periodKey4
 
-      stubAuthorised()
+      stubAuthorised(appaId)
       stubGetWithParameters(url, expectedQueryParamsOpen, OK, Json.toJson(obligationDataSingleOpen).toString)
 
       val response = callRoute(
@@ -98,7 +98,7 @@ class ObligationDetailsIntegrationSpec extends ISpecBase {
     }
 
     "respond with INTERNAL_SERVER_ERROR if error(s) returned from the obligation api call" in new SetUp {
-      stubAuthorised()
+      stubAuthorised(appaId)
       stubGetWithParameters(url, expectedQueryParamsOpen, BAD_REQUEST, otherErrorMessage)
 
       val response = callRoute(
@@ -115,7 +115,7 @@ class ObligationDetailsIntegrationSpec extends ISpecBase {
 
   "the obligation details endpoint should" should {
     "respond with OK if able to fetch data" in new SetUp {
-      stubAuthorised()
+      stubAuthorised(appaId)
 
       stubGetWithParameters(url, expectedQueryParamsNoStatus, OK, Json.toJson(obligationDataSingleOpen).toString)
 
@@ -130,7 +130,7 @@ class ObligationDetailsIntegrationSpec extends ISpecBase {
     }
 
     "respond with OK if able to fetch open and fulfilled obligation data" in new SetUp {
-      stubAuthorised()
+      stubAuthorised(appaId)
       stubGetWithParameters(
         url,
         expectedQueryParamsNoStatus,
@@ -150,7 +150,7 @@ class ObligationDetailsIntegrationSpec extends ISpecBase {
     }
 
     "respond with INTERNAL_SERVER_ERROR if the data retrieved cannot be parsed" in new SetUp {
-      stubAuthorised()
+      stubAuthorised(appaId)
       stubGetWithParameters(url, expectedQueryParamsNoStatus, OK, "blah")
 
       val response = callRoute(
@@ -167,7 +167,7 @@ class ObligationDetailsIntegrationSpec extends ISpecBase {
     }
 
     "respond with no obligations if no obligation data" in new SetUp {
-      stubAuthorised()
+      stubAuthorised(appaId)
 
       stubGetWithParameters(url, expectedQueryParamsNoStatus, NOT_FOUND, notFoundErrorMessage)
 
@@ -183,7 +183,7 @@ class ObligationDetailsIntegrationSpec extends ISpecBase {
     }
 
     "respond with INTERNAL_SERVER_ERROR if error(s) returned from the obligation api call" in new SetUp {
-      stubAuthorised()
+      stubAuthorised(appaId)
       stubGetWithParameters(url, expectedQueryParamsNoStatus, BAD_REQUEST, otherErrorMessage)
 
       val response = callRoute(

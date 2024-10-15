@@ -34,7 +34,7 @@ import uk.gov.hmrc.alcoholdutyaccount.common.TestData
 import uk.gov.hmrc.alcoholdutyaccount.common.generators.ModelGenerators
 import uk.gov.hmrc.alcoholdutyaccount.config.AppConfig
 import uk.gov.hmrc.alcoholdutyaccount.connectors.helpers.RandomUUIDGenerator
-import uk.gov.hmrc.alcoholdutyaccount.controllers.actions.FakeAuthorisedAction
+import uk.gov.hmrc.alcoholdutyaccount.controllers.actions.{FakeAuthorisedAction, FakeCheckAppaIdAction}
 import uk.gov.hmrc.http.HeaderCarrier
 
 import scala.concurrent.ExecutionContext
@@ -75,6 +75,7 @@ trait SpecBase
   val appConfig: AppConfig                             = app.injector.instanceOf[AppConfig]
   val bodyParsers: PlayBodyParsers                     = app.injector.instanceOf[PlayBodyParsers]
   val fakeAuthorisedAction                             = new FakeAuthorisedAction(bodyParsers)
+  val fakeCheckAppaIdAction                            = new FakeCheckAppaIdAction()
 
   def fakeRequestWithJsonBody(json: JsValue): FakeRequest[JsValue] = FakeRequest("", "/", FakeHeaders(), json)
 

@@ -31,7 +31,7 @@ class BTACardEndpointIntegrationSpec
   "the service BTA Card endpoint should" should {
     "respond with 200 status and with full card data" when {
       "the status is approved" in {
-        stubAuthorised()
+        stubAuthorised(appaId)
         stubGetSubscriptionSummary(appaId, approvedSubscriptionSummary)
         stubGetObligations(appaId, obligationDataSingleOpen)
         stubGetFinancialData(appaId, financialDocumentWithSingleSapDocumentNo)
@@ -68,7 +68,7 @@ class BTACardEndpointIntegrationSpec
       }
 
       "the status is approved with empty obligations and financial data" in {
-        stubAuthorised()
+        stubAuthorised(appaId)
         stubGetSubscriptionSummary(appaId, approvedSubscriptionSummary)
         stubObligationsNotFound(appaId)
         stubFinancialDataNotFound(appaId)
@@ -93,7 +93,7 @@ class BTACardEndpointIntegrationSpec
       }
 
       "the insolvent flag is on" in {
-        stubAuthorised()
+        stubAuthorised(appaId)
         stubGetSubscriptionSummary(appaId, insolventSubscriptionSummary)
         stubGetObligations(appaId, obligationDataSingleOpen)
         stubGetFinancialData(appaId, financialDocumentWithSingleSapDocumentNo)
@@ -132,7 +132,7 @@ class BTACardEndpointIntegrationSpec
 
     "respond with 200 status and with Restricted Card Data" when {
       "subscription has DeRegistered status" in {
-        stubAuthorised()
+        stubAuthorised(appaId)
         stubGetSubscriptionSummary(appaId, deregisteredSubscriptionSummary)
 
         val expectedBTACardData = RestrictedCardData(appaId, DeRegistered)
@@ -147,7 +147,7 @@ class BTACardEndpointIntegrationSpec
       }
 
       "subscription has Revoked status" in {
-        stubAuthorised()
+        stubAuthorised(appaId)
         stubGetSubscriptionSummary(appaId, revokedSubscriptionSummary)
 
         val expectedBTACardData = RestrictedCardData(appaId, Revoked)
@@ -162,7 +162,7 @@ class BTACardEndpointIntegrationSpec
       }
 
       "subscription has small producer flag on" in {
-        stubAuthorised()
+        stubAuthorised(appaId)
         stubGetSubscriptionSummary(appaId, smallCiderProducerSubscriptionSummary)
 
         val expectedBTACardData = RestrictedCardData(appaId, SmallCiderProducer)
@@ -179,7 +179,7 @@ class BTACardEndpointIntegrationSpec
 
     "respond with 200 status for errors" when {
       "subscription summary api call fails" in {
-        stubAuthorised()
+        stubAuthorised(appaId)
         stubSubscriptionSummaryError(appaId)
 
         val expectedBTATileData = AlcoholDutyCardData(
@@ -202,7 +202,7 @@ class BTACardEndpointIntegrationSpec
       }
 
       "subscription summary api call fails with exception" in {
-        stubAuthorised()
+        stubAuthorised(appaId)
         stubSubscriptionSummaryWithFault(appaId)
 
         val expectedBTATileData = AlcoholDutyCardData(
@@ -225,7 +225,7 @@ class BTACardEndpointIntegrationSpec
       }
 
       "obligation api call fails with a Bad Request" in {
-        stubAuthorised()
+        stubAuthorised(appaId)
         stubGetSubscriptionSummary(appaId, approvedSubscriptionSummary)
         stubObligationsBadRequest(appaId)
         stubGetFinancialData(appaId, financialDocumentWithSingleSapDocumentNo)
@@ -258,7 +258,7 @@ class BTACardEndpointIntegrationSpec
       }
 
       "obligation api call fails with a Bad Request with multiple errors" in {
-        stubAuthorised()
+        stubAuthorised(appaId)
         stubGetSubscriptionSummary(appaId, approvedSubscriptionSummary)
         stubObligationsMultipleErrorsBadRequest(appaId)
         stubGetFinancialData(appaId, financialDocumentWithSingleSapDocumentNo)
@@ -291,7 +291,7 @@ class BTACardEndpointIntegrationSpec
       }
 
       "obligation api call fails with an Internal Server error" in {
-        stubAuthorised()
+        stubAuthorised(appaId)
         stubGetSubscriptionSummary(appaId, approvedSubscriptionSummary)
         stubObligationsInternalServerError(appaId)
         stubGetFinancialData(appaId, financialDocumentWithSingleSapDocumentNo)
@@ -324,7 +324,7 @@ class BTACardEndpointIntegrationSpec
       }
 
       "obligation api call fails with an exception" in {
-        stubAuthorised()
+        stubAuthorised(appaId)
         stubGetSubscriptionSummary(appaId, approvedSubscriptionSummary)
         stubObligationsWithFault(appaId)
         stubGetFinancialData(appaId, financialDocumentWithSingleSapDocumentNo)
@@ -357,7 +357,7 @@ class BTACardEndpointIntegrationSpec
       }
 
       "financial data api call fails with Bad Request" in {
-        stubAuthorised()
+        stubAuthorised(appaId)
         stubGetSubscriptionSummary(appaId, approvedSubscriptionSummary)
         stubGetObligations(appaId, obligationDataSingleOpen)
         stubFinancialDataBadRequest(appaId)
@@ -386,7 +386,7 @@ class BTACardEndpointIntegrationSpec
       }
 
       "financial data api call fails with Bad Request with multiple errors" in {
-        stubAuthorised()
+        stubAuthorised(appaId)
         stubGetSubscriptionSummary(appaId, approvedSubscriptionSummary)
         stubGetObligations(appaId, obligationDataSingleOpen)
         stubFinancialDataMultipleErrorsBadRequest(appaId)
@@ -415,7 +415,7 @@ class BTACardEndpointIntegrationSpec
       }
 
       "financial data api call fails with Unprocessable Entity" in {
-        stubAuthorised()
+        stubAuthorised(appaId)
         stubGetSubscriptionSummary(appaId, approvedSubscriptionSummary)
         stubGetObligations(appaId, obligationDataSingleOpen)
         stubFinancialDataUnprocessableEntity(appaId)
@@ -444,7 +444,7 @@ class BTACardEndpointIntegrationSpec
       }
 
       "financial data api call fails with an exception" in {
-        stubAuthorised()
+        stubAuthorised(appaId)
         stubGetSubscriptionSummary(appaId, approvedSubscriptionSummary)
         stubGetObligations(appaId, obligationDataSingleOpen)
         stubFinancialDataWithFault(appaId)
@@ -473,7 +473,7 @@ class BTACardEndpointIntegrationSpec
       }
 
       "both obligation api and financial data api calls fail" in {
-        stubAuthorised()
+        stubAuthorised(appaId)
         stubGetSubscriptionSummary(appaId, approvedSubscriptionSummary)
         stubObligationsBadRequest(appaId)
         stubFinancialDataBadRequest(appaId)
@@ -498,7 +498,7 @@ class BTACardEndpointIntegrationSpec
       }
 
       "both obligation api and financial data api calls fail with exceptions" in {
-        stubAuthorised()
+        stubAuthorised(appaId)
         stubGetSubscriptionSummary(appaId, approvedSubscriptionSummary)
         stubObligationsWithFault(appaId)
         stubFinancialDataWithFault(appaId)
