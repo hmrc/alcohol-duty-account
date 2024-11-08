@@ -45,7 +45,8 @@ class SubscriptionSummarySpec extends SpecBase {
           |            "01",
           |            "02",
           |            "03",
-          |            "04"
+          |            "04",
+          |            "05"
           |        ],
           |        "smallciderFlag": "0",
           |        "paperlessReference":"1",
@@ -93,7 +94,7 @@ class SubscriptionSummarySpec extends SpecBase {
       val json =
         """
           |{
-          |    "typeOfAlcoholApprovedFor": ["05"],
+          |    "typeOfAlcoholApprovedFor": ["06"],
           |    "smallciderFlag": "0",
           |    "approvalStatus": "01",
           |    "insolvencyFlag": "0"

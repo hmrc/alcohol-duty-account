@@ -20,6 +20,7 @@ import cats.data.{EitherT, OptionT}
 import cats.implicits._
 import play.api.Logging
 import play.api.http.Status.NOT_FOUND
+import uk.gov.hmrc.alcoholdutyaccount.config.AppConfig
 import uk.gov.hmrc.alcoholdutyaccount.connectors.{FinancialDataConnector, ObligationDataConnector, SubscriptionSummaryConnector}
 import uk.gov.hmrc.alcoholdutyaccount.models.subscription.ApprovalStatus.{DeRegistered, Revoked, SmallCiderProducer}
 import uk.gov.hmrc.alcoholdutyaccount.models._
@@ -37,7 +38,8 @@ import scala.concurrent.{ExecutionContext, Future}
 class AlcoholDutyService @Inject() (
   subscriptionSummaryConnector: SubscriptionSummaryConnector,
   obligationDataConnector: ObligationDataConnector,
-  financialDataConnector: FinancialDataConnector
+  financialDataConnector: FinancialDataConnector,
+  appConfig: AppConfig
 )(implicit ec: ExecutionContext)
     extends Logging {
 
@@ -46,7 +48,7 @@ class AlcoholDutyService @Inject() (
   )(implicit hc: HeaderCarrier): EitherT[Future, ErrorResponse, AdrSubscriptionSummary] =
     subscriptionSummaryConnector
       .getSubscriptionSummary(alcoholDutyReference)
-      .subflatMap(AdrSubscriptionSummary.fromSubscriptionSummary)
+      .subflatMap(AdrSubscriptionSummary.fromSubscriptionSummary(_, appConfig.ofpSubscriptionAvailable))
 
   def getOpenObligations(
     alcoholDutyReference: String,
@@ -81,7 +83,7 @@ class AlcoholDutyService @Inject() (
   )(implicit hc: HeaderCarrier): EitherT[Future, ErrorResponse, AlcoholDutyCardData] =
     subscriptionSummaryConnector
       .getSubscriptionSummary(alcoholDutyReference)
-      .flatMapF { subscriptionSummary: SubscriptionSummary =>
+      .flatMapF { subscriptionSummary =>
         val approvalStatus = ApprovalStatus.fromSubscriptionSummary(subscriptionSummary)
         if (
           approvalStatus == SmallCiderProducer ||

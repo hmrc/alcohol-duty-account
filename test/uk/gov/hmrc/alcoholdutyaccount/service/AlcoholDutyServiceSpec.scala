@@ -21,6 +21,7 @@ import org.mockito.ArgumentMatchersSugar.*
 import org.mockito.cats.IdiomaticMockitoCats.StubbingOpsCats
 import uk.gov.hmrc.alcoholdutyaccount.base.SpecBase
 import uk.gov.hmrc.alcoholdutyaccount.common.TestData
+import uk.gov.hmrc.alcoholdutyaccount.config.AppConfig
 import uk.gov.hmrc.alcoholdutyaccount.connectors.{FinancialDataConnector, ObligationDataConnector, SubscriptionSummaryConnector}
 import uk.gov.hmrc.alcoholdutyaccount.models.subscription.ApprovalStatus.{Approved, DeRegistered, Insolvent, Revoked, SmallCiderProducer}
 import uk.gov.hmrc.alcoholdutyaccount.models._
@@ -766,7 +767,10 @@ class AlcoholDutyServiceSpec extends SpecBase with TestData {
     val subscriptionSummaryConnector = mock[SubscriptionSummaryConnector]
     val obligationDataConnector      = mock[ObligationDataConnector]
     val financialDataConnector       = mock[FinancialDataConnector]
-    val service                      = new AlcoholDutyService(subscriptionSummaryConnector, obligationDataConnector, financialDataConnector)
+    val appConfig                    = mock[AppConfig]
+    val service                      = new AlcoholDutyService(subscriptionSummaryConnector, obligationDataConnector, financialDataConnector, appConfig)
+
+    when(appConfig.ofpSubscriptionAvailable).thenReturn(true)
 
     val periodStart = LocalDate.of(2023, 1, 1)
     val periodEnd   = LocalDate.of(2023, 1, 31)
