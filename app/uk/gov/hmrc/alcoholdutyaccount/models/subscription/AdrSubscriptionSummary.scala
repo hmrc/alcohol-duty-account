@@ -49,10 +49,10 @@ object AdrSubscriptionSummary {
   }
 
   /**
-   * When updated subscription is available, the toggle will be set to call the new mapping
-   * Once happy with it, delete the toggle, and the old code replacing the code in mapRegimes with that in
-   * mapRegimesNew
-   */
+    * When updated subscription is available, the toggle will be set to call the new mapping
+    * Once happy with it, delete the toggle, and the old code replacing the code in mapRegimes with that in
+    * mapRegimesNew
+    */
   private def mapRegimes(typeOfAlcohol: Set[hods.ApprovalType], ofpSubscriptionAvailable: Boolean): Set[AlcoholRegime] =
     if (ofpSubscriptionAvailable) {
       mapRegimesNew(typeOfAlcohol)
@@ -61,19 +61,19 @@ object AdrSubscriptionSummary {
     }
 
   private def mapRegimesOld(typeOfAlcohol: Set[hods.ApprovalType]): Set[AlcoholRegime] = typeOfAlcohol.flatMap {
-    case hods.Beer                         => Seq(Beer)
-    case hods.CiderOrPerry                 => Seq(Cider, OtherFermentedProduct)
-    case hods.Wine                         => Seq(Wine, OtherFermentedProduct)
-    case hods.Spirits                      => Seq(Spirits)
-    case hods.OtherFermentedProduct        => Seq(OtherFermentedProduct) // So as not to break if only has OFP after change
+    case hods.Beer                  => Seq(Beer)
+    case hods.CiderOrPerry          => Seq(Cider, OtherFermentedProduct)
+    case hods.Wine                  => Seq(Wine, OtherFermentedProduct)
+    case hods.Spirits               => Seq(Spirits)
+    case hods.OtherFermentedProduct => Seq(OtherFermentedProduct) // So as not to break if only has OFP after change
   }
 
   private def mapRegimesNew(typeOfAlcohol: Set[hods.ApprovalType]): Set[AlcoholRegime] = typeOfAlcohol.flatMap {
-    case hods.Beer                         => Seq(Beer)
-    case hods.CiderOrPerry                 => Seq(Cider)
-    case hods.Wine                         => Seq(Wine)
-    case hods.Spirits                      => Seq(Spirits)
-    case hods.OtherFermentedProduct        => Seq(OtherFermentedProduct)
+    case hods.Beer                  => Seq(Beer)
+    case hods.CiderOrPerry          => Seq(Cider)
+    case hods.Wine                  => Seq(Wine)
+    case hods.Spirits               => Seq(Spirits)
+    case hods.OtherFermentedProduct => Seq(OtherFermentedProduct)
   }
 
   implicit val writes: OWrites[AdrSubscriptionSummary] = Json.writes[AdrSubscriptionSummary]

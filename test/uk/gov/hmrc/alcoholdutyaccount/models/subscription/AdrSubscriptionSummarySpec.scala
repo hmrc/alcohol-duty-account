@@ -27,9 +27,9 @@ class AdrSubscriptionSummarySpec extends SpecBase {
   "AdrSubscriptionSummary fromSubscriptionSummary" - {
     val alcoholRegimesBeforeOFPAvailable: Set[ApprovalType] =
       Set(hods.Beer, hods.CiderOrPerry, hods.Wine, hods.Spirits)
-    val alcoholRegimes: Set[ApprovalType] =
+    val alcoholRegimes: Set[ApprovalType]                   =
       Set(hods.Beer, hods.CiderOrPerry, hods.Wine, hods.Spirits, hods.OtherFermentedProduct)
-    val expectedRegimes                   = Set(
+    val expectedRegimes                                     = Set(
       AlcoholRegime.Beer,
       AlcoholRegime.Cider,
       AlcoholRegime.Spirits,
@@ -44,7 +44,10 @@ class AdrSubscriptionSummarySpec extends SpecBase {
         approvalStatus = hods.Approved,
         insolvencyFlag = false
       )
-      val adrSubscriptionSummary                   = AdrSubscriptionSummary.fromSubscriptionSummary(subscriptionSummary, ofpSubscriptionAvailable = false).toOption.get
+      val adrSubscriptionSummary                   = AdrSubscriptionSummary
+        .fromSubscriptionSummary(subscriptionSummary, ofpSubscriptionAvailable = false)
+        .toOption
+        .get
 
       adrSubscriptionSummary.approvalStatus shouldBe Approved
       adrSubscriptionSummary.regimes        shouldBe expectedRegimes
@@ -57,7 +60,10 @@ class AdrSubscriptionSummarySpec extends SpecBase {
         approvalStatus = hods.Approved,
         insolvencyFlag = false
       )
-      val adrSubscriptionSummary                   = AdrSubscriptionSummary.fromSubscriptionSummary(subscriptionSummary, ofpSubscriptionAvailable = true).toOption.get
+      val adrSubscriptionSummary                   = AdrSubscriptionSummary
+        .fromSubscriptionSummary(subscriptionSummary, ofpSubscriptionAvailable = true)
+        .toOption
+        .get
 
       adrSubscriptionSummary.approvalStatus shouldBe Approved
       adrSubscriptionSummary.regimes        shouldBe expectedRegimes
@@ -78,7 +84,10 @@ class AdrSubscriptionSummarySpec extends SpecBase {
           insolvencyFlag = false
         )
 
-        val adrSubscriptionSummary = AdrSubscriptionSummary.fromSubscriptionSummary(subscriptionSummary, ofpSubscriptionAvailable = false).toOption.get
+        val adrSubscriptionSummary = AdrSubscriptionSummary
+          .fromSubscriptionSummary(subscriptionSummary, ofpSubscriptionAvailable = false)
+          .toOption
+          .get
 
         adrSubscriptionSummary.regimes shouldBe expectedRegimes
       }
@@ -99,7 +108,10 @@ class AdrSubscriptionSummarySpec extends SpecBase {
           insolvencyFlag = false
         )
 
-        val adrSubscriptionSummary = AdrSubscriptionSummary.fromSubscriptionSummary(subscriptionSummary, ofpSubscriptionAvailable = true).toOption.get
+        val adrSubscriptionSummary = AdrSubscriptionSummary
+          .fromSubscriptionSummary(subscriptionSummary, ofpSubscriptionAvailable = true)
+          .toOption
+          .get
 
         adrSubscriptionSummary.regimes shouldBe expectedRegimes
       }
@@ -112,7 +124,10 @@ class AdrSubscriptionSummarySpec extends SpecBase {
         approvalStatus = hods.Approved,
         insolvencyFlag = true
       )
-      val adrSubscriptionSummary                   = AdrSubscriptionSummary.fromSubscriptionSummary(subscriptionSummary, ofpSubscriptionAvailable = true).toOption.get
+      val adrSubscriptionSummary                   = AdrSubscriptionSummary
+        .fromSubscriptionSummary(subscriptionSummary, ofpSubscriptionAvailable = true)
+        .toOption
+        .get
 
       adrSubscriptionSummary.approvalStatus shouldBe Insolvent
     }
@@ -124,7 +139,10 @@ class AdrSubscriptionSummarySpec extends SpecBase {
         approvalStatus = hods.Approved,
         insolvencyFlag = false
       )
-      val adrSubscriptionSummary                   = AdrSubscriptionSummary.fromSubscriptionSummary(subscriptionSummary, ofpSubscriptionAvailable = true).toOption.get
+      val adrSubscriptionSummary                   = AdrSubscriptionSummary
+        .fromSubscriptionSummary(subscriptionSummary, ofpSubscriptionAvailable = true)
+        .toOption
+        .get
 
       adrSubscriptionSummary.approvalStatus shouldBe SmallCiderProducer
     }
@@ -136,7 +154,10 @@ class AdrSubscriptionSummarySpec extends SpecBase {
         approvalStatus = hods.Revoked,
         insolvencyFlag = false
       )
-      val adrSubscriptionSummary                   = AdrSubscriptionSummary.fromSubscriptionSummary(subscriptionSummary, ofpSubscriptionAvailable = true).toOption.get
+      val adrSubscriptionSummary                   = AdrSubscriptionSummary
+        .fromSubscriptionSummary(subscriptionSummary, ofpSubscriptionAvailable = true)
+        .toOption
+        .get
 
       adrSubscriptionSummary.approvalStatus shouldBe Revoked
     }
@@ -148,7 +169,10 @@ class AdrSubscriptionSummarySpec extends SpecBase {
         approvalStatus = hods.DeRegistered,
         insolvencyFlag = false
       )
-      val adrSubscriptionSummary                   = AdrSubscriptionSummary.fromSubscriptionSummary(subscriptionSummary, ofpSubscriptionAvailable = true).toOption.get
+      val adrSubscriptionSummary                   = AdrSubscriptionSummary
+        .fromSubscriptionSummary(subscriptionSummary, ofpSubscriptionAvailable = true)
+        .toOption
+        .get
 
       adrSubscriptionSummary.approvalStatus shouldBe DeRegistered
     }
@@ -161,7 +185,11 @@ class AdrSubscriptionSummarySpec extends SpecBase {
         insolvencyFlag = false
       )
       val adrSubscriptionSummaryError              =
-        AdrSubscriptionSummary.fromSubscriptionSummary(subscriptionSummary, ofpSubscriptionAvailable = true).swap.toOption.get
+        AdrSubscriptionSummary
+          .fromSubscriptionSummary(subscriptionSummary, ofpSubscriptionAvailable = true)
+          .swap
+          .toOption
+          .get
 
       adrSubscriptionSummaryError.statusCode shouldBe INTERNAL_SERVER_ERROR
     }

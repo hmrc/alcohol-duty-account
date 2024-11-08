@@ -37,7 +37,7 @@ trait TestData extends ModelGenerators {
   val contractAccount: String = contractAccountGen.sample.get
   val contractObject: String  = contractObjectGen.sample.get
 
-  val allApprovals = Set[ApprovalType](Beer, CiderOrPerry, WineAndOtherFermentedProduct, Spirits)
+  val allApprovals = Set[ApprovalType](Beer, CiderOrPerry, Wine, Spirits, OtherFermentedProduct)
 
   val approvedSubscriptionSummary = SubscriptionSummary(
     typeOfAlcoholApprovedFor = allApprovals,

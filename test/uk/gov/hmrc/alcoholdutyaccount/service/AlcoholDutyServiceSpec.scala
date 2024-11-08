@@ -768,7 +768,8 @@ class AlcoholDutyServiceSpec extends SpecBase with TestData {
     val obligationDataConnector      = mock[ObligationDataConnector]
     val financialDataConnector       = mock[FinancialDataConnector]
     val appConfig                    = mock[AppConfig]
-    val service                      = new AlcoholDutyService(subscriptionSummaryConnector, obligationDataConnector, financialDataConnector, appConfig)
+    val service                      =
+      new AlcoholDutyService(subscriptionSummaryConnector, obligationDataConnector, financialDataConnector, appConfig)
 
     when(appConfig.ofpSubscriptionAvailable).thenReturn(true)
 

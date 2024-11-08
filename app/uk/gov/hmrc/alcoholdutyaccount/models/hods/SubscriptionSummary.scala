@@ -40,11 +40,11 @@ object ApprovalType {
   }
 
   implicit val approvalTypeWrites: Writes[ApprovalType] = {
-    case Beer                         => JsString("01")
-    case CiderOrPerry                 => JsString("02")
-    case Wine                         => JsString("03")
-    case Spirits                      => JsString("04")
-    case OtherFermentedProduct        => JsString("05")
+    case Beer                  => JsString("01")
+    case CiderOrPerry          => JsString("02")
+    case Wine                  => JsString("03")
+    case Spirits               => JsString("04")
+    case OtherFermentedProduct => JsString("05")
   }
 }
 

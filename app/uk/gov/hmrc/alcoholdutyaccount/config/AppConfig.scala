@@ -64,7 +64,7 @@ class AppConfig @Inject() (config: Configuration, servicesConfig: ServicesConfig
     config.get[Int]("payments.minimumHistoricPaymentsYear")
 
   val ofpSubscriptionAvailable: Boolean = config.get[Boolean]("features.ofp-subscription-available")
-  def btaServiceAvailable: Boolean = config.get[Boolean]("features.bta-service-available")
+  def btaServiceAvailable: Boolean      = config.get[Boolean]("features.bta-service-available")
 
   private[config] def getConfStringAndThrowIfNotFound(key: String) =
     servicesConfig.getConfString(key, throw new RuntimeException(s"Could not find services config key '$key'"))
