@@ -48,7 +48,7 @@ class AlcoholDutyService @Inject() (
   )(implicit hc: HeaderCarrier): EitherT[Future, ErrorResponse, AdrSubscriptionSummary] =
     subscriptionSummaryConnector
       .getSubscriptionSummary(alcoholDutyReference)
-      .subflatMap(AdrSubscriptionSummary.fromSubscriptionSummary(_, appConfig.ofpSubscriptionAvailable))
+      .subflatMap(AdrSubscriptionSummary.fromSubscriptionSummary(_, appConfig.ofpAsSeparateRegimeEnabled))
 
   def getOpenObligations(
     alcoholDutyReference: String,

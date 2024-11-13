@@ -771,7 +771,7 @@ class AlcoholDutyServiceSpec extends SpecBase with TestData {
     val service                      =
       new AlcoholDutyService(subscriptionSummaryConnector, obligationDataConnector, financialDataConnector, appConfig)
 
-    when(appConfig.ofpSubscriptionAvailable).thenReturn(true)
+    when(appConfig.ofpAsSeparateRegimeEnabled).thenReturn(true)
 
     val periodStart = LocalDate.of(2023, 1, 1)
     val periodEnd   = LocalDate.of(2023, 1, 31)

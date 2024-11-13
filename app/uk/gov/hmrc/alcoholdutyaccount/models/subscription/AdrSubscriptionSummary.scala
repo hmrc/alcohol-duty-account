@@ -32,9 +32,9 @@ object AdrSubscriptionSummary {
 
   def fromSubscriptionSummary(
     subscriptionSummary: SubscriptionSummary,
-    ofpSubscriptionAvailable: Boolean
+    ofpAsSeparateRegimeEnabled: Boolean
   ): Either[ErrorResponse, AdrSubscriptionSummary] = {
-    val regimes = mapRegimes(subscriptionSummary.typeOfAlcoholApprovedFor, ofpSubscriptionAvailable)
+    val regimes = mapRegimes(subscriptionSummary.typeOfAlcoholApprovedFor, ofpAsSeparateRegimeEnabled)
 
     if (regimes.isEmpty) {
       Left(ErrorResponse(INTERNAL_SERVER_ERROR, "Expected at least one approved regime to be provided"))
@@ -53,8 +53,11 @@ object AdrSubscriptionSummary {
     * Once happy with it, delete the toggle, and the old code replacing the code in mapRegimes with that in
     * mapRegimesNew
     */
-  private def mapRegimes(typeOfAlcohol: Set[hods.ApprovalType], ofpSubscriptionAvailable: Boolean): Set[AlcoholRegime] =
-    if (ofpSubscriptionAvailable) {
+  private def mapRegimes(
+    typeOfAlcohol: Set[hods.ApprovalType],
+    ofpAsSeparateRegimeEnabled: Boolean
+  ): Set[AlcoholRegime] =
+    if (ofpAsSeparateRegimeEnabled) {
       mapRegimesNew(typeOfAlcohol)
     } else {
       mapRegimesOld(typeOfAlcohol)
