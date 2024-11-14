@@ -63,7 +63,7 @@ class AdrSubscriptionSummarySpec extends SpecBase {
 
       "should return a AdrSubscriptionSummary with all regimes given a SubscriptionSummary with all alcohol other types approved when" - {
         "the feature toggle ofpAsSeparateRegimeEnabled is off" in {
-          val subscriptionSummary =
+          val subscriptionSummary    =
             approvedSubscriptionSummary.copy(typeOfAlcoholApprovedFor = allApprovals - hods.OtherFermentedProduct)
           val adrSubscriptionSummary = AdrSubscriptionSummary
             .fromSubscriptionSummary(subscriptionSummary, ofpAsSeparateRegimeEnabled = false)
