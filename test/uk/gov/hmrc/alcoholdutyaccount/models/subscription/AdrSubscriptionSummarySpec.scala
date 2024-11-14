@@ -61,20 +61,22 @@ class AdrSubscriptionSummarySpec extends SpecBase {
         }
       }
 
-      "should return a AdrSubscriptionSummary with all regimes given a SubscriptionSummary before OFP subscription available with all alcohol other types approved" in {
-        val subscriptionSummary    =
-          approvedSubscriptionSummary.copy(typeOfAlcoholApprovedFor = allApprovals - hods.OtherFermentedProduct)
-        val adrSubscriptionSummary = AdrSubscriptionSummary
-          .fromSubscriptionSummary(subscriptionSummary, ofpAsSeparateRegimeEnabled = false)
+      "should return a AdrSubscriptionSummary with all regimes given a SubscriptionSummary with all alcohol other types approved when" - {
+        "the feature toggle ofpAsSeparateRegimeEnabled is off" in {
+          val subscriptionSummary =
+            approvedSubscriptionSummary.copy(typeOfAlcoholApprovedFor = allApprovals - hods.OtherFermentedProduct)
+          val adrSubscriptionSummary = AdrSubscriptionSummary
+            .fromSubscriptionSummary(subscriptionSummary, ofpAsSeparateRegimeEnabled = false)
 
-        adrSubscriptionSummary.map(_.regimes) shouldBe Right(allRegimes)
-      }
+          adrSubscriptionSummary.map(_.regimes) shouldBe Right(allRegimes)
+        }
 
-      "should return a AdrSubscriptionSummary with Approved and all regimes given a SubscriptionSummary with all alcohol types approved" in {
-        val adrSubscriptionSummary = AdrSubscriptionSummary
-          .fromSubscriptionSummary(approvedSubscriptionSummary, ofpAsSeparateRegimeEnabled = true)
+        "the feature toggle ofpAsSeparateRegimeEnabled is on" in {
+          val adrSubscriptionSummary = AdrSubscriptionSummary
+            .fromSubscriptionSummary(approvedSubscriptionSummary, ofpAsSeparateRegimeEnabled = true)
 
-        adrSubscriptionSummary.map(_.regimes) shouldBe Right(allRegimes)
+          adrSubscriptionSummary.map(_.regimes) shouldBe Right(allRegimes)
+        }
       }
 
       "should return a AdrSubscriptionSummary with Insolvent given a SubscriptionSummary with insolvency flag" in {
