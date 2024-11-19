@@ -23,25 +23,28 @@ sealed trait ApprovalType
 
 case object Beer extends ApprovalType
 case object CiderOrPerry extends ApprovalType
-case object WineAndOtherFermentedProduct extends ApprovalType
+case object Wine extends ApprovalType
 case object Spirits extends ApprovalType
+case object OtherFermentedProduct extends ApprovalType
 
 object ApprovalType {
 
   implicit val approvalTypeReads: Reads[ApprovalType] = {
     case JsString("01") => JsSuccess(Beer)
     case JsString("02") => JsSuccess(CiderOrPerry)
-    case JsString("03") => JsSuccess(WineAndOtherFermentedProduct)
+    case JsString("03") => JsSuccess(Wine)
     case JsString("04") => JsSuccess(Spirits)
+    case JsString("05") => JsSuccess(OtherFermentedProduct)
     case s: JsString    => JsError(s"$s is not a valid ApprovalType")
     case v              => JsError(s"got $v was expecting a string representing a ApprovalType")
   }
 
   implicit val approvalTypeWrites: Writes[ApprovalType] = {
-    case Beer                         => JsString("01")
-    case CiderOrPerry                 => JsString("02")
-    case WineAndOtherFermentedProduct => JsString("03")
-    case Spirits                      => JsString("04")
+    case Beer                  => JsString("01")
+    case CiderOrPerry          => JsString("02")
+    case Wine                  => JsString("03")
+    case Spirits               => JsString("04")
+    case OtherFermentedProduct => JsString("05")
   }
 }
 

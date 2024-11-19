@@ -45,7 +45,8 @@ class SpecBaseWithConfigOverrides extends SpecBase {
     "downstream-apis.contractObjectType"                         -> "ZADP",
     "enrolment.serviceName"                                      -> "HMRC-AD-ORG",
     "payments.minimumHistoricPaymentsYear"                       -> 2024,
-    "features.btaServiceAvailable"                               -> true
+    "features.ofp-as-a-separate-regime-enabled"                  -> true,
+    "features.bta-service-available"                             -> true
   )
 }
 
@@ -139,6 +140,10 @@ class AppConfigSpec extends SpecBaseWithConfigOverrides {
   }
 
   "for features" - {
+    "ofpSubscriptionAvailable should return whether the OFP subscription can be received" in {
+      appConfig.ofpAsSeparateRegimeEnabled mustBe true
+    }
+
     "btaServiceAvailable should return whether the service is available" in {
       appConfig.btaServiceAvailable mustBe true
     }

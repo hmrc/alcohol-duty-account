@@ -16,118 +16,125 @@
 
 package uk.gov.hmrc.alcoholdutyaccount.models.subscription
 
+import cats.implicits._
 import org.scalatest.matchers.should.Matchers.convertToAnyShouldWrapper
 import uk.gov.hmrc.alcoholdutyaccount.base.SpecBase
 import uk.gov.hmrc.alcoholdutyaccount.models.hods
-import uk.gov.hmrc.alcoholdutyaccount.models.hods.{ApprovalType, SubscriptionSummary}
 import uk.gov.hmrc.alcoholdutyaccount.models.subscription.ApprovalStatus.{Approved, DeRegistered, Insolvent, Revoked, SmallCiderProducer}
 
 class AdrSubscriptionSummarySpec extends SpecBase {
+  "AdrSubscriptionSummary" - {
+    "fromSubscriptionSummary" - {
+      Seq(
+        (hods.Beer, Set(AlcoholRegime.Beer)),
+        (hods.CiderOrPerry, Set(AlcoholRegime.Cider, AlcoholRegime.OtherFermentedProduct)),
+        (hods.Wine, Set(AlcoholRegime.Wine, AlcoholRegime.OtherFermentedProduct)),
+        (hods.Spirits, Set(AlcoholRegime.Spirits)),
+        (hods.OtherFermentedProduct, Set(AlcoholRegime.OtherFermentedProduct))
+      ).foreach { case (approvedSubscription, expectedRegimes) =>
+        s"should return an AdrSubscriptionSummary of ${expectedRegimes.map(_.entryName).mkString(",")} when ${approvedSubscription.getClass.getTypeName} is approved and OFP subscription is not available" in {
+          val subscriptionSummary =
+            approvedSubscriptionSummary.copy(typeOfAlcoholApprovedFor = Set(approvedSubscription))
 
-  "AdrSubscriptionSummary fromSubscriptionSummary" - {
-    val alcoholRegimes: Set[ApprovalType] =
-      Set(hods.Beer, hods.CiderOrPerry, hods.WineAndOtherFermentedProduct, hods.Spirits)
-    val expectedRegimes                   = Set(
-      AlcoholRegime.Beer,
-      AlcoholRegime.Cider,
-      AlcoholRegime.Spirits,
-      AlcoholRegime.Wine,
-      AlcoholRegime.OtherFermentedProduct
-    )
+          val adrSubscriptionSummary = AdrSubscriptionSummary
+            .fromSubscriptionSummary(subscriptionSummary, ofpAsSeparateRegimeEnabled = false)
 
-    "should return a AdrSubscriptionSummary with Approved and all regimes given a SubscriptionSummary with Approved status and all alcohol types approved" in {
-      val subscriptionSummary: SubscriptionSummary = SubscriptionSummary(
-        typeOfAlcoholApprovedFor = alcoholRegimes,
-        smallciderFlag = false,
-        approvalStatus = hods.Approved,
-        insolvencyFlag = false
-      )
-      val adrSubscriptionSummary                   = AdrSubscriptionSummary.fromSubscriptionSummary(subscriptionSummary).toOption.get
-
-      adrSubscriptionSummary.approvalStatus shouldBe Approved
-      adrSubscriptionSummary.regimes        shouldBe expectedRegimes
-    }
-
-    Seq(
-      (hods.Beer, Set(AlcoholRegime.Beer)),
-      (hods.CiderOrPerry, Set(AlcoholRegime.Cider, AlcoholRegime.OtherFermentedProduct)),
-      (hods.WineAndOtherFermentedProduct, Set(AlcoholRegime.Wine, AlcoholRegime.OtherFermentedProduct)),
-      (hods.Spirits, Set(AlcoholRegime.Spirits))
-    ).foreach { case (approvedSubscription, expectedRegimes) =>
-      s"should return an AdrSubscriptionSummary of ${expectedRegimes.map(_.entryName).mkString(",")} when ${approvedSubscription.getClass.getTypeName} is approved" in {
-        val subscriptionSummary: SubscriptionSummary = SubscriptionSummary(
-          typeOfAlcoholApprovedFor = Set(approvedSubscription),
-          smallciderFlag = false,
-          approvalStatus = hods.Approved,
-          insolvencyFlag = false
-        )
-
-        val adrSubscriptionSummary = AdrSubscriptionSummary.fromSubscriptionSummary(subscriptionSummary).toOption.get
-
-        adrSubscriptionSummary.regimes shouldBe expectedRegimes
+          adrSubscriptionSummary.map(_.regimes) shouldBe Right(expectedRegimes)
+        }
       }
-    }
 
-    "should return a AdrSubscriptionSummary with Insolvent given a SubscriptionSummary with Approved status with insolvent flag and all alcohol types approved" in {
-      val subscriptionSummary: SubscriptionSummary = SubscriptionSummary(
-        typeOfAlcoholApprovedFor = alcoholRegimes,
-        smallciderFlag = false,
-        approvalStatus = hods.Approved,
-        insolvencyFlag = true
-      )
-      val adrSubscriptionSummary                   = AdrSubscriptionSummary.fromSubscriptionSummary(subscriptionSummary).toOption.get
+      Seq(
+        (hods.Beer, Set(AlcoholRegime.Beer)),
+        (hods.CiderOrPerry, Set(AlcoholRegime.Cider)),
+        (hods.Wine, Set(AlcoholRegime.Wine)),
+        (hods.Spirits, Set(AlcoholRegime.Spirits)),
+        (hods.OtherFermentedProduct, Set(AlcoholRegime.OtherFermentedProduct))
+      ).foreach { case (approvedSubscription, expectedRegimes) =>
+        s"should return an AdrSubscriptionSummary of ${expectedRegimes.map(_.entryName).mkString(",")} when ${approvedSubscription.getClass.getTypeName} is approved and OFP subscription is available" in {
+          val subscriptionSummary =
+            approvedSubscriptionSummary.copy(typeOfAlcoholApprovedFor = Set(approvedSubscription))
 
-      adrSubscriptionSummary.approvalStatus shouldBe Insolvent
-    }
+          val adrSubscriptionSummary = AdrSubscriptionSummary
+            .fromSubscriptionSummary(subscriptionSummary, ofpAsSeparateRegimeEnabled = true)
 
-    "should return a AdrSubscriptionSummary with SmallCiderProducer status given a SubscriptionSummary with Approved status with small cider producer flag and all alcohol types approved" in {
-      val subscriptionSummary: SubscriptionSummary = SubscriptionSummary(
-        typeOfAlcoholApprovedFor = alcoholRegimes,
-        smallciderFlag = true,
-        approvalStatus = hods.Approved,
-        insolvencyFlag = false
-      )
-      val adrSubscriptionSummary                   = AdrSubscriptionSummary.fromSubscriptionSummary(subscriptionSummary).toOption.get
+          adrSubscriptionSummary.map(_.regimes) shouldBe Right(expectedRegimes)
+        }
+      }
 
-      adrSubscriptionSummary.approvalStatus shouldBe SmallCiderProducer
-    }
+      "should return a AdrSubscriptionSummary with all regimes given a SubscriptionSummary with all alcohol other types approved when" - {
+        "the feature toggle ofpAsSeparateRegimeEnabled is off" in {
+          val subscriptionSummary    =
+            approvedSubscriptionSummary.copy(typeOfAlcoholApprovedFor = allApprovals - hods.OtherFermentedProduct)
+          val adrSubscriptionSummary = AdrSubscriptionSummary
+            .fromSubscriptionSummary(subscriptionSummary, ofpAsSeparateRegimeEnabled = false)
 
-    "should return a AdrSubscriptionSummary with Revoked given a SubscriptionSummary with Revoked status and all alcohol types approved" in {
-      val subscriptionSummary: SubscriptionSummary = SubscriptionSummary(
-        typeOfAlcoholApprovedFor = alcoholRegimes,
-        smallciderFlag = false,
-        approvalStatus = hods.Revoked,
-        insolvencyFlag = false
-      )
-      val adrSubscriptionSummary                   = AdrSubscriptionSummary.fromSubscriptionSummary(subscriptionSummary).toOption.get
+          adrSubscriptionSummary.map(_.regimes) shouldBe Right(allRegimes)
+        }
 
-      adrSubscriptionSummary.approvalStatus shouldBe Revoked
-    }
+        "the feature toggle ofpAsSeparateRegimeEnabled is on" in {
+          val adrSubscriptionSummary = AdrSubscriptionSummary
+            .fromSubscriptionSummary(approvedSubscriptionSummary, ofpAsSeparateRegimeEnabled = true)
 
-    "should return a AdrSubscriptionSummary with DeRegistered given a SubscriptionSummary with DeRegistered status and all alcohol types approved" in {
+          adrSubscriptionSummary.map(_.regimes) shouldBe Right(allRegimes)
+        }
+      }
 
-      val subscriptionSummary: SubscriptionSummary = SubscriptionSummary(
-        typeOfAlcoholApprovedFor = alcoholRegimes,
-        smallciderFlag = false,
-        approvalStatus = hods.DeRegistered,
-        insolvencyFlag = false
-      )
-      val adrSubscriptionSummary                   = AdrSubscriptionSummary.fromSubscriptionSummary(subscriptionSummary).toOption.get
+      "should return a AdrSubscriptionSummary with Insolvent given a SubscriptionSummary with insolvency flag" in {
+        val adrSubscriptionSummary = AdrSubscriptionSummary
+          .fromSubscriptionSummary(
+            approvedSubscriptionSummary.copy(insolvencyFlag = true),
+            ofpAsSeparateRegimeEnabled = true
+          )
 
-      adrSubscriptionSummary.approvalStatus shouldBe DeRegistered
-    }
+        adrSubscriptionSummary.map(_.approvalStatus) shouldBe Right(Insolvent)
+      }
 
-    "should return an INTERNAL_SERVER_ERROR if no alcohol types were approved" in {
-      val subscriptionSummary: SubscriptionSummary = SubscriptionSummary(
-        typeOfAlcoholApprovedFor = Set.empty,
-        smallciderFlag = false,
-        approvalStatus = hods.Approved,
-        insolvencyFlag = false
-      )
-      val adrSubscriptionSummaryError              =
-        AdrSubscriptionSummary.fromSubscriptionSummary(subscriptionSummary).swap.toOption.get
+      "should return a AdrSubscriptionSummary with SmallCiderProducer status given a SubscriptionSummary with smallcider flag" in {
+        val adrSubscriptionSummary = AdrSubscriptionSummary
+          .fromSubscriptionSummary(
+            approvedSubscriptionSummary.copy(smallciderFlag = true),
+            ofpAsSeparateRegimeEnabled = true
+          )
 
-      adrSubscriptionSummaryError.statusCode shouldBe INTERNAL_SERVER_ERROR
+        adrSubscriptionSummary.map(_.approvalStatus) shouldBe Right(SmallCiderProducer)
+      }
+
+      "should return a AdrSubscriptionSummary with Approved given a SubscriptionSummary with Approved status" in {
+        val adrSubscriptionSummary = AdrSubscriptionSummary
+          .fromSubscriptionSummary(approvedSubscriptionSummary, ofpAsSeparateRegimeEnabled = true)
+
+        adrSubscriptionSummary.map(_.approvalStatus) shouldBe Right(Approved)
+      }
+
+      "should return a AdrSubscriptionSummary with Revoked given a SubscriptionSummary with Revoked status" in {
+        val adrSubscriptionSummary = AdrSubscriptionSummary
+          .fromSubscriptionSummary(
+            approvedSubscriptionSummary.copy(approvalStatus = hods.Revoked),
+            ofpAsSeparateRegimeEnabled = true
+          )
+
+        adrSubscriptionSummary.map(_.approvalStatus) shouldBe Right(Revoked)
+      }
+
+      "should return a AdrSubscriptionSummary with DeRegistered given a SubscriptionSummary with DeRegistered status" in {
+        val adrSubscriptionSummary = AdrSubscriptionSummary
+          .fromSubscriptionSummary(
+            approvedSubscriptionSummary.copy(approvalStatus = hods.DeRegistered),
+            ofpAsSeparateRegimeEnabled = true
+          )
+
+        adrSubscriptionSummary.map(_.approvalStatus) shouldBe Right(DeRegistered)
+      }
+
+      "should return an INTERNAL_SERVER_ERROR if no alcohol types were approved" in {
+        val adrSubscriptionSummary = AdrSubscriptionSummary
+          .fromSubscriptionSummary(
+            approvedSubscriptionSummary.copy(typeOfAlcoholApprovedFor = Set.empty),
+            ofpAsSeparateRegimeEnabled = true
+          )
+
+        adrSubscriptionSummary.leftMap(_.statusCode) shouldBe Left(INTERNAL_SERVER_ERROR)
+      }
     }
   }
 }
