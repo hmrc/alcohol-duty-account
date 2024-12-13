@@ -44,6 +44,48 @@ class ObligationDataConnectorSpec extends SpecBase with ScalaFutures with Connec
         verifyGetWithParameters(url, expectedQueryParamsFulfilled)
       }
     }
+
+    "successfully filter out future open obligation data" in new SetUp {
+      stubGetWithParameters(url, expectedQueryParamsOpen, OK, Json.toJson(openObligationDataFromFuture).toString)
+      whenReady(connector.getObligationDetails(appaId, Some(obligationFilterOpen)).value) { result =>
+        result mustBe Right(noObligations)
+        verifyGetWithParameters(url, expectedQueryParamsOpen)
+      }
+    }
+
+    "successfully filter out future fulfilled obligation data" in new SetUp {
+      stubGetWithParameters(
+        url,
+        expectedQueryParamsFulfilled,
+        OK,
+        Json.toJson(fulfilledObligationDataFromFuture).toString
+      )
+      whenReady(connector.getObligationDetails(appaId, Some(obligationFilterFulfilled)).value) { result =>
+        result mustBe Right(noObligations)
+        verifyGetWithParameters(url, expectedQueryParamsFulfilled)
+      }
+    }
+    "successfully NOT filter out open obligation due today" in new SetUp {
+      stubGetWithParameters(url, expectedQueryParamsOpen, OK, Json.toJson(openObligationDataFromToday).toString)
+      whenReady(connector.getObligationDetails(appaId, Some(obligationFilterOpen)).value) { result =>
+        result mustBe Right(openObligationDataFromToday)
+        verifyGetWithParameters(url, expectedQueryParamsOpen)
+      }
+    }
+
+    "successfully NOT filter out fulfilled obligation due today" in new SetUp {
+      stubGetWithParameters(
+        url,
+        expectedQueryParamsFulfilled,
+        OK,
+        Json.toJson(fulfilledObligationDataFromToday).toString
+      )
+      whenReady(connector.getObligationDetails(appaId, Some(obligationFilterFulfilled)).value) { result =>
+        result mustBe Right(fulfilledObligationDataFromToday)
+        verifyGetWithParameters(url, expectedQueryParamsFulfilled)
+      }
+    }
+
     "successfully get open and fulfilled obligation data if there is no filter" in new SetUp {
       stubGetWithParameters(
         url,

@@ -17,12 +17,12 @@
 package uk.gov.hmrc.alcoholdutyaccount.connectors
 
 import cats.data.EitherT
-import play.api.{Logger, Logging}
 import play.api.http.Status.{INTERNAL_SERVER_ERROR, NOT_FOUND}
+import play.api.{Logger, Logging}
 import uk.gov.hmrc.alcoholdutyaccount.config.AppConfig
-import uk.gov.hmrc.alcoholdutyaccount.models.hods.{ObligationData, ObligationStatus, Open}
-import uk.gov.hmrc.http.client.HttpClientV2
+import uk.gov.hmrc.alcoholdutyaccount.models.hods.{ObligationData, ObligationDetails, ObligationStatus, Open}
 import uk.gov.hmrc.http._
+import uk.gov.hmrc.http.client.HttpClientV2
 import uk.gov.hmrc.play.bootstrap.backend.http.ErrorResponse
 
 import java.time.{LocalDate, ZoneId}
@@ -60,12 +60,11 @@ class ObligationDataConnector @Inject() (
         .map {
           case Right(response) =>
             Try {
-              response.json
-                .as[ObligationData]
+              response.json.as[ObligationData]
             } match {
               case Success(doc)       =>
                 logger.info(s"Retrieved open obligation data for appaId $appaId")
-                Right(doc)
+                Right(filterOutFutureObligations(doc))
               case Failure(exception) =>
                 logger.warn(s"Unable to parse obligation data for appaId $appaId", exception)
                 Left(ErrorResponse(INTERNAL_SERVER_ERROR, "Unable to parse obligation data"))
@@ -104,4 +103,14 @@ class ObligationDataConnector @Inject() (
 
     ErrorResponse(INTERNAL_SERVER_ERROR, "An error occurred")
   }
+
+  private def filterOutFutureObligations(obligationData: ObligationData): ObligationData =
+    obligationData.copy(obligations = obligationData.obligations.flatMap { obligation =>
+      val filteredDetails: Seq[ObligationDetails] = obligation.obligationDetails.filter { obligationDetail =>
+        !obligationDetail.inboundCorrespondenceToDate.isAfter(LocalDate.now())
+      }
+      // This code makes empty obligations of format ObligationData(obligations = Seq.empty), matching how they are currently returned
+      if (filteredDetails.nonEmpty) Some(obligation.copy(obligationDetails = filteredDetails)) else None
+    })
+
 }
