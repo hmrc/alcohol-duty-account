@@ -65,7 +65,7 @@ class ObligationDataConnectorSpec extends SpecBase with ScalaFutures with Connec
         verifyGetWithParameters(url, expectedQueryParamsFulfilled)
       }
     }
-    "successfully NOT filter out open obligation due today" in new SetUp {
+    "NOT filter out open obligation due from today" in new SetUp {
       stubGetWithParameters(url, expectedQueryParamsOpen, OK, Json.toJson(openObligationDataFromToday).toString)
       whenReady(connector.getObligationDetails(appaId, Some(obligationFilterOpen)).value) { result =>
         result mustBe Right(openObligationDataFromToday)
@@ -73,7 +73,7 @@ class ObligationDataConnectorSpec extends SpecBase with ScalaFutures with Connec
       }
     }
 
-    "successfully NOT filter out fulfilled obligation due today" in new SetUp {
+    "NOT filter out fulfilled obligation due from today" in new SetUp {
       stubGetWithParameters(
         url,
         expectedQueryParamsFulfilled,
