@@ -107,7 +107,7 @@ class ObligationDataConnector @Inject() (
   private def filterOutFutureObligations(obligationData: ObligationData): ObligationData =
     obligationData.copy(obligations = obligationData.obligations.flatMap { obligation =>
       val filteredDetails: Seq[ObligationDetails] = obligation.obligationDetails.filter { obligationDetail =>
-        !obligationDetail.inboundCorrespondenceToDate.isAfter(LocalDate.now())
+        obligationDetail.inboundCorrespondenceToDate.isBefore(LocalDate.now())
       }
       // This code makes empty obligations of format ObligationData(obligations = Seq.empty), matching how they are currently returned
       if (filteredDetails.nonEmpty) Some(obligation.copy(obligationDetails = filteredDetails)) else None
