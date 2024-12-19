@@ -84,8 +84,12 @@ trait TestData extends ModelGenerators {
     periodKey = periodKey
   )
 
-  val obligationDetails2 = obligationDetails.copy(periodKey = periodKey2)
-  val obligationDetails3 = obligationDetails.copy(periodKey = periodKey3)
+  val obligationDetails2            = obligationDetails.copy(periodKey = periodKey2)
+  val obligationDetails3            = obligationDetails.copy(periodKey = periodKey3)
+  val obligationDetailsFromFuture   =
+    obligationDetails.copy(inboundCorrespondenceToDate = LocalDate.now().plusDays(1000))
+  val obligationDetailsFromToday    = obligationDetails.copy(inboundCorrespondenceToDate = LocalDate.now().minusDays(1))
+  val obligationDetailsFromTomorrow = obligationDetails.copy(inboundCorrespondenceToDate = LocalDate.now())
 
   val obligationDataSingleOpen = ObligationData(
     obligations = Seq(
@@ -106,6 +110,30 @@ trait TestData extends ModelGenerators {
     )
   )
 
+  val openObligationDataFromToday = ObligationData(obligations =
+    Seq(
+      Obligation(
+        obligationDetails = Seq(obligationDetailsFromToday)
+      )
+    )
+  )
+
+  val openObligationDataFromTomorrow = ObligationData(obligations =
+    Seq(
+      Obligation(
+        obligationDetails = Seq(obligationDetailsFromTomorrow)
+      )
+    )
+  )
+
+  val openObligationDataFromFuture = ObligationData(obligations =
+    Seq(
+      Obligation(
+        obligationDetails = Seq(obligationDetailsFromFuture)
+      )
+    )
+  )
+
   val fulfilledObligationDetails = ObligationDetails(
     status = Fulfilled,
     inboundCorrespondenceFromDate = LocalDate.of(2024, 1, 1),
@@ -114,6 +142,13 @@ trait TestData extends ModelGenerators {
     inboundCorrespondenceDueDate = LocalDate.of(2024, 1, 1),
     periodKey = periodKey
   )
+
+  val fulfilledObligationDetailsFromFuture   =
+    fulfilledObligationDetails.copy(inboundCorrespondenceToDate = LocalDate.now().plusDays(1000))
+  val fulfilledObligationDetailsFromToday    =
+    fulfilledObligationDetails.copy(inboundCorrespondenceToDate = LocalDate.now().minusDays(1))
+  val fulfilledObligationDetailsFromTomorrow =
+    fulfilledObligationDetails.copy(inboundCorrespondenceToDate = LocalDate.now())
 
   val obligationDataSingleFulfilled          = ObligationData(
     obligations = Seq(
@@ -129,6 +164,30 @@ trait TestData extends ModelGenerators {
       ),
       Obligation(
         obligationDetails = Seq(fulfilledObligationDetails)
+      )
+    )
+  )
+
+  val fulfilledObligationDataFromToday = ObligationData(obligations =
+    Seq(
+      Obligation(
+        obligationDetails = Seq(fulfilledObligationDetailsFromToday)
+      )
+    )
+  )
+
+  val fulfilledObligationDataFromTomorrow = ObligationData(obligations =
+    Seq(
+      Obligation(
+        obligationDetails = Seq(fulfilledObligationDetailsFromTomorrow)
+      )
+    )
+  )
+
+  val fulfilledObligationDataFromFuture = ObligationData(obligations =
+    Seq(
+      Obligation(
+        obligationDetails = Seq(fulfilledObligationDetailsFromFuture)
       )
     )
   )
