@@ -97,8 +97,8 @@ class FinancialDataConnector @Inject() (config: AppConfig, implicit val httpClie
 
   private def getOnlyOpenItemsFalseParameters: Seq[(String, String)] =
     getBaseQueryParams(false) ++ Seq(
-      "dateFrom" -> "2024-10-31",
-      "dateTo"   -> "2025-10-30"
+      "dateFrom" -> config.historicDataStartDate,
+      "dateTo"   -> config.historicDataEndDate
     ) //TODO: need to change these dates when pagination story(ADR-1322) is implemented
 
   def getOnlyOpenFinancialData(

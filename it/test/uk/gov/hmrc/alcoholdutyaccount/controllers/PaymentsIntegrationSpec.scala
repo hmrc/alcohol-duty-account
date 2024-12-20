@@ -89,22 +89,21 @@ class PaymentsIntegrationSpec extends ISpecBase with ConnectorTestHelpers {
   "the historic payments endpoint should" should {
     "respond with OK if able to fetch historic payments" in new SetUp {
       stubAuthorised(appaId)
-      stubGetWithParameters(url, allParameters, OK, financialDataStubJson)
+      stubGetWithParameters(url, historicParameters, OK, financialDataStubJson)
 
       val response = callRoute(
         FakeRequest("GET", routes.PaymentsController.historicPayments(appaId, year).url)
           .withHeaders("Authorization" -> "Bearer 12345")
       )
-
       status(response) shouldBe OK
       contentAsJson(response).toString shouldBe historicPayments
 
-      verifyGetWithParameters(url, allParameters)
+      verifyGetWithParameters(url, historicParameters)
     }
 
     "respond with INTERNAL_SERVER_ERROR if the data retrieved cannot be parsed" in new SetUp {
       stubAuthorised(appaId)
-      stubGetWithParameters(url, allParameters, OK, "blah")
+      stubGetWithParameters(url, historicParameters, OK, "blah")
 
       val response = callRoute(
         FakeRequest("GET", routes.PaymentsController.historicPayments(appaId, year).url)
@@ -114,12 +113,12 @@ class PaymentsIntegrationSpec extends ISpecBase with ConnectorTestHelpers {
       status(response) shouldBe INTERNAL_SERVER_ERROR
       contentAsJson(response) shouldBe Json.toJson(ErrorResponse(INTERNAL_SERVER_ERROR, "Unexpected Response"))
 
-      verifyGetWithParameters(url, allParameters)
+      verifyGetWithParameters(url, historicParameters)
     }
 
     "respond with an empty document if financial data not found for appaId" in new SetUp {
       stubAuthorised(appaId)
-      stubGetWithParameters(url, allParameters, NOT_FOUND, "")
+      stubGetWithParameters(url, historicParameters, NOT_FOUND, "")
 
       val response = callRoute(
         FakeRequest("GET", routes.PaymentsController.historicPayments(appaId, year).url)
@@ -129,12 +128,12 @@ class PaymentsIntegrationSpec extends ISpecBase with ConnectorTestHelpers {
       status(response) shouldBe OK
       contentAsJson(response).toString shouldBe noHistoricPayments
 
-      verifyGetWithParameters(url, allParameters)
+      verifyGetWithParameters(url, historicParameters)
     }
 
     "respond with INTERNAL_SERVER_ERROR if error(s) returned from the financial data api call" in new SetUp {
       stubAuthorised(appaId)
-      stubGetWithParameters(url, allParameters, INTERNAL_SERVER_ERROR, "")
+      stubGetWithParameters(url, historicParameters, INTERNAL_SERVER_ERROR, "")
 
       val response = callRoute(
         FakeRequest("GET", routes.PaymentsController.historicPayments(appaId, year).url)
@@ -144,7 +143,7 @@ class PaymentsIntegrationSpec extends ISpecBase with ConnectorTestHelpers {
       status(response) shouldBe INTERNAL_SERVER_ERROR
       contentAsJson(response) shouldBe Json.toJson(ErrorResponse(INTERNAL_SERVER_ERROR, "Unexpected Response"))
 
-      verifyGetWithParameters(url, allParameters)
+      verifyGetWithParameters(url, historicParameters)
     }
   }
 
@@ -167,6 +166,15 @@ class PaymentsIntegrationSpec extends ISpecBase with ConnectorTestHelpers {
       "customerPaymentInformation" -> false.toString,
       "dateFrom"                   -> s"$year-01-01",
       "dateTo"                     -> s"$year-12-31"
+    )
+
+    val historicParameters = Seq(
+      "onlyOpenItems" -> false.toString,
+      "includeLocks" -> false.toString,
+      "calculateAccruedInterest" -> false.toString,
+      "customerPaymentInformation" -> false.toString,
+      "dateFrom" -> "2024-10-31",
+      "dateTo" -> "2025-10-30"
     )
 
     val financialDataStubJson =
