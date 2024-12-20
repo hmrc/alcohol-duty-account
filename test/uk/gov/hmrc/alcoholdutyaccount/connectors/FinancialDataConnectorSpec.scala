@@ -115,8 +115,8 @@ class FinancialDataConnectorSpec extends SpecBase with ScalaFutures with Connect
       "includeLocks"               -> "false",
       "calculateAccruedInterest"   -> "false",
       "customerPaymentInformation" -> "false",
-      "dateFrom"                   -> s"$year-01-01",
-      "dateTo"                     -> s"$year-12-31"
+      "dateFrom"                   -> "2024-10-31",
+      "dateTo"                     -> "2025-10-30"
     )
   }
 }
