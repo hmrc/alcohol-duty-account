@@ -185,23 +185,20 @@ class AlcoholDutyService @Inject() (
       financialTransactions.groupBy(_.sapDocumentNumber)
     val totalPaymentAmount: BigDecimal                                          = financialTransactions.flatMap(_.outstandingAmount).sum
 
-    transactionsBySapDocumentNumber.size match {
-      case 0 => Payments()
-      case 1 =>
-        val transactions: Seq[FinancialTransaction] = transactionsBySapDocumentNumber.head._2
-
+    transactionsBySapDocumentNumber.toList match {
+      case Nil                     => Payments()
+      case List(_ -> transactions) =>
         val chargeReferences: Seq[Option[String]] = transactions.map(_.chargeReference).distinct
 
         /*
             If there is one group of transactions by sapDocumentNumber but those group of transactions don't have a charge reference or the same charge references,
             we still return isMultiplePaymentDue = true because we'd want the user to pay with appaid in that case (as there is no charge ref found for payment)
          */
-        val (chargeReferenceToUse, isMultiplePaymentsDue) =
-          if (chargeReferences.size == 1 && chargeReferences.head.isDefined) {
-            (chargeReferences.head, false)
-          } else {
-            (None, true)
-          }
+        val (chargeReferenceToUse, isMultiplePaymentsDue) = chargeReferences match {
+          case Seq(maybeChargeReference @ Some(_)) => (maybeChargeReference, false)
+          case _                                   => (None, true)
+        }
+
         Payments(
           balance = Some(
             Balance(
