@@ -95,8 +95,11 @@ class FinancialDataConnector @Inject() (config: AppConfig, implicit val httpClie
       "customerPaymentInformation" -> false.toString
     )
 
-  private def getOnlyOpenItemsFalseParameters(year: Int): Seq[(String, String)]               =
-    getBaseQueryParams(false) ++ Seq("dateFrom" -> s"$year-01-01", "dateTo" -> s"$year-12-31")
+  private def getOnlyOpenItemsFalseParameters: Seq[(String, String)] =
+    getBaseQueryParams(false) ++ Seq(
+      "dateFrom" -> config.historicDataStartDate,
+      "dateTo"   -> config.historicDataEndDate
+    ) //TODO: need to change these dates when pagination story(ADR-1322) is implemented
 
   def getOnlyOpenFinancialData(
     appaId: String
@@ -107,5 +110,5 @@ class FinancialDataConnector @Inject() (config: AppConfig, implicit val httpClie
     appaId: String,
     year: Int
   )(implicit hc: HeaderCarrier): EitherT[Future, ErrorResponse, FinancialTransactionDocument] =
-    getFinancialData(appaId, getOnlyOpenItemsFalseParameters(year))
+    getFinancialData(appaId, getOnlyOpenItemsFalseParameters)
 }
