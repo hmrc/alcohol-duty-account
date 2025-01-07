@@ -90,7 +90,7 @@ class ObligationDataConnector @Inject() (
       Seq("from" -> config.obligationDataFilterStartDate, "to" -> LocalDate.now(ZoneId.of("Europe/London")).toString)
     obligationStatusFilter match {
       case Some(Open)   => Seq("status" -> Open.value)
-      case Some(status) => Seq("status" -> status.value) ++ dateFilterHeaders
+      case Some(status) => Seq("status" -> status.value) ++ dateFilterHeaders // Untested in ITs because is not accessed anywhere in code
       case None         => dateFilterHeaders
     }
   }
