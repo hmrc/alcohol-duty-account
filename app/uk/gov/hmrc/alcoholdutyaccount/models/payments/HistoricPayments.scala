@@ -31,8 +31,7 @@ object HistoricPayment {
 }
 
 case class HistoricPayments(
-  year: Int,
-  payments: Seq[HistoricPayment]
+  payments: Map[Int, Seq[HistoricPayment]]
 )
 
 object HistoricPayments {

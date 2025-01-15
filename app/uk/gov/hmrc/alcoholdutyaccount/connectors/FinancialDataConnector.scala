@@ -26,6 +26,7 @@ import uk.gov.hmrc.http.client.HttpClientV2
 import uk.gov.hmrc.http.{HeaderCarrier, HeaderNames, HttpReadsInstances, HttpResponse, StringContextOps, UpstreamErrorResponse}
 import uk.gov.hmrc.play.bootstrap.backend.http.ErrorResponse
 
+import java.time.LocalDate
 import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
@@ -62,6 +63,7 @@ class FinancialDataConnector @Inject() (config: AppConfig, implicit val httpClie
                 logger.info(s"Retrieved financial transaction document for appaId $appaId")
                 Right(doc)
               case Failure(exception) =>
+                println("FFFFFFFFF")
                 logger.warn(s"Parsing failed for financial transaction document for appaId $appaId", exception)
                 Left(ErrorCodes.unexpectedResponse)
             }
@@ -73,6 +75,7 @@ class FinancialDataConnector @Inject() (config: AppConfig, implicit val httpClie
             Left(processErrors(appaId, error))
         }
         .recoverWith { case e: Exception =>
+          println("GGGGGGGGG")
           logger.warn(s"An exception was returned while trying to fetch financial data for appaId $appaId", e)
           Future.successful(Left(ErrorCodes.unexpectedResponse))
         }
@@ -95,10 +98,10 @@ class FinancialDataConnector @Inject() (config: AppConfig, implicit val httpClie
       "customerPaymentInformation" -> false.toString
     )
 
-  private def getOnlyOpenItemsFalseParameters: Seq[(String, String)] =
+  private def getOnlyOpenItemsFalseParameters(year: Int): Seq[(String, String)] =
     getBaseQueryParams(false) ++ Seq(
       "dateFrom" -> config.historicDataStartDate,
-      "dateTo"   -> config.historicDataEndDate
+      "dateTo"   -> LocalDate.of(year, LocalDate.now().getMonth, LocalDate.now().getDayOfMonth).toString
     ) //TODO: need to change these dates when pagination story(ADR-1322) is implemented
 
   def getOnlyOpenFinancialData(
@@ -110,5 +113,5 @@ class FinancialDataConnector @Inject() (config: AppConfig, implicit val httpClie
     appaId: String,
     year: Int
   )(implicit hc: HeaderCarrier): EitherT[Future, ErrorResponse, FinancialTransactionDocument] =
-    getFinancialData(appaId, getOnlyOpenItemsFalseParameters)
+    getFinancialData(appaId, getOnlyOpenItemsFalseParameters(year))
 }

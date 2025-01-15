@@ -77,10 +77,14 @@ class PaymentsController @Inject() (
 
       historicPayments.fold(
         errorResponse => {
+          println("BBBBBBBBB" + errorResponse)
           logger.warn(s"Unable to get historic payments for $appaId: $errorResponse")
           error(errorResponse)
         },
-        historicPayments => Ok(Json.toJson(historicPayments))
+        historicPayments => {
+          println("AAAAAAAA" + historicPayments)
+          Ok(Json.toJson(historicPayments))
+        }
       )
     }
 }

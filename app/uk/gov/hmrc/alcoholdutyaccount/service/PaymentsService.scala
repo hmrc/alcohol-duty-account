@@ -363,5 +363,8 @@ class PaymentsService @Inject() (
       financialTransactionDocument <-
         financialDataConnector.getNotOnlyOpenFinancialData(appaId = appaId, year = year)
       historicPayments             <- extractHistoricPayments(financialTransactionDocument)
-    } yield HistoricPayments(year, historicPayments)
+    } yield {
+      println("CCCCCCCCC" + historicPayments)
+      HistoricPayments(historicPayments.groupBy(_.period.period.toString.take(4).toInt))
+    }
 }
