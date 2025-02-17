@@ -2,7 +2,7 @@ import sbt._
 
 object AppDependencies {
 
-  private val bootstrapVersion = "9.4.0"
+  private val bootstrapVersion = "9.9.0"
   val mockitoScalaVersion = "1.17.37"
 
   val compile = Seq(
@@ -13,8 +13,8 @@ object AppDependencies {
 
   val test = Seq(
     "uk.gov.hmrc"             %% "bootstrap-test-play-30"     % bootstrapVersion            % Test,
-    "org.mockito"             %% "mockito-scala"              % mockitoScalaVersion                   % Test,
-    "org.mockito"             %% "mockito-scala-cats"         % mockitoScalaVersion                   % Test,
+    "org.mockito"             %% "mockito-scala"              % mockitoScalaVersion         % Test,
+    "org.mockito"             %% "mockito-scala-cats"         % mockitoScalaVersion         % Test,
     "org.scalatestplus"       %% "scalatestplus-scalacheck"   % "3.1.0.0-RC2"               % Test
   )
   val itDependencies = Seq.empty
