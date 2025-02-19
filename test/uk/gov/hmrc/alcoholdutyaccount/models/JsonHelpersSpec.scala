@@ -22,26 +22,26 @@ import uk.gov.hmrc.alcoholdutyaccount.base.SpecBase
 class JsonHelpersSpec extends SpecBase {
   "SubscriptionSummary" - {
     Seq((false, """"0""""), (true, """"1"""")).foreach { case (v, code) =>
-      s"should deserialise the code $code to boolean $v" in {
+      s"must deserialise the code $code to boolean $v" in {
         import JsonHelpers.booleanReads
 
         Json.parse(code).as[Boolean] mustBe v
       }
 
-      s"should serialise boolean $v to the code $code" in {
+      s"must serialise boolean $v to the code $code" in {
         import JsonHelpers.booleanWrites
 
         Json.toJson(v).toString mustBe code
       }
     }
 
-    "should return an error if a read value is an invalid string" in {
+    "must return an error if a read value is an invalid string" in {
       import JsonHelpers.booleanReads
 
       a[JsResultException] mustBe thrownBy(Json.parse(""""2"""").as[Boolean])
     }
 
-    "should return an error if a read value is an invalid type" in {
+    "must return an error if a read value is an invalid type" in {
       import JsonHelpers.booleanReads
 
       a[JsResultException] mustBe thrownBy(Json.parse("""1""").as[Boolean])

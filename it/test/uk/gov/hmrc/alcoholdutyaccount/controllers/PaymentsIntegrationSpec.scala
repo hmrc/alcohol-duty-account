@@ -24,7 +24,7 @@ import uk.gov.hmrc.play.bootstrap.backend.http.ErrorResponse
 class PaymentsIntegrationSpec extends ISpecBase with ConnectorTestHelpers {
   protected val endpointName = "financial"
 
-  "the open payments endpoint should" should {
+  "the open payments endpoint must" - {
     "respond with OK if able to fetch open payments" in new SetUp {
       stubAuthorised(appaId)
       stubGetWithParameters(url, openParameters, OK, financialDataStubJson)
@@ -34,8 +34,8 @@ class PaymentsIntegrationSpec extends ISpecBase with ConnectorTestHelpers {
           .withHeaders("Authorization" -> "Bearer 12345")
       )
 
-      status(response) shouldBe OK
-      contentAsJson(response).toString shouldBe openPayments
+      status(response)                 mustBe OK
+      contentAsJson(response).toString mustBe openPayments
 
       verifyGetWithParameters(url, openParameters)
     }
@@ -49,8 +49,8 @@ class PaymentsIntegrationSpec extends ISpecBase with ConnectorTestHelpers {
           .withHeaders("Authorization" -> "Bearer 12345")
       )
 
-      status(response) shouldBe INTERNAL_SERVER_ERROR
-      contentAsJson(response) shouldBe Json.toJson(ErrorResponse(INTERNAL_SERVER_ERROR, "Unexpected Response"))
+      status(response)        mustBe INTERNAL_SERVER_ERROR
+      contentAsJson(response) mustBe Json.toJson(ErrorResponse(INTERNAL_SERVER_ERROR, "Unexpected Response"))
 
       verifyGetWithParameters(url, openParameters)
     }
@@ -64,8 +64,8 @@ class PaymentsIntegrationSpec extends ISpecBase with ConnectorTestHelpers {
           .withHeaders("Authorization" -> "Bearer 12345")
       )
 
-      status(response) shouldBe OK
-      contentAsJson(response).toString shouldBe noOpenPayments
+      status(response)                 mustBe OK
+      contentAsJson(response).toString mustBe noOpenPayments
 
       verifyGetWithParameters(url, openParameters)
     }
@@ -79,14 +79,14 @@ class PaymentsIntegrationSpec extends ISpecBase with ConnectorTestHelpers {
           .withHeaders("Authorization" -> "Bearer 12345")
       )
 
-      status(response) shouldBe INTERNAL_SERVER_ERROR
-      contentAsJson(response) shouldBe Json.toJson(ErrorResponse(INTERNAL_SERVER_ERROR, "Unexpected Response"))
+      status(response)        mustBe INTERNAL_SERVER_ERROR
+      contentAsJson(response) mustBe Json.toJson(ErrorResponse(INTERNAL_SERVER_ERROR, "Unexpected Response"))
 
       verifyGetWithParameters(url, openParameters)
     }
   }
 
-  "the historic payments endpoint should" should {
+  "the historic payments endpoint must" - {
     "respond with OK if able to fetch historic payments" in new SetUp {
       stubAuthorised(appaId)
       stubGetWithParameters(url, historicParameters, OK, financialDataStubJson)
@@ -95,8 +95,8 @@ class PaymentsIntegrationSpec extends ISpecBase with ConnectorTestHelpers {
         FakeRequest("GET", routes.PaymentsController.historicPayments(appaId, year).url)
           .withHeaders("Authorization" -> "Bearer 12345")
       )
-      status(response) shouldBe OK
-      contentAsJson(response).toString shouldBe historicPayments
+      status(response) mustBe OK
+      contentAsJson(response).toString mustBe historicPayments
 
       verifyGetWithParameters(url, historicParameters)
     }
@@ -110,8 +110,8 @@ class PaymentsIntegrationSpec extends ISpecBase with ConnectorTestHelpers {
           .withHeaders("Authorization" -> "Bearer 12345")
       )
 
-      status(response) shouldBe INTERNAL_SERVER_ERROR
-      contentAsJson(response) shouldBe Json.toJson(ErrorResponse(INTERNAL_SERVER_ERROR, "Unexpected Response"))
+      status(response)        mustBe INTERNAL_SERVER_ERROR
+      contentAsJson(response) mustBe Json.toJson(ErrorResponse(INTERNAL_SERVER_ERROR, "Unexpected Response"))
 
       verifyGetWithParameters(url, historicParameters)
     }
@@ -125,8 +125,8 @@ class PaymentsIntegrationSpec extends ISpecBase with ConnectorTestHelpers {
           .withHeaders("Authorization" -> "Bearer 12345")
       )
 
-      status(response) shouldBe OK
-      contentAsJson(response).toString shouldBe noHistoricPayments
+      status(response)                 mustBe OK
+      contentAsJson(response).toString mustBe noHistoricPayments
 
       verifyGetWithParameters(url, historicParameters)
     }
@@ -140,26 +140,26 @@ class PaymentsIntegrationSpec extends ISpecBase with ConnectorTestHelpers {
           .withHeaders("Authorization" -> "Bearer 12345")
       )
 
-      status(response) shouldBe INTERNAL_SERVER_ERROR
-      contentAsJson(response) shouldBe Json.toJson(ErrorResponse(INTERNAL_SERVER_ERROR, "Unexpected Response"))
+      status(response)        mustBe INTERNAL_SERVER_ERROR
+      contentAsJson(response) mustBe Json.toJson(ErrorResponse(INTERNAL_SERVER_ERROR, "Unexpected Response"))
 
       verifyGetWithParameters(url, historicParameters)
     }
   }
 
   class SetUp {
-    val url       = config.financialDataUrl(appaId)
+    val url = config.financialDataUrl(appaId)
 
     val year = 2024
 
-    val openParameters =     Seq(
+    val openParameters = Seq(
       "onlyOpenItems"              -> true.toString,
       "includeLocks"               -> false.toString,
       "calculateAccruedInterest"   -> false.toString,
       "customerPaymentInformation" -> false.toString
     )
 
-    val allParameters =     Seq(
+    val allParameters = Seq(
       "onlyOpenItems"              -> false.toString,
       "includeLocks"               -> false.toString,
       "calculateAccruedInterest"   -> false.toString,
@@ -169,12 +169,12 @@ class PaymentsIntegrationSpec extends ISpecBase with ConnectorTestHelpers {
     )
 
     val historicParameters = Seq(
-      "onlyOpenItems" -> false.toString,
-      "includeLocks" -> false.toString,
-      "calculateAccruedInterest" -> false.toString,
+      "onlyOpenItems"              -> false.toString,
+      "includeLocks"               -> false.toString,
+      "calculateAccruedInterest"   -> false.toString,
       "customerPaymentInformation" -> false.toString,
-      "dateFrom" -> "2024-10-31",
-      "dateTo" -> "2025-10-30"
+      "dateFrom"                   -> "2024-10-31",
+      "dateTo"                     -> "2025-10-30"
     )
 
     val financialDataStubJson =
@@ -440,9 +440,12 @@ class PaymentsIntegrationSpec extends ISpecBase with ConnectorTestHelpers {
         |}
         |""".stripMargin
 
-    val openPayments = """{"outstandingPayments":[{"transactionType":"LPI","dueDate":"2024-02-01","chargeReference":"XA85353805192234","remainingAmount":20.56},{"transactionType":"Return","dueDate":"2024-09-25","chargeReference":"XA91104208683855","remainingAmount":237.44},{"transactionType":"Return","dueDate":"2024-06-25","chargeReference":"XA95767883826728","remainingAmount":4577.44},{"transactionType":"Return","dueDate":"2024-05-25","chargeReference":"XA07406454540955","remainingAmount":2577.44},{"transactionType":"RPI","dueDate":"2024-03-01","chargeReference":"XA69201353871649","remainingAmount":-50},{"transactionType":"Return","dueDate":"2024-04-25","chargeReference":"XA15775952652650","remainingAmount":-2577.44},{"transactionType":"LPI","dueDate":"2024-02-01","chargeReference":"XA63139412020838","remainingAmount":10.56}],"totalOutstandingPayments":4796,"unallocatedPayments":[{"paymentDate":"2024-08-01","unallocatedAmount":-1000},{"paymentDate":"2024-08-01","unallocatedAmount":-500}],"totalUnallocatedPayments":-1500,"totalOpenPaymentsAmount":3296}"""
-    val historicPayments = s"""{"year":$year,"payments":[{"period":"24AB","transactionType":"LPI","chargeReference":"XA63139412020838","amountPaid":10},{"period":"24AD","transactionType":"Return","chargeReference":"XA07406454540955","amountPaid":2000}]}"""
-    val noOpenPayments = """{"outstandingPayments":[],"totalOutstandingPayments":0,"unallocatedPayments":[],"totalUnallocatedPayments":0,"totalOpenPaymentsAmount":0}"""
+    val openPayments       =
+      """{"outstandingPayments":[{"transactionType":"LPI","dueDate":"2024-02-01","chargeReference":"XA85353805192234","remainingAmount":20.56},{"transactionType":"Return","dueDate":"2024-09-25","chargeReference":"XA91104208683855","remainingAmount":237.44},{"transactionType":"Return","dueDate":"2024-06-25","chargeReference":"XA95767883826728","remainingAmount":4577.44},{"transactionType":"Return","dueDate":"2024-05-25","chargeReference":"XA07406454540955","remainingAmount":2577.44},{"transactionType":"RPI","dueDate":"2024-03-01","chargeReference":"XA69201353871649","remainingAmount":-50},{"transactionType":"Return","dueDate":"2024-04-25","chargeReference":"XA15775952652650","remainingAmount":-2577.44},{"transactionType":"LPI","dueDate":"2024-02-01","chargeReference":"XA63139412020838","remainingAmount":10.56}],"totalOutstandingPayments":4796,"unallocatedPayments":[{"paymentDate":"2024-08-01","unallocatedAmount":-1000},{"paymentDate":"2024-08-01","unallocatedAmount":-500}],"totalUnallocatedPayments":-1500,"totalOpenPaymentsAmount":3296}"""
+    val historicPayments   =
+      s"""{"year":$year,"payments":[{"period":"24AB","transactionType":"LPI","chargeReference":"XA63139412020838","amountPaid":10},{"period":"24AD","transactionType":"Return","chargeReference":"XA07406454540955","amountPaid":2000}]}"""
+    val noOpenPayments     =
+      """{"outstandingPayments":[],"totalOutstandingPayments":0,"unallocatedPayments":[],"totalUnallocatedPayments":0,"totalOpenPaymentsAmount":0}"""
     val noHistoricPayments = s"""{"year":$year,"payments":[]}"""
   }
 }

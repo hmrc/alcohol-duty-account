@@ -30,7 +30,7 @@ import java.time.{LocalDate, ZoneId}
 class ObligationDetailsIntegrationSpec extends ISpecBase {
   protected val endpointName = "obligation"
 
-  "the open obligation details endpoint should" should {
+  "the open obligation details endpoint must" - {
     "respond with OK if able to fetch data that matches the period key" in new SetUp {
       stubAuthorised(appaId)
       stubGetWithParameters(url, expectedQueryParamsOpen, OK, Json.toJson(obligationDataSingleOpen).toString)
@@ -40,8 +40,8 @@ class ObligationDetailsIntegrationSpec extends ISpecBase {
           .withHeaders("Authorization" -> "Bearer 12345")
       )
 
-      status(response)        shouldBe OK
-      contentAsJson(response) shouldBe Json.toJson(adrObligationDetails)
+      status(response)        mustBe OK
+      contentAsJson(response) mustBe Json.toJson(adrObligationDetails)
 
       verifyGetWithParametersAndHeaders(url, expectedQueryParamsOpen, expectedHeaders)
     }
@@ -55,8 +55,8 @@ class ObligationDetailsIntegrationSpec extends ISpecBase {
           .withHeaders("Authorization" -> "Bearer 12345")
       )
 
-      status(response)        shouldBe INTERNAL_SERVER_ERROR
-      contentAsJson(response) shouldBe Json.toJson(
+      status(response)        mustBe INTERNAL_SERVER_ERROR
+      contentAsJson(response) mustBe Json.toJson(
         ErrorResponse(INTERNAL_SERVER_ERROR, "Unable to parse obligation data")
       )
 
@@ -72,8 +72,10 @@ class ObligationDetailsIntegrationSpec extends ISpecBase {
           .withHeaders("Authorization" -> "Bearer 12345")
       )
 
-      status(response)        shouldBe NOT_FOUND
-      contentAsJson(response) shouldBe Json.toJson(ErrorResponse(NOT_FOUND, s"Obligation details not found for period key $periodKey"))
+      status(response)        mustBe NOT_FOUND
+      contentAsJson(response) mustBe Json.toJson(
+        ErrorResponse(NOT_FOUND, s"Obligation details not found for period key $periodKey")
+      )
 
       verifyGetWithParametersAndHeaders(url, expectedQueryParamsOpen, expectedHeaders)
     }
@@ -89,8 +91,8 @@ class ObligationDetailsIntegrationSpec extends ISpecBase {
           .withHeaders("Authorization" -> "Bearer 12345")
       )
 
-      status(response)        shouldBe NOT_FOUND
-      contentAsJson(response) shouldBe Json.toJson(
+      status(response)        mustBe NOT_FOUND
+      contentAsJson(response) mustBe Json.toJson(
         ErrorResponse(NOT_FOUND, s"Obligation details not found for period key $testPeriodKey")
       )
 
@@ -106,14 +108,14 @@ class ObligationDetailsIntegrationSpec extends ISpecBase {
           .withHeaders("Authorization" -> "Bearer 12345")
       )
 
-      status(response)        shouldBe INTERNAL_SERVER_ERROR
-      contentAsJson(response) shouldBe Json.toJson(ErrorResponse(INTERNAL_SERVER_ERROR, "An error occurred"))
+      status(response)        mustBe INTERNAL_SERVER_ERROR
+      contentAsJson(response) mustBe Json.toJson(ErrorResponse(INTERNAL_SERVER_ERROR, "An error occurred"))
 
       verifyGetWithParametersAndHeaders(url, expectedQueryParamsOpen, expectedHeaders)
     }
   }
 
-  "the obligation details endpoint should" should {
+  "the obligation details endpoint must" - {
     "respond with OK if able to fetch data" in new SetUp {
       stubAuthorised(appaId)
 
@@ -124,8 +126,8 @@ class ObligationDetailsIntegrationSpec extends ISpecBase {
           .withHeaders("Authorization" -> "Bearer 12345")
       )
 
-      status(response)        shouldBe OK
-      contentAsJson(response) shouldBe Json.toJson(Seq(adrObligationDetails))
+      status(response)        mustBe OK
+      contentAsJson(response) mustBe Json.toJson(Seq(adrObligationDetails))
       verifyGetWithParametersAndHeaders(url, expectedQueryParamsNoStatus, expectedHeaders)
     }
 
@@ -143,8 +145,8 @@ class ObligationDetailsIntegrationSpec extends ISpecBase {
           .withHeaders("Authorization" -> "Bearer 12345")
       )
 
-      status(response)        shouldBe OK
-      contentAsJson(response) shouldBe Json.toJson(adrMultipleOpenAndFulfilledData)
+      status(response)        mustBe OK
+      contentAsJson(response) mustBe Json.toJson(adrMultipleOpenAndFulfilledData)
 
       verifyGetWithParametersAndHeaders(url, expectedQueryParamsNoStatus, expectedHeaders)
     }
@@ -158,8 +160,8 @@ class ObligationDetailsIntegrationSpec extends ISpecBase {
           .withHeaders("Authorization" -> "Bearer 12345")
       )
 
-      status(response)        shouldBe INTERNAL_SERVER_ERROR
-      contentAsJson(response) shouldBe Json.toJson(
+      status(response)        mustBe INTERNAL_SERVER_ERROR
+      contentAsJson(response) mustBe Json.toJson(
         ErrorResponse(INTERNAL_SERVER_ERROR, "Unable to parse obligation data")
       )
 
@@ -176,8 +178,8 @@ class ObligationDetailsIntegrationSpec extends ISpecBase {
           .withHeaders("Authorization" -> "Bearer 12345")
       )
 
-      status(response)        shouldBe OK
-      contentAsJson(response) shouldBe Json.toJson(Seq.empty[AdrObligationData])
+      status(response)        mustBe OK
+      contentAsJson(response) mustBe Json.toJson(Seq.empty[AdrObligationData])
 
       verifyGetWithParametersAndHeaders(url, expectedQueryParamsNoStatus, expectedHeaders)
     }
@@ -191,8 +193,8 @@ class ObligationDetailsIntegrationSpec extends ISpecBase {
           .withHeaders("Authorization" -> "Bearer 12345")
       )
 
-      status(response)        shouldBe INTERNAL_SERVER_ERROR
-      contentAsJson(response) shouldBe Json.toJson(ErrorResponse(INTERNAL_SERVER_ERROR, "An error occurred"))
+      status(response)        mustBe INTERNAL_SERVER_ERROR
+      contentAsJson(response) mustBe Json.toJson(ErrorResponse(INTERNAL_SERVER_ERROR, "An error occurred"))
 
       verifyGetWithParametersAndHeaders(url, expectedQueryParamsNoStatus, expectedHeaders)
     }
@@ -204,7 +206,7 @@ class ObligationDetailsIntegrationSpec extends ISpecBase {
 
     val expectedHeaders = Seq(
       HeaderNames.authorisation -> s"Bearer ${config.obligationDataToken}",
-      "Environment" -> config.obligationDataEnv
+      "Environment"             -> config.obligationDataEnv
     )
 
     private val dateFilterHeadersHeaders =

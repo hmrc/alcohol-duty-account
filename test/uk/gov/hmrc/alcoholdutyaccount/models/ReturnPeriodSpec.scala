@@ -23,7 +23,7 @@ import java.time.{LocalDate, YearMonth}
 
 class ReturnPeriodSpec extends SpecBase {
   "ReturnPeriod" - {
-    "should return an error when" - {
+    "must return an error when" - {
       "the key is more than 4 characters" in {
         ReturnPeriod.fromPeriodKey("24AC1") mustBe None
       }
@@ -78,20 +78,20 @@ class ReturnPeriodSpec extends SpecBase {
       ReturnPeriod.fromDateInPeriod(LocalDate.of(2024, 12, 1)) mustBe ReturnPeriod(YearMonth.of(2024, 12))
     }
 
-    "should parse ReturnPeriod with the right json value" in {
+    "must parse ReturnPeriod with the right json value" in {
       val returnPeriod = ReturnPeriod(YearMonth.of(2024, 1))
       val result       = Json.toJson(returnPeriod)
       result mustBe JsString("24AA")
     }
 
-    "should transform a valid Period Key json string into a Return Period" in {
+    "must transform a valid Period Key json string into a Return Period" in {
       val periodKey         = periodKeyGen.sample.get
       val periodKeyJsString = JsString(periodKey)
       val result            = periodKeyJsString.as[ReturnPeriod]
       result.toPeriodKey mustBe periodKey
     }
 
-    "should throw an IllegalArgumentException when an invalid period key json string is parsed" in {
+    "must throw an IllegalArgumentException when an invalid period key json string is parsed" in {
       val invalidPeriodKey  = invalidPeriodKeyGen.sample.get
       val periodKeyJsString = JsString(invalidPeriodKey)
 
@@ -102,19 +102,19 @@ class ReturnPeriodSpec extends SpecBase {
       exception mustBe an[IllegalArgumentException]
     }
 
-    "should be able to get the periodKey" in {
+    "must be able to get the periodKey" in {
       ReturnPeriod.fromPeriodKey("24AC").get.toPeriodKey mustBe "24AC"
     }
 
-    "should be able to get the due date for the period key" in {
+    "must be able to get the due date for the period key" in {
       ReturnPeriod.fromPeriodKey("24AC").get.dueDate() mustBe LocalDate.of(2024, 4, 25)
     }
 
-    "should be able to get the first date of the period" in {
+    "must be able to get the first date of the period" in {
       ReturnPeriod.fromPeriodKey("24AC").get.periodFromDate() mustBe LocalDate.of(2024, 3, 1)
     }
 
-    "should be able to get the last date of the period" in {
+    "must be able to get the last date of the period" in {
       ReturnPeriod.fromPeriodKey("24AC").get.periodToDate() mustBe LocalDate.of(2024, 3, 31)
     }
   }

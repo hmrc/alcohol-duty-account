@@ -16,7 +16,6 @@
 
 package uk.gov.hmrc.alcoholdutyaccount.models.hods
 
-import org.scalatest.matchers.should.Matchers.convertToAnyShouldWrapper
 import play.api.libs.json.{JsResultException, Json}
 import uk.gov.hmrc.alcoholdutyaccount.base.SpecBase
 
@@ -25,7 +24,7 @@ import java.time.LocalDate
 class ObligationDataSpec extends SpecBase {
 
   "ObligationData" - {
-    "should be able to to be read from a Json" in {
+    "must be able to to be read from a Json" in {
       val expectedObligationData = ObligationData(
         obligations = Seq(
           Obligation(
@@ -79,10 +78,10 @@ class ObligationDataSpec extends SpecBase {
           |""".stripMargin
 
       val result = Json.parse(json).asOpt[ObligationData]
-      result shouldBe Some(expectedObligationData)
+      result mustBe Some(expectedObligationData)
     }
 
-    "should be able to transform an object into a Json" in {
+    "must be able to transform an object into a Json" in {
 
       val obligationData = ObligationData(
         obligations = Seq(
@@ -137,10 +136,10 @@ class ObligationDataSpec extends SpecBase {
           |""".stripMargin.filterNot(_.isWhitespace)
 
       val result: String = Json.toJson(obligationData).toString()
-      result shouldBe expectedValue
+      result mustBe expectedValue
     }
 
-    "should throw an Exception if the Obligation Status is not Open or Fulfilled" in {
+    "must throw an Exception if the Obligation Status is not Open or Fulfilled" in {
       val json =
         """
           |{
@@ -152,10 +151,10 @@ class ObligationDataSpec extends SpecBase {
           |}
           |""".stripMargin
 
-      an[JsResultException] should be thrownBy Json.parse(json).as[ObligationDetails]
+      an[JsResultException] must be thrownBy Json.parse(json).as[ObligationDetails]
     }
 
-    "should throw an Exception if the Obligation Status is not a string" in {
+    "must throw an Exception if the Obligation Status is not a string" in {
       val json =
         """
           |{
@@ -167,7 +166,7 @@ class ObligationDataSpec extends SpecBase {
           |}
           |""".stripMargin
 
-      an[JsResultException] should be thrownBy Json.parse(json).as[ObligationDetails]
+      an[JsResultException] must be thrownBy Json.parse(json).as[ObligationDetails]
     }
   }
 }
