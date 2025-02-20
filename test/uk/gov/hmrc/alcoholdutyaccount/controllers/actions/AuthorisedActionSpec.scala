@@ -57,7 +57,7 @@ class AuthorisedActionSpec extends SpecBase {
   }
 
   "invokeBlock" - {
-    "should execute the block and return OK if authorised" in {
+    "must execute the block and return OK if authorised" in {
       when(
         mockAuthConnector.authorise(
           eqTo(
@@ -74,11 +74,11 @@ class AuthorisedActionSpec extends SpecBase {
 
       val result: Future[Result] = authorisedAction.invokeBlock(fakeRequest, testAction)
 
-      status(result) mustBe OK
+      status(result)          mustBe OK
       contentAsString(result) mustBe testContent
     }
 
-    "should execute the block and throw IllegalStateException if cannot get the enrolment" in {
+    "must execute the block and throw IllegalStateException if cannot get the enrolment" in {
       when(
         mockAuthConnector.authorise(
           eqTo(
@@ -98,7 +98,7 @@ class AuthorisedActionSpec extends SpecBase {
       }
     }
 
-    "should execute the block and throw IllegalStateException if cannot get the APPAID enrolment" in {
+    "must execute the block and throw IllegalStateException if cannot get the APPAID enrolment" in {
       when(
         mockAuthConnector.authorise(
           eqTo(
@@ -118,7 +118,7 @@ class AuthorisedActionSpec extends SpecBase {
       }
     }
 
-    "should return 401 Unauthorized if there is an authorisation exception" - {
+    "must return 401 Unauthorized if there is an authorisation exception" - {
       List(
         InsufficientConfidenceLevel(),
         InsufficientEnrolments(),
@@ -140,7 +140,7 @@ class AuthorisedActionSpec extends SpecBase {
       }
     }
 
-    "should return the exception if there is any other exception" in {
+    "must return the exception if there is any other exception" in {
       val msg = "Test Exception"
 
       when(mockAuthConnector.authorise[Unit](any(), any())(any(), any()))

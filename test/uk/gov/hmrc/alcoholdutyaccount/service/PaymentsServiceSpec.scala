@@ -29,7 +29,7 @@ import scala.concurrent.Future
 class PaymentsServiceSpec extends SpecBase {
   "PaymentsService" - {
     "when calling getOpenPayments" - {
-      "a successful and correct response should be returned" - {
+      "a successful and correct response must be returned" - {
         "handle no financial data (nil return or no data)" in new SetUp {
           when(mockFinancialDataConnector.getOnlyOpenFinancialData(appaId))
             .thenReturn(EitherT.pure[Future, ErrorResponse](emptyFinancialDocument))
@@ -132,7 +132,7 @@ class PaymentsServiceSpec extends SpecBase {
           whenReady(paymentsService.getOpenPayments(appaId).value) {
             case Left(_)             => fail()
             case Right(openPayments) =>
-              openPayments.outstandingPayments must contain theSameElementsAs Seq(
+              openPayments.outstandingPayments        must contain theSameElementsAs Seq(
                 OutstandingPayment(
                   transactionType = TransactionType.Return,
                   dueDate = financialTransactionDocument.financialTransactions(0).items.head.dueDate.get,
@@ -147,13 +147,13 @@ class PaymentsServiceSpec extends SpecBase {
                 )
               )
               openPayments.totalOutstandingPayments mustBe BigDecimal("7000")
-              openPayments.unallocatedPayments mustBe Seq.empty
+              openPayments.unallocatedPayments      mustBe Seq.empty
               openPayments.totalUnallocatedPayments mustBe BigDecimal("0")
-              openPayments.totalOpenPaymentsAmount mustBe BigDecimal("7000")
+              openPayments.totalOpenPaymentsAmount  mustBe BigDecimal("7000")
           }
         }
 
-        "should ignore payments on account that have no contract object type" in new SetUp {
+        "must ignore payments on account that have no contract object type" in new SetUp {
           when(mockFinancialDataConnector.getOnlyOpenFinancialData(appaId))
             .thenReturn(EitherT.pure[Future, ErrorResponse](singlePaymentOnAccountNoContractObjectType))
 
@@ -170,7 +170,7 @@ class PaymentsServiceSpec extends SpecBase {
           }
         }
 
-        "should ignore payments on account that are not contract object type ZADP" in new SetUp {
+        "must ignore payments on account that are not contract object type ZADP" in new SetUp {
           when(mockFinancialDataConnector.getOnlyOpenFinancialData(appaId))
             .thenReturn(EitherT.pure[Future, ErrorResponse](singlePaymentOnAccountNotZADP))
 
@@ -209,7 +209,7 @@ class PaymentsServiceSpec extends SpecBase {
           }
         }
 
-        "should warn when processing a single fully unallocated payment on account where original and outstanding amounts don't match (coverage)" in new SetUp {
+        "must warn when processing a single fully unallocated payment on account where original and outstanding amounts don't match (coverage)" in new SetUp {
           when(mockFinancialDataConnector.getOnlyOpenFinancialData(appaId))
             .thenReturn(EitherT.pure[Future, ErrorResponse](singlePaymentOnAccountAmountMismatch))
 
@@ -240,9 +240,9 @@ class PaymentsServiceSpec extends SpecBase {
           whenReady(paymentsService.getOpenPayments(appaId).value) {
             case Left(_)             => fail()
             case Right(openPayments) =>
-              openPayments.outstandingPayments mustBe Seq.empty
+              openPayments.outstandingPayments      mustBe Seq.empty
               openPayments.totalOutstandingPayments mustBe BigDecimal("0")
-              openPayments.unallocatedPayments must contain theSameElementsAs Seq(
+              openPayments.unallocatedPayments        must contain theSameElementsAs Seq(
                 UnallocatedPayment(
                   paymentDate = twoSeparatePaymentsOnAccountOpen.financialTransactions(0).items.head.dueDate.get,
                   unallocatedAmount = BigDecimal("-5000")
@@ -253,11 +253,11 @@ class PaymentsServiceSpec extends SpecBase {
                 )
               )
               openPayments.totalUnallocatedPayments mustBe BigDecimal("-7000")
-              openPayments.totalOpenPaymentsAmount mustBe BigDecimal("-7000")
+              openPayments.totalOpenPaymentsAmount  mustBe BigDecimal("-7000")
           }
         }
 
-        // This is a test edge case which shouldn't happen in real life, to check the outstanding amount is used from payment on account
+        // This is a test edge case which mustn't happen in real life, to check the outstanding amount is used from payment on account
         "when processing a single partially outstanding return and a partially allocated payment on account" in new SetUp {
           when(mockFinancialDataConnector.getOnlyOpenFinancialData(appaId))
             .thenReturn(
@@ -322,7 +322,7 @@ class PaymentsServiceSpec extends SpecBase {
           }
         }
 
-        "when processing a single fully outstanding RPI" in new SetUp { // This shouldn't appear as an open payment
+        "when processing a single fully outstanding RPI" in new SetUp { // This mustn't appear as an open payment
           when(mockFinancialDataConnector.getOnlyOpenFinancialData(appaId))
             .thenReturn(EitherT.pure[Future, ErrorResponse](singleRPI))
 
@@ -347,7 +347,7 @@ class PaymentsServiceSpec extends SpecBase {
         }
       }
 
-      "an error should be returned" - {
+      "an error must be returned" - {
         "if getting financial data returns an error" in new SetUp {
           val errorResponse = ErrorResponse(INTERNAL_SERVER_ERROR, "error!")
           when(mockFinancialDataConnector.getOnlyOpenFinancialData(appaId))
@@ -571,7 +571,7 @@ class PaymentsServiceSpec extends SpecBase {
     }
 
     "when calling getHistoricPayments" - {
-      "a successful and correct response should be returned" - {
+      "a successful and correct response must be returned" - {
         "handle no financial data (nil return or no data for the period)" in new SetUp {
           when(mockFinancialDataConnector.getNotOnlyOpenFinancialData(appaId = appaId, year = year))
             .thenReturn(EitherT.pure[Future, ErrorResponse](emptyFinancialDocument))
@@ -595,7 +595,7 @@ class PaymentsServiceSpec extends SpecBase {
           }
         }
 
-        "when just RPI which should be filtered as it's a negative amount" in new SetUp {
+        "when just RPI which must be filtered as it's a negative amount" in new SetUp {
           when(mockFinancialDataConnector.getNotOnlyOpenFinancialData(appaId = appaId, year = year))
             .thenReturn(EitherT.pure[Future, ErrorResponse](singleRPI))
 
@@ -609,7 +609,7 @@ class PaymentsServiceSpec extends SpecBase {
           }
         }
 
-        // This is a test edge case which shouldn't happen in real life, RPIs should always be negative
+        // This is a test edge case which mustn't happen in real life, RPIs must always be negative
         "when processing a single positive RPI it appear with a warning" in new SetUp {
           when(mockFinancialDataConnector.getNotOnlyOpenFinancialData(appaId = appaId, year = year))
             .thenReturn(
@@ -635,7 +635,7 @@ class PaymentsServiceSpec extends SpecBase {
           }
         }
 
-        "when refunded (shouldn't show)" in new SetUp {
+        "when refunded (mustn't show)" in new SetUp {
           when(mockFinancialDataConnector.getNotOnlyOpenFinancialData(appaId = appaId, year = year))
             .thenReturn(EitherT.pure[Future, ErrorResponse](singleRefundedReturn))
 
@@ -772,8 +772,8 @@ class PaymentsServiceSpec extends SpecBase {
     }
 
     "when calling validateAndGetFinancialTransactionData" - {
-      "and there is no financial transactions for a document which should not be possible" - {
-        "it should return an error gracefully (coverage)" in new SetUp {
+      "and there is no financial transactions for a document which must not be possible" - {
+        "it must return an error gracefully (coverage)" in new SetUp {
           val sapDocumentNumber = sapDocumentNumberGen.sample.get
 
           paymentsService.validateAndGetFinancialTransactionData(
@@ -790,7 +790,7 @@ class PaymentsServiceSpec extends SpecBase {
 
   "when calling calculateTotalAmountPaid" - {
     "and there is no clearedAmount and it's not an RPI" - {
-      "it should count it as 0 (coverage)" in new SetUp {
+      "it must count it as 0 (coverage)" in new SetUp {
         paymentsService.calculateTotalAmountPaid(singleFullyOutstandingReturn.financialTransactions) mustBe BigDecimal(
           "0"
         )
@@ -820,7 +820,7 @@ class PaymentsServiceSpec extends SpecBase {
       singlePaymentOnAccount.financialTransactions.map(_.copy(contractObjectType = Some("blah")))
     )
 
-    // Test edge case which shouldn't happen as payments on account should reduce original amount
+    // Test edge case which mustn't happen as payments on account must reduce original amount
     val onePartiallyPaidReturnLineItemAndOnePartiallyAllocatedPaymentOnAccount: FinancialTransactionDocument =
       combineFinancialTransactionDocuments(
         Seq(
@@ -847,7 +847,7 @@ class PaymentsServiceSpec extends SpecBase {
         )
       )
 
-    // Shouldn't happen, RPI should be negative
+    // mustn't happen, RPI must be negative
     val singlePositiveRPI: FinancialTransactionDocument = {
       val sapDocumentNumber = sapDocumentNumberGen.sample.get
       val chargeReference   = chargeReferenceGen.sample.get

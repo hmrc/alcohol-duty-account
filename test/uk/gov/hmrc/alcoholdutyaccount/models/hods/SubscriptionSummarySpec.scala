@@ -16,14 +16,13 @@
 
 package uk.gov.hmrc.alcoholdutyaccount.models.hods
 
-import org.scalatest.matchers.should.Matchers.convertToAnyShouldWrapper
 import play.api.libs.json.{JsResultException, Json}
 import uk.gov.hmrc.alcoholdutyaccount.base.SpecBase
 
 class SubscriptionSummarySpec extends SpecBase {
 
   "SubscriptionSummary" - {
-    "should be able to to be serialised from the full json" in {
+    "must be able to to be serialised from the full json" in {
 
       val expectedSubscriptionSummarySuccess = SubscriptionSummarySuccess(
         SubscriptionSummary(
@@ -58,7 +57,7 @@ class SubscriptionSummarySpec extends SpecBase {
           |""".stripMargin
 
       val result = Json.parse(json).asOpt[SubscriptionSummarySuccess]
-      result shouldBe Some(expectedSubscriptionSummarySuccess)
+      result mustBe Some(expectedSubscriptionSummarySuccess)
     }
 
     Seq(
@@ -66,7 +65,7 @@ class SubscriptionSummarySpec extends SpecBase {
       (DeRegistered, "02"),
       (Revoked, "03")
     ).foreach { case (approvalStatus, approvalCode) =>
-      s"should be able to to be deserialise the approval status $approvalStatus from json" in {
+      s"must be able to to be deserialise the approval status $approvalStatus from json" in {
 
         val expectedSubscriptionSummary = SubscriptionSummary(
           typeOfAlcoholApprovedFor = Set(Beer),
@@ -86,11 +85,11 @@ class SubscriptionSummarySpec extends SpecBase {
             |""".stripMargin
 
         val result = Json.parse(json).asOpt[SubscriptionSummary]
-        result shouldBe Some(expectedSubscriptionSummary)
+        result mustBe Some(expectedSubscriptionSummary)
       }
     }
 
-    "should throw an Exception if one of the the alcohol approved types cannot be deserialised" in {
+    "must throw an Exception if one of the the alcohol approved types cannot be deserialised" in {
       val json =
         """
           |{
@@ -101,10 +100,10 @@ class SubscriptionSummarySpec extends SpecBase {
           |}
           |""".stripMargin
 
-      an[JsResultException] should be thrownBy Json.parse(json).as[SubscriptionSummary]
+      an[JsResultException] must be thrownBy Json.parse(json).as[SubscriptionSummary]
     }
 
-    "should throw an Exception if one of the the alcohol approved types is not a string" in {
+    "must throw an Exception if one of the the alcohol approved types is not a string" in {
       val json =
         """
           |{
@@ -115,10 +114,10 @@ class SubscriptionSummarySpec extends SpecBase {
           |}
           |""".stripMargin
 
-      an[JsResultException] should be thrownBy Json.parse(json).as[SubscriptionSummary]
+      an[JsResultException] must be thrownBy Json.parse(json).as[SubscriptionSummary]
     }
 
-    "should throw an Exception if the Approval Status is not valid" in {
+    "must throw an Exception if the Approval Status is not valid" in {
       val json =
         """
           |{
@@ -129,10 +128,10 @@ class SubscriptionSummarySpec extends SpecBase {
           |}
           |""".stripMargin
 
-      an[JsResultException] should be thrownBy Json.parse(json).as[SubscriptionSummary]
+      an[JsResultException] must be thrownBy Json.parse(json).as[SubscriptionSummary]
     }
 
-    "should throw an Exception if the Approval Status is not a string" in {
+    "must throw an Exception if the Approval Status is not a string" in {
       val json =
         """
           |{
@@ -143,10 +142,10 @@ class SubscriptionSummarySpec extends SpecBase {
           |}
           |""".stripMargin
 
-      an[JsResultException] should be thrownBy Json.parse(json).as[SubscriptionSummary]
+      an[JsResultException] must be thrownBy Json.parse(json).as[SubscriptionSummary]
     }
 
-    "should throw an Exception if a boolean is not valid" in {
+    "must throw an Exception if a boolean is not valid" in {
       val json =
         """
           |{
@@ -157,7 +156,7 @@ class SubscriptionSummarySpec extends SpecBase {
           |}
           |""".stripMargin
 
-      an[JsResultException] should be thrownBy Json.parse(json).as[SubscriptionSummary]
+      an[JsResultException] must be thrownBy Json.parse(json).as[SubscriptionSummary]
     }
   }
 }

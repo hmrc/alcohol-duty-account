@@ -23,7 +23,7 @@ import uk.gov.hmrc.alcoholdutyaccount.models.hods.{Beer, SubscriptionSummary}
 class ApprovalStatusSpec extends SpecBase {
 
   "ApprovalStatus apply" - {
-    "should return DeRegistered" - {
+    "must return DeRegistered" - {
       "when hods status is DeRegistered" in {
         val subscriptionSummary = SubscriptionSummary(
           typeOfAlcoholApprovedFor = Set(Beer),
@@ -45,7 +45,7 @@ class ApprovalStatusSpec extends SpecBase {
       }
     }
 
-    "should return Revoked" - {
+    "must return Revoked" - {
       "when hods status is Revoked" in {
         val subscriptionSummary = SubscriptionSummary(
           typeOfAlcoholApprovedFor = Set(Beer),
@@ -67,7 +67,7 @@ class ApprovalStatusSpec extends SpecBase {
       }
     }
 
-    "should return SmallCiderProducer" - {
+    "must return SmallCiderProducer" - {
       "when hods status is Approved and smallciderFlag is set" in {
         val subscriptionSummary = SubscriptionSummary(
           typeOfAlcoholApprovedFor = Set(Beer),
@@ -89,7 +89,7 @@ class ApprovalStatusSpec extends SpecBase {
       }
     }
 
-    "should return Insolvent when hods status is Approved and insolvencyFlag is set" in {
+    "must return Insolvent when hods status is Approved and insolvencyFlag is set" in {
       val subscriptionSummary = SubscriptionSummary(
         typeOfAlcoholApprovedFor = Set(Beer),
         smallciderFlag = false,
@@ -99,7 +99,7 @@ class ApprovalStatusSpec extends SpecBase {
       ApprovalStatus.fromSubscriptionSummary(subscriptionSummary) mustBe ApprovalStatus.Insolvent
     }
 
-    "should return Approved when hods status is Approved and both smallciderFlag and insolvencyFlag are false" in {
+    "must return Approved when hods status is Approved and both smallciderFlag and insolvencyFlag are false" in {
       val subscriptionSummary = SubscriptionSummary(
         typeOfAlcoholApprovedFor = Set(Beer),
         smallciderFlag = false,

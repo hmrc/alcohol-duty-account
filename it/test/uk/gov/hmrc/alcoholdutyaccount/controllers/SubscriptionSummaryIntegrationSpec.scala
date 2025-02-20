@@ -25,7 +25,7 @@ import uk.gov.hmrc.play.bootstrap.backend.http.ErrorResponse
 class SubscriptionSummaryIntegrationSpec extends ISpecBase with ConnectorTestHelpers {
   protected val endpointName = "subscription"
 
-  "the subscription summary endpoint should" should {
+  "the subscription summary endpoint must" - {
     "respond with OK if able to fetch subscription summary data" in new SetUp {
       stubAuthorised(appaId)
       stubGet(url, OK, Json.toJson(SubscriptionSummarySuccess(approvedSubscriptionSummary)).toString)
@@ -35,8 +35,8 @@ class SubscriptionSummaryIntegrationSpec extends ISpecBase with ConnectorTestHel
           .withHeaders("Authorization" -> "Bearer 12345")
       )
 
-      status(response) shouldBe OK
-      contentAsJson(response) shouldBe Json.toJson(approvedAdrSubscriptionSummary)
+      status(response)        mustBe OK
+      contentAsJson(response) mustBe Json.toJson(approvedAdrSubscriptionSummary)
 
       verifyGet(url)
     }
@@ -50,8 +50,10 @@ class SubscriptionSummaryIntegrationSpec extends ISpecBase with ConnectorTestHel
           .withHeaders("Authorization" -> "Bearer 12345")
       )
 
-      status(response) shouldBe INTERNAL_SERVER_ERROR
-      contentAsJson(response) shouldBe Json.toJson(ErrorResponse(INTERNAL_SERVER_ERROR, "Unable to parse subscription summary success"))
+      status(response)        mustBe INTERNAL_SERVER_ERROR
+      contentAsJson(response) mustBe Json.toJson(
+        ErrorResponse(INTERNAL_SERVER_ERROR, "Unable to parse subscription summary success")
+      )
 
       verifyGet(url)
     }
@@ -65,8 +67,8 @@ class SubscriptionSummaryIntegrationSpec extends ISpecBase with ConnectorTestHel
           .withHeaders("Authorization" -> "Bearer 12345")
       )
 
-      status(response) shouldBe BAD_REQUEST
-      contentAsJson(response) shouldBe Json.toJson(ErrorResponse(BAD_REQUEST, "Bad request"))
+      status(response)        mustBe BAD_REQUEST
+      contentAsJson(response) mustBe Json.toJson(ErrorResponse(BAD_REQUEST, "Bad request"))
 
       verifyGet(url)
     }
@@ -80,8 +82,8 @@ class SubscriptionSummaryIntegrationSpec extends ISpecBase with ConnectorTestHel
           .withHeaders("Authorization" -> "Bearer 12345")
       )
 
-      status(response) shouldBe NOT_FOUND
-      contentAsJson(response) shouldBe Json.toJson(ErrorResponse(NOT_FOUND, "Subscription summary not found"))
+      status(response)        mustBe NOT_FOUND
+      contentAsJson(response) mustBe Json.toJson(ErrorResponse(NOT_FOUND, "Subscription summary not found"))
 
       verifyGet(url)
     }
@@ -95,14 +97,14 @@ class SubscriptionSummaryIntegrationSpec extends ISpecBase with ConnectorTestHel
           .withHeaders("Authorization" -> "Bearer 12345")
       )
 
-      status(response) shouldBe INTERNAL_SERVER_ERROR
-      contentAsJson(response) shouldBe Json.toJson(ErrorResponse(INTERNAL_SERVER_ERROR, "An error occurred"))
+      status(response)        mustBe INTERNAL_SERVER_ERROR
+      contentAsJson(response) mustBe Json.toJson(ErrorResponse(INTERNAL_SERVER_ERROR, "An error occurred"))
 
       verifyGet(url)
     }
   }
 
   class SetUp {
-    val url       = config.getSubscriptionUrl(appaId)
+    val url = config.getSubscriptionUrl(appaId)
   }
 }

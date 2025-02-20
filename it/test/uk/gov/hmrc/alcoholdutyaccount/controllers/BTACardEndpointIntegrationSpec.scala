@@ -28,8 +28,8 @@ class BTACardEndpointIntegrationSpec
     with ObligationDataStubs
     with SubscriptionSummaryStubs {
 
-  "the service BTA Card endpoint should" should {
-    "respond with 200 status and with full card data" when {
+  "the service BTA Card endpoint must" - {
+    "respond with 200 status and with full card data when" - {
       "the status is approved" in {
         stubAuthorised(appaId)
         stubGetSubscriptionSummary(appaId, approvedSubscriptionSummary)
@@ -63,8 +63,8 @@ class BTACardEndpointIntegrationSpec
             .withHeaders("Authorization" -> "Bearer 12345")
         )
 
-        status(response)        shouldBe OK
-        contentAsJson(response) shouldBe Json.toJson(expectedBTATileData)
+        status(response)        mustBe OK
+        contentAsJson(response) mustBe Json.toJson(expectedBTATileData)
       }
 
       "the status is approved with empty obligations and financial data" in {
@@ -88,8 +88,8 @@ class BTACardEndpointIntegrationSpec
             .withHeaders("Authorization" -> "Bearer 12345")
         )
 
-        status(response)        shouldBe OK
-        contentAsJson(response) shouldBe Json.toJson(expectedBTATileData)
+        status(response)        mustBe OK
+        contentAsJson(response) mustBe Json.toJson(expectedBTATileData)
       }
 
       "the insolvent flag is on" in {
@@ -125,12 +125,12 @@ class BTACardEndpointIntegrationSpec
             .withHeaders("Authorization" -> "Bearer 12345")
         )
 
-        status(response)        shouldBe OK
-        contentAsJson(response) shouldBe Json.toJson(expectedBTATileData)
+        status(response)        mustBe OK
+        contentAsJson(response) mustBe Json.toJson(expectedBTATileData)
       }
     }
 
-    "respond with 200 status and with Restricted Card Data" when {
+    "respond with 200 status and with Restricted Card Data when" - {
       "subscription has DeRegistered status" in {
         stubAuthorised(appaId)
         stubGetSubscriptionSummary(appaId, deregisteredSubscriptionSummary)
@@ -142,8 +142,8 @@ class BTACardEndpointIntegrationSpec
             .withHeaders("Authorization" -> "Bearer 12345")
         )
 
-        status(response)        shouldBe OK
-        contentAsJson(response) shouldBe Json.toJson(expectedBTACardData)
+        status(response)        mustBe OK
+        contentAsJson(response) mustBe Json.toJson(expectedBTACardData)
       }
 
       "subscription has Revoked status" in {
@@ -157,8 +157,8 @@ class BTACardEndpointIntegrationSpec
             .withHeaders("Authorization" -> "Bearer 12345")
         )
 
-        status(response)        shouldBe OK
-        contentAsJson(response) shouldBe Json.toJson(expectedBTACardData)
+        status(response)        mustBe OK
+        contentAsJson(response) mustBe Json.toJson(expectedBTACardData)
       }
 
       "subscription has small producer flag on" in {
@@ -172,12 +172,12 @@ class BTACardEndpointIntegrationSpec
             .withHeaders("Authorization" -> "Bearer 12345")
         )
 
-        status(response)        shouldBe OK
-        contentAsJson(response) shouldBe Json.toJson(expectedBTACardData)
+        status(response)        mustBe OK
+        contentAsJson(response) mustBe Json.toJson(expectedBTACardData)
       }
     }
 
-    "respond with 200 status for errors" when {
+    "respond with 200 status for errors when" - {
       "subscription summary api call fails" in {
         stubAuthorised(appaId)
         stubSubscriptionSummaryError(appaId)
@@ -197,8 +197,8 @@ class BTACardEndpointIntegrationSpec
             .withHeaders("Authorization" -> "Bearer 12345")
         )
 
-        status(response)        shouldBe OK
-        contentAsJson(response) shouldBe Json.toJson(expectedBTATileData)
+        status(response)        mustBe OK
+        contentAsJson(response) mustBe Json.toJson(expectedBTATileData)
       }
 
       "subscription summary api call fails with exception" in {
@@ -220,8 +220,8 @@ class BTACardEndpointIntegrationSpec
             .withHeaders("Authorization" -> "Bearer 12345")
         )
 
-        status(response)        shouldBe OK
-        contentAsJson(response) shouldBe Json.toJson(expectedBTATileData)
+        status(response)        mustBe OK
+        contentAsJson(response) mustBe Json.toJson(expectedBTATileData)
       }
 
       "obligation api call fails with a Bad Request" in {
@@ -253,8 +253,8 @@ class BTACardEndpointIntegrationSpec
             .withHeaders("Authorization" -> "Bearer 12345")
         )
 
-        status(response)        shouldBe OK
-        contentAsJson(response) shouldBe Json.toJson(expectedBTATileData)
+        status(response)        mustBe OK
+        contentAsJson(response) mustBe Json.toJson(expectedBTATileData)
       }
 
       "obligation api call fails with a Bad Request with multiple errors" in {
@@ -286,8 +286,8 @@ class BTACardEndpointIntegrationSpec
             .withHeaders("Authorization" -> "Bearer 12345")
         )
 
-        status(response)        shouldBe OK
-        contentAsJson(response) shouldBe Json.toJson(expectedBTATileData)
+        status(response)        mustBe OK
+        contentAsJson(response) mustBe Json.toJson(expectedBTATileData)
       }
 
       "obligation api call fails with an Internal Server error" in {
@@ -319,8 +319,8 @@ class BTACardEndpointIntegrationSpec
             .withHeaders("Authorization" -> "Bearer 12345")
         )
 
-        status(response)        shouldBe OK
-        contentAsJson(response) shouldBe Json.toJson(expectedBTATileData)
+        status(response)        mustBe OK
+        contentAsJson(response) mustBe Json.toJson(expectedBTATileData)
       }
 
       "obligation api call fails with an exception" in {
@@ -352,8 +352,8 @@ class BTACardEndpointIntegrationSpec
             .withHeaders("Authorization" -> "Bearer 12345")
         )
 
-        status(response)        shouldBe OK
-        contentAsJson(response) shouldBe Json.toJson(expectedBTATileData)
+        status(response)        mustBe OK
+        contentAsJson(response) mustBe Json.toJson(expectedBTATileData)
       }
 
       "financial data api call fails with Bad Request" in {
@@ -381,8 +381,8 @@ class BTACardEndpointIntegrationSpec
             .withHeaders("Authorization" -> "Bearer 12345")
         )
 
-        status(response)        shouldBe OK
-        contentAsJson(response) shouldBe Json.toJson(expectedBTATileData)
+        status(response)        mustBe OK
+        contentAsJson(response) mustBe Json.toJson(expectedBTATileData)
       }
 
       "financial data api call fails with Bad Request with multiple errors" in {
@@ -410,8 +410,8 @@ class BTACardEndpointIntegrationSpec
             .withHeaders("Authorization" -> "Bearer 12345")
         )
 
-        status(response)        shouldBe OK
-        contentAsJson(response) shouldBe Json.toJson(expectedBTATileData)
+        status(response)        mustBe OK
+        contentAsJson(response) mustBe Json.toJson(expectedBTATileData)
       }
 
       "financial data api call fails with Unprocessable Entity" in {
@@ -439,8 +439,8 @@ class BTACardEndpointIntegrationSpec
             .withHeaders("Authorization" -> "Bearer 12345")
         )
 
-        status(response)        shouldBe OK
-        contentAsJson(response) shouldBe Json.toJson(expectedBTATileData)
+        status(response)        mustBe OK
+        contentAsJson(response) mustBe Json.toJson(expectedBTATileData)
       }
 
       "financial data api call fails with an exception" in {
@@ -468,8 +468,8 @@ class BTACardEndpointIntegrationSpec
             .withHeaders("Authorization" -> "Bearer 12345")
         )
 
-        status(response)        shouldBe OK
-        contentAsJson(response) shouldBe Json.toJson(expectedBTATileData)
+        status(response)        mustBe OK
+        contentAsJson(response) mustBe Json.toJson(expectedBTATileData)
       }
 
       "both obligation api and financial data api calls fail" in {
@@ -493,8 +493,8 @@ class BTACardEndpointIntegrationSpec
             .withHeaders("Authorization" -> "Bearer 12345")
         )
 
-        status(response)        shouldBe OK
-        contentAsJson(response) shouldBe Json.toJson(expectedBTATileData)
+        status(response)        mustBe OK
+        contentAsJson(response) mustBe Json.toJson(expectedBTATileData)
       }
 
       "both obligation api and financial data api calls fail with exceptions" in {
@@ -518,8 +518,8 @@ class BTACardEndpointIntegrationSpec
             .withHeaders("Authorization" -> "Bearer 12345")
         )
 
-        status(response)        shouldBe OK
-        contentAsJson(response) shouldBe Json.toJson(expectedBTATileData)
+        status(response)        mustBe OK
+        contentAsJson(response) mustBe Json.toJson(expectedBTATileData)
       }
     }
   }

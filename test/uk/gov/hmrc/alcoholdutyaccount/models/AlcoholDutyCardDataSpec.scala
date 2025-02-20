@@ -16,7 +16,6 @@
 
 package uk.gov.hmrc.alcoholdutyaccount.models
 
-import org.scalatest.matchers.should.Matchers.convertToAnyShouldWrapper
 import play.api.libs.json.Json
 import uk.gov.hmrc.alcoholdutyaccount.base.SpecBase
 import uk.gov.hmrc.alcoholdutyaccount.models.subscription.ApprovalStatus._
@@ -24,7 +23,7 @@ import uk.gov.hmrc.alcoholdutyaccount.models.subscription.ApprovalStatus._
 class AlcoholDutyCardDataSpec extends SpecBase {
 
   "AlcoholDutyCardData" - {
-    "should be able to be written as Json" - {
+    "must be able to be written as Json" - {
       "when all the fields are available " in {
         val alcoholDutyCardData = AlcoholDutyCardData(
           alcoholDutyReference = "REF01",
@@ -70,7 +69,7 @@ class AlcoholDutyCardDataSpec extends SpecBase {
             |  }
             |}""".stripMargin
 
-        result shouldBe Json.parse(expectedJson)
+        result mustBe Json.parse(expectedJson)
       }
 
       Seq(Revoked, DeRegistered, SmallCiderProducer).foreach { approvalStatus =>
@@ -99,7 +98,7 @@ class AlcoholDutyCardDataSpec extends SpecBase {
                |  "payments": {}
                |}""".stripMargin
 
-          result shouldBe Json.parse(expectedJson)
+          result mustBe Json.parse(expectedJson)
         }
       }
       "when only mandatory available due to subscription summary error" in {
@@ -126,7 +125,7 @@ class AlcoholDutyCardDataSpec extends SpecBase {
             |  "payments": {}
             |}""".stripMargin
 
-        result shouldBe Json.parse(expectedJson)
+        result mustBe Json.parse(expectedJson)
       }
 
     }

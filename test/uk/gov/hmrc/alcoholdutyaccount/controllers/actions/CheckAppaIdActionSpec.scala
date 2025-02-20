@@ -34,15 +34,15 @@ class CheckAppaIdActionSpec extends SpecBase {
   }
 
   "CheckAppaIdAction" - {
-    "should succeed if appaId matches that in the enrolment" in {
+    "must succeed if appaId matches that in the enrolment" in {
       val checkAppaIdAction = new CheckAppaIdAction
       val result            = checkAppaIdAction(appaId).invokeBlock(fakeIdentifierRequest, testAction)
 
-      status(result) mustBe OK
+      status(result)          mustBe OK
       contentAsString(result) mustBe testContent
     }
 
-    "should fail if appaId doesn't match that in the enrolment" in {
+    "must fail if appaId doesn't match that in the enrolment" in {
       val checkAppaIdAction = new CheckAppaIdAction
       val result            = checkAppaIdAction(wrongAppaId).invokeBlock(fakeIdentifierRequest, testAction)
 

@@ -17,7 +17,7 @@
 package uk.gov.hmrc.alcoholdutyaccount.controllers
 
 import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
-import org.scalatest.matchers.should.Matchers
+import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatestplus.play.guice.GuiceOneServerPerSuite
 import play.api.Application
@@ -39,7 +39,7 @@ class HealthEndpointIntegrationSpec
       .configure("metrics.enabled" -> false)
       .build()
 
-  "service health endpoint" should {
+  "service health endpoint" must {
     "respond with 200 status" in {
       val response =
         wsClient
@@ -47,7 +47,7 @@ class HealthEndpointIntegrationSpec
           .get()
           .futureValue
 
-      response.status shouldBe 200
+      response.status mustBe 200
     }
   }
 }
