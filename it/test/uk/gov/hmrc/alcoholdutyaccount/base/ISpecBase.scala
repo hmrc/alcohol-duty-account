@@ -84,7 +84,7 @@ abstract class ISpecBase
 
   /*
   This is to initialise the app before running any tests, as it is lazy by default in org.scalatestplus.play.BaseOneAppPerSuite.
-  It enables us to include behaviour tests that call routes within the `should` part of a test but before `in`.
+  It enables us to include behaviour tests that call routes within the `must` part of a test but before `in`.
    */
   locally { val _ = app }
 
