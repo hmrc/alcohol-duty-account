@@ -39,7 +39,7 @@ class AlcoholDutyControllerSpec extends SpecBase {
       alcoholDutyService.getSubscriptionSummary(eqTo(appaId))(*) returnsF approvedAdrSubscriptionSummary
 
       val result: Future[Result] = controller.subscriptionSummary(appaId)(fakeRequest)
-      status(result) mustBe OK
+      status(result)        mustBe OK
       contentAsJson(result) mustBe Json.toJson(approvedAdrSubscriptionSummary)
     }
 
@@ -61,7 +61,7 @@ class AlcoholDutyControllerSpec extends SpecBase {
       ) returnsF adrObligationDetails
 
       val result: Future[Result] = controller.openObligationDetails(appaId, periodKey)(fakeRequest)
-      status(result) mustBe OK
+      status(result)        mustBe OK
       contentAsJson(result) mustBe Json.toJson(adrObligationDetails)
     }
 
@@ -91,7 +91,7 @@ class AlcoholDutyControllerSpec extends SpecBase {
       ) returnsF adrMultipleOpenAndFulfilledData
 
       val result: Future[Result] = controller.obligationDetails(appaId)(fakeRequest)
-      status(result) mustBe OK
+      status(result)        mustBe OK
       contentAsJson(result) mustBe Json.toJson(adrMultipleOpenAndFulfilledData)
     }
 
@@ -112,7 +112,7 @@ class AlcoholDutyControllerSpec extends SpecBase {
       alcoholDutyService.getAlcoholDutyCardData(*)(*) returnsF cardData
 
       val result: Future[Result] = controller.btaTileData(appaId)(fakeRequest)
-      status(result) mustBe OK
+      status(result)        mustBe OK
       contentAsJson(result) mustBe Json.toJson(cardData)
     }
 
@@ -124,7 +124,7 @@ class AlcoholDutyControllerSpec extends SpecBase {
       when(alcoholDutyService.getAlcoholDutyCardData(*)(*)).thenReturn(EitherT.fromEither(Left(expectedError)))
 
       val result: Future[Result] = controller.btaTileData(appaId)(fakeRequest)
-      status(result) mustBe BAD_REQUEST
+      status(result)        mustBe BAD_REQUEST
       contentAsJson(result) mustBe Json.toJson(expectedError)
     }
 
@@ -134,7 +134,7 @@ class AlcoholDutyControllerSpec extends SpecBase {
       alcoholDutyService.getAlcoholDutyCardData(*)(*) returnsF cardData
 
       val result: Future[Result] = controller.btaTileData(appaId)(fakeRequest)
-      status(result) mustBe SERVICE_UNAVAILABLE
+      status(result)        mustBe SERVICE_UNAVAILABLE
       contentAsJson(result) mustBe Json.toJson(ErrorCodes.serviceUnavailable)
     }
   }

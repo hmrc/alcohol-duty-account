@@ -36,7 +36,7 @@ import scala.util.Success
 
 class AlcoholDutyServiceSpec extends SpecBase with TestData {
   "AlcoholDutyService" - {
-    "getSubscriptionSummary should" - {
+    "getSubscriptionSummary must" - {
       "return summary data from the connector when successful" in new SetUp {
         when(subscriptionSummaryConnector.getSubscriptionSummary(appaId))
           .thenReturn(EitherT.fromEither(Right(approvedSubscriptionSummary)))
@@ -55,7 +55,7 @@ class AlcoholDutyServiceSpec extends SpecBase with TestData {
       }
     }
 
-    "getOpenObligations should" - {
+    "getOpenObligations must" - {
       "return obligation data from the connector where one open return matches the period key" in new SetUp {
         when(obligationDataConnector.getObligationDetails(appaId, Some(obligationFilterOpen)))
           .thenReturn(EitherT.fromEither(Right(obligationDataMultipleOpen)))
@@ -90,7 +90,7 @@ class AlcoholDutyServiceSpec extends SpecBase with TestData {
       }
     }
 
-    "getObligations should" - {
+    "getObligations must" - {
       "return obligation data from the connector where multiple open and fulfilled obligations are returned" in new SetUp {
         when(obligationDataConnector.getObligationDetails(appaId, None))
           .thenReturn(EitherT.fromEither(Right(obligationDataMultipleOpenAndFulfilled)))
@@ -117,7 +117,7 @@ class AlcoholDutyServiceSpec extends SpecBase with TestData {
       }
     }
 
-    "extractReturns should" - {
+    "extractReturns must" - {
       "return an empty Returns object when there are no obligation details" in new SetUp {
         val result = service.extractReturns(Seq.empty)
         result mustBe Returns()
@@ -174,7 +174,7 @@ class AlcoholDutyServiceSpec extends SpecBase with TestData {
         }
     }
 
-    "extractPayments should" - {
+    "extractPayments must" - {
       "return an empty Payments object if there are no financial transactions" in new SetUp {
         val result = service.extractPayments(emptyFinancialDocument.financialTransactions)
         result mustBe Payments()
@@ -266,7 +266,7 @@ class AlcoholDutyServiceSpec extends SpecBase with TestData {
             )
         }
 
-        "for multiple financial transactions with the same sap document no but some without charge reference (shouldn't happen in real life)" in new SetUp {
+        "for multiple financial transactions with the same sap document no but some without charge reference (mustn't happen in real life)" in new SetUp {
           val financialTransactionDocument = FinancialTransactionDocument(
             financialTransactions = Seq(
               financialTransaction,
@@ -437,7 +437,7 @@ class AlcoholDutyServiceSpec extends SpecBase with TestData {
 
     }
 
-    "getReturnDetails should" - {
+    "getReturnDetails must" - {
       "return None if the obligationDataConnector returns an error" in new SetUp {
         when(obligationDataConnector.getObligationDetails(*, *)(*))
           .thenReturn(EitherT.fromEither(Left(ErrorResponse(NOT_FOUND, ""))))
@@ -460,7 +460,7 @@ class AlcoholDutyServiceSpec extends SpecBase with TestData {
       }
     }
 
-    "getPaymentInformation should" - {
+    "getPaymentInformation must" - {
       "return None if the financialDataConnector returns an error" in new SetUp {
         when(financialDataConnector.getOnlyOpenFinancialData(*)(*))
           .thenReturn(EitherT.leftT(ErrorCodes.unexpectedResponse))
@@ -509,7 +509,7 @@ class AlcoholDutyServiceSpec extends SpecBase with TestData {
       }
     }
 
-    "getAlcoholDutyCardData should" - {
+    "getAlcoholDutyCardData must" - {
       "return a Returns and Payments object" - {
         "if the approval status is Approved and all the api calls return data" in new SetUp {
           val subscriptionSummary = SubscriptionSummary(

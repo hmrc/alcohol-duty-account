@@ -52,64 +52,64 @@ class SpecBaseWithConfigOverrides extends SpecBase {
 
 class AppConfigSpec extends SpecBaseWithConfigOverrides {
   "AppConfig" - {
-    "should return the appName" in {
+    "must return the appName" in {
       appConfig.appName mustBe "appName"
     }
 
     "for subscriptions" - {
-      "should return the getSubscription url" in {
+      "must return the getSubscription url" in {
         appConfig.getSubscriptionUrl(
           appaId
         ) mustBe s"http://subscriptionhost:12345/etmp/RESTAdapter/excise/subscriptionsummary/AD/ZAD/$appaId"
       }
 
-      "should return the client id" in {
+      "must return the client id" in {
         appConfig.subscriptionClientId mustBe "subscription clientId"
       }
 
-      "should return the secret" in {
+      "must return the secret" in {
         appConfig.subscriptionSecret mustBe "subscription secret"
       }
     }
   }
 
   "for obligations" - {
-    "should return the obligation data url" in {
+    "must return the obligation data url" in {
       appConfig.obligationDataUrl(
         appaId
       ) mustBe s"http://obligationhost:54321/enterprise/obligation-data/ZAD/$appaId/AD"
     }
 
-    "should return the token" in {
+    "must return the token" in {
       appConfig.obligationDataToken mustBe "obligation token"
     }
 
-    "should return the env" in {
+    "must return the env" in {
       appConfig.obligationDataEnv mustBe "obligation env"
     }
 
-    "should return the filter start date" in {
+    "must return the filter start date" in {
       appConfig.obligationDataFilterStartDate mustBe "2023-09-01"
     }
   }
 
   "for financial data" - {
-    "should return the financial data url" in {
+    "must return the financial data url" in {
       appConfig.financialDataUrl(
         appaId
       ) mustBe s"http://financialhost:2468/enterprise/financial-data/ZAD/$appaId/AD"
     }
 
-    "should return the token" in {
+    "must return the token" in {
       appConfig.financialDataToken mustBe "financial token"
     }
 
-    "should return the env" in {
+    "must return the env" in {
       appConfig.financialDataEnv mustBe "financial env"
     }
   }
 
-  "should return the config relating to downstream APIs" - {
+  "must return the config relating to downstream APIs" - {
     "for idType" in {
       appConfig.idType mustBe "ZAD"
     }
@@ -119,32 +119,32 @@ class AppConfigSpec extends SpecBaseWithConfigOverrides {
     }
   }
 
-  "should return the enrolment service name" in {
+  "must return the enrolment service name" in {
     appConfig.enrolmentServiceName mustBe "HMRC-AD-ORG"
   }
 
-  "getConfStringAndThrowIfNotFound should" - {
+  "getConfStringAndThrowIfNotFound must" - {
     "return a key if found" in {
       appConfig.getConfStringAndThrowIfNotFound("subscription.secret") mustBe "subscription secret"
     }
 
     "throw an exception if not found" in {
-      a[RuntimeException] shouldBe thrownBy(appConfig.getConfStringAndThrowIfNotFound("blah"))
+      a[RuntimeException] mustBe thrownBy(appConfig.getConfStringAndThrowIfNotFound("blah"))
     }
   }
 
   "for payments" - {
-    "minimumHistoricPaymentsYear should return a year" in {
+    "minimumHistoricPaymentsYear must return a year" in {
       appConfig.minimumHistoricPaymentsYear mustBe 2024
     }
   }
 
   "for features" - {
-    "ofpSubscriptionAvailable should return whether the OFP subscription can be received" in {
+    "ofpSubscriptionAvailable must return whether the OFP subscription can be received" in {
       appConfig.ofpAsSeparateRegimeEnabled mustBe true
     }
 
-    "btaServiceAvailable should return whether the service is available" in {
+    "btaServiceAvailable must return whether the service is available" in {
       appConfig.btaServiceAvailable mustBe true
     }
   }

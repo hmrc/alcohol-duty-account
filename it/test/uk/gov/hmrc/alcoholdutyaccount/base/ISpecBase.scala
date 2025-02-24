@@ -20,8 +20,8 @@ import org.apache.pekko.actor.ActorSystem
 import org.apache.pekko.stream.Materializer
 import org.scalacheck.{Arbitrary, Gen}
 import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpec
+import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.matchers.must.Matchers
 import org.scalatest.{Status => _, _}
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 import play.api.http._
@@ -38,7 +38,7 @@ import scala.concurrent.ExecutionContext.global
 import scala.concurrent.{ExecutionContext, Future}
 
 abstract class ISpecBase
-    extends AnyWordSpec
+    extends AnyFreeSpec
     with GuiceOneAppPerSuite
     with Matchers
     with Inspectors
@@ -84,7 +84,7 @@ abstract class ISpecBase
 
   /*
   This is to initialise the app before running any tests, as it is lazy by default in org.scalatestplus.play.BaseOneAppPerSuite.
-  It enables us to include behaviour tests that call routes within the `should` part of a test but before `in`.
+  It enables us to include behaviour tests that call routes within the `must` part of a test but before `in`.
    */
   locally { val _ = app }
 

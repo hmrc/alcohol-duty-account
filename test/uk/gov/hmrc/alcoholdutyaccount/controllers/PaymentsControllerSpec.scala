@@ -39,7 +39,7 @@ class PaymentsControllerSpec extends SpecBase {
         mockPaymentsService.getOpenPayments(eqTo(appaId))(*) returnsF noOpenPayments
 
         val result: Future[Result] = controller.openPayments(appaId)(fakeRequest)
-        status(result) mustBe OK
+        status(result)        mustBe OK
         contentAsJson(result) mustBe Json.toJson(noOpenPayments)
       }
 
@@ -48,7 +48,7 @@ class PaymentsControllerSpec extends SpecBase {
           .thenReturn(EitherT.leftT[Future, OpenPayments](ErrorCodes.unexpectedResponse))
 
         val result: Future[Result] = controller.openPayments(appaId)(fakeRequest)
-        status(result) mustBe INTERNAL_SERVER_ERROR
+        status(result)                          mustBe INTERNAL_SERVER_ERROR
         contentAsJson(result).as[ErrorResponse] mustBe ErrorCodes.unexpectedResponse
       }
     }
@@ -58,7 +58,7 @@ class PaymentsControllerSpec extends SpecBase {
         mockPaymentsService.getHistoricPayments(eqTo(appaId), eqTo(year))(*) returnsF noHistoricPayments
 
         val result: Future[Result] = controller.historicPayments(appaId, year)(fakeRequest)
-        status(result) mustBe OK
+        status(result)        mustBe OK
         contentAsJson(result) mustBe Json.toJson(noHistoricPayments)
       }
 
@@ -67,7 +67,7 @@ class PaymentsControllerSpec extends SpecBase {
           .thenReturn(EitherT.fromEither(Left(ErrorCodes.unexpectedResponse)))
 
         val result: Future[Result] = controller.historicPayments(appaId, year)(fakeRequest)
-        status(result) mustBe INTERNAL_SERVER_ERROR
+        status(result)                          mustBe INTERNAL_SERVER_ERROR
         contentAsJson(result).as[ErrorResponse] mustBe ErrorCodes.unexpectedResponse
       }
 
@@ -75,13 +75,13 @@ class PaymentsControllerSpec extends SpecBase {
         val minimumYear = appConfig.minimumHistoricPaymentsYear
 
         val result: Future[Result] = controller.historicPayments(appaId, minimumYear - 1)(fakeRequest)
-        status(result) mustBe BAD_REQUEST
+        status(result)                                  mustBe BAD_REQUEST
         contentAsJson(result).as[ErrorResponse].message mustBe "Bad request made"
       }
 
       "return an error if the year is after the current" in new SetUp {
         val result: Future[Result] = controller.historicPayments(appaId, LocalDate.now().getYear + 1)(fakeRequest)
-        status(result) mustBe BAD_REQUEST
+        status(result)                                  mustBe BAD_REQUEST
         contentAsJson(result).as[ErrorResponse].message mustBe "Bad request made"
       }
     }
