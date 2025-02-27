@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 HM Revenue & Customs
+ * Copyright 2025 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,16 +16,6 @@
 
 package uk.gov.hmrc.alcoholdutyaccount.config
 
-import com.google.inject.AbstractModule
-import uk.gov.hmrc.alcoholdutyaccount.controllers.actions.{AuthorisedAction, BaseAuthorisedAction}
-
-import java.time.{Clock, ZoneId}
-
-class Module extends AbstractModule {
-
-  override def configure(): Unit = {
-    bind(classOf[AppConfig]).asEagerSingleton()
-    bind(classOf[AuthorisedAction]).to(classOf[BaseAuthorisedAction]).asEagerSingleton()
-    bind(classOf[Clock]).toInstance(Clock.system(ZoneId.of(Constants.ukTimeZoneStringId)))
-  }
+object Constants {
+  val ukTimeZoneStringId = "Europe/London"
 }

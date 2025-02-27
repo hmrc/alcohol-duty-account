@@ -19,6 +19,7 @@ package uk.gov.hmrc.alcoholdutyaccount.common
 import org.scalacheck.Gen
 import play.api.libs.json.{Json, OFormat}
 import uk.gov.hmrc.alcoholdutyaccount.common.generators.ModelGenerators
+import uk.gov.hmrc.alcoholdutyaccount.config.Constants.ukTimeZoneStringId
 import uk.gov.hmrc.alcoholdutyaccount.models.{AdrObligationData, ObligationStatus, ReturnPeriod}
 import uk.gov.hmrc.alcoholdutyaccount.models.hods._
 import uk.gov.hmrc.alcoholdutyaccount.models.payments.TransactionType.{Return, toMainTransactionType}
@@ -28,7 +29,7 @@ import uk.gov.hmrc.alcoholdutyaccount.models.subscription.{AdrSubscriptionSummar
 import java.time.{Clock, Instant, LocalDate, ZoneId}
 
 trait TestData extends ModelGenerators {
-  val clock = Clock.fixed(Instant.ofEpochMilli(1718118467838L), ZoneId.of("UTC"))
+  val clock = Clock.fixed(Instant.ofEpochMilli(1718118467838L), ZoneId.of(ukTimeZoneStringId))
 
   val dummyUUID = "01234567-89ab-cdef-0123-456789abcdef"
 
@@ -87,9 +88,10 @@ trait TestData extends ModelGenerators {
   val obligationDetails2            = obligationDetails.copy(periodKey = periodKey2)
   val obligationDetails3            = obligationDetails.copy(periodKey = periodKey3)
   val obligationDetailsFromFuture   =
-    obligationDetails.copy(inboundCorrespondenceToDate = LocalDate.now().plusDays(1000))
-  val obligationDetailsFromToday    = obligationDetails.copy(inboundCorrespondenceToDate = LocalDate.now().minusDays(1))
-  val obligationDetailsFromTomorrow = obligationDetails.copy(inboundCorrespondenceToDate = LocalDate.now())
+    obligationDetails.copy(inboundCorrespondenceToDate = LocalDate.now(clock).plusDays(1000))
+  val obligationDetailsFromToday    =
+    obligationDetails.copy(inboundCorrespondenceToDate = LocalDate.now(clock).minusDays(1))
+  val obligationDetailsFromTomorrow = obligationDetails.copy(inboundCorrespondenceToDate = LocalDate.now(clock))
 
   val obligationDataSingleOpen = ObligationData(
     obligations = Seq(
@@ -144,11 +146,11 @@ trait TestData extends ModelGenerators {
   )
 
   val fulfilledObligationDetailsFromFuture   =
-    fulfilledObligationDetails.copy(inboundCorrespondenceToDate = LocalDate.now().plusDays(1000))
+    fulfilledObligationDetails.copy(inboundCorrespondenceToDate = LocalDate.now(clock).plusDays(1000))
   val fulfilledObligationDetailsFromToday    =
-    fulfilledObligationDetails.copy(inboundCorrespondenceToDate = LocalDate.now().minusDays(1))
+    fulfilledObligationDetails.copy(inboundCorrespondenceToDate = LocalDate.now(clock).minusDays(1))
   val fulfilledObligationDetailsFromTomorrow =
-    fulfilledObligationDetails.copy(inboundCorrespondenceToDate = LocalDate.now())
+    fulfilledObligationDetails.copy(inboundCorrespondenceToDate = LocalDate.now(clock))
 
   val obligationDataSingleFulfilled          = ObligationData(
     obligations = Seq(

@@ -27,7 +27,7 @@ import uk.gov.hmrc.alcoholdutyaccount.service.PaymentsService
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 import uk.gov.hmrc.play.bootstrap.backend.http.ErrorResponse
 
-import java.time.LocalDate
+import java.time.{Clock, LocalDate}
 import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -36,7 +36,8 @@ class PaymentsController @Inject() (
   checkAppaId: CheckAppaIdAction,
   paymentsService: PaymentsService,
   appConfig: AppConfig,
-  cc: ControllerComponents
+  cc: ControllerComponents,
+  clock: Clock
 )(implicit ec: ExecutionContext)
     extends BackendController(cc)
     with BaseController
@@ -61,7 +62,7 @@ class PaymentsController @Inject() (
     if (year < minimumHistoricPaymentsYear) {
       logger.info(s"Year requested is before $minimumHistoricPaymentsYear")
       EitherT.leftT(ErrorCodes.badRequest)
-    } else if (year > LocalDate.now().getYear) {
+    } else if (year > LocalDate.now(clock).getYear) {
       logger.info(s"Year requested is after the current year")
       EitherT.leftT(ErrorCodes.badRequest)
     } else {

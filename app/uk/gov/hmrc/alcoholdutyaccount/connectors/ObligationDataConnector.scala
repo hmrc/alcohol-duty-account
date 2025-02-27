@@ -25,13 +25,14 @@ import uk.gov.hmrc.http._
 import uk.gov.hmrc.http.client.HttpClientV2
 import uk.gov.hmrc.play.bootstrap.backend.http.ErrorResponse
 
-import java.time.{LocalDate, ZoneId}
+import java.time.{Clock, LocalDate}
 import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
 
 class ObligationDataConnector @Inject() (
   config: AppConfig,
+  clock: Clock,
   implicit val httpClient: HttpClientV2
 )(implicit ec: ExecutionContext)
     extends HttpReadsInstances
@@ -87,7 +88,7 @@ class ObligationDataConnector @Inject() (
   private def getQueryParams(obligationStatusFilter: Option[ObligationStatus]): Seq[(String, String)] = {
     // date filter headers should only be added if the status is not defined or is not Open (according to api specs)
     val dateFilterHeaders =
-      Seq("from" -> config.obligationDataFilterStartDate, "to" -> LocalDate.now(ZoneId.of("Europe/London")).toString)
+      Seq("from" -> config.obligationDataFilterStartDate, "to" -> LocalDate.now(clock).toString)
     obligationStatusFilter match {
       case Some(Open)   => Seq("status" -> Open.value)
       case Some(status) => Seq("status" -> status.value) ++ dateFilterHeaders
@@ -107,7 +108,7 @@ class ObligationDataConnector @Inject() (
   private def filterOutFutureObligations(obligationData: ObligationData): ObligationData =
     obligationData.copy(obligations = obligationData.obligations.flatMap { obligation =>
       val filteredDetails: Seq[ObligationDetails] = obligation.obligationDetails.filter { obligationDetail =>
-        obligationDetail.inboundCorrespondenceToDate.isBefore(LocalDate.now())
+        obligationDetail.inboundCorrespondenceToDate.isBefore(LocalDate.now(clock))
       }
       // This code makes empty obligations of format ObligationData(obligations = Seq.empty), matching how they are currently returned
       if (filteredDetails.nonEmpty) Some(obligation.copy(obligationDetails = filteredDetails)) else None

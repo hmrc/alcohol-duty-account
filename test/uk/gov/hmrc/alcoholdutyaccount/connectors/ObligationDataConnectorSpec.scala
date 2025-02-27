@@ -16,16 +16,14 @@
 
 package uk.gov.hmrc.alcoholdutyaccount.connectors
 
-import org.scalatest.concurrent.ScalaFutures
 import play.api.libs.json.Json
 import uk.gov.hmrc.alcoholdutyaccount.base.{ConnectorTestHelpers, SpecBase}
-import uk.gov.hmrc.alcoholdutyaccount.common.TestData
 import uk.gov.hmrc.alcoholdutyaccount.models.hods.{Fulfilled, Open}
 import uk.gov.hmrc.play.bootstrap.backend.http.ErrorResponse
 
-import java.time.{LocalDate, ZoneOffset}
+import java.time.LocalDate
 
-class ObligationDataConnectorSpec extends SpecBase with ScalaFutures with ConnectorTestHelpers {
+class ObligationDataConnectorSpec extends SpecBase with ConnectorTestHelpers {
   protected val endpointName = "obligation"
 
   "ObligationDataConnector" - {
@@ -155,10 +153,10 @@ class ObligationDataConnectorSpec extends SpecBase with ScalaFutures with Connec
     }
   }
 
-  class SetUp extends ConnectorFixture with TestData {
-    val connector = new ObligationDataConnector(config = config, httpClient = httpClientV2)
+  class SetUp extends ConnectorFixture {
+    val connector = new ObligationDataConnector(config = config, clock = clock, httpClient = httpClientV2)
 
-    private val dateFilterHeadersHeaders = Seq("from" -> "2023-09-01", "to" -> LocalDate.now(ZoneOffset.UTC).toString)
+    private val dateFilterHeadersHeaders = Seq("from" -> "2023-09-01", "to" -> LocalDate.now(clock).toString)
     val expectedQueryParamsOpen          = Seq("status" -> Open.value)
 
     val expectedQueryParamsFulfilled =

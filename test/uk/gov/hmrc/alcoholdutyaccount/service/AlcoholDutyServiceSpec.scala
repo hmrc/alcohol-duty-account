@@ -34,7 +34,7 @@ import java.time.LocalDate
 import scala.concurrent.ExecutionContext
 import scala.util.Success
 
-class AlcoholDutyServiceSpec extends SpecBase with TestData {
+class AlcoholDutyServiceSpec extends SpecBase {
   "AlcoholDutyService" - {
     "getSubscriptionSummary must" - {
       "return summary data from the connector when successful" in new SetUp {
@@ -125,7 +125,7 @@ class AlcoholDutyServiceSpec extends SpecBase with TestData {
 
       "return a Returns object with a dueReturnExists true and with periodKey if the due date is in a week" in new SetUp {
         val obligationDetailsDueNextWeek =
-          obligationDetails.copy(inboundCorrespondenceDueDate = LocalDate.now().plusDays(7))
+          obligationDetails.copy(inboundCorrespondenceDueDate = LocalDate.now(clock).plusDays(7))
         val result                       = service.extractReturns(Seq(obligationDetailsDueNextWeek))
 
         result mustBe Returns(
@@ -136,7 +136,7 @@ class AlcoholDutyServiceSpec extends SpecBase with TestData {
       }
 
       "return a Returns object with dueReturnExists true and with periodKey if the due date is today" in new SetUp {
-        val obligationDetailsDueToday = obligationDetails.copy(inboundCorrespondenceDueDate = LocalDate.now())
+        val obligationDetailsDueToday = obligationDetails.copy(inboundCorrespondenceDueDate = LocalDate.now(clock))
         val result                    = service.extractReturns(Seq(obligationDetailsDueToday))
 
         result mustBe Returns(
@@ -149,7 +149,7 @@ class AlcoholDutyServiceSpec extends SpecBase with TestData {
       "return a Returns object with dueReturnExists false and with periodKey and the number of overdue returns equals 1" +
         " if the due date was yesterday" in new SetUp {
           val obligationDetailsDueYesterday =
-            obligationDetails.copy(inboundCorrespondenceDueDate = LocalDate.now().minusDays(1))
+            obligationDetails.copy(inboundCorrespondenceDueDate = LocalDate.now(clock).minusDays(1))
           val result                        = service.extractReturns(Seq(obligationDetailsDueYesterday))
 
           result mustBe Returns(
@@ -162,9 +162,9 @@ class AlcoholDutyServiceSpec extends SpecBase with TestData {
       "return a Returns object with a dueReturnExists true the number of overdue returns equals 1 and without a periodKey " +
         "if there are multiple returns due" in new SetUp {
           val obligationDetailsDueNextWeek  =
-            obligationDetails.copy(inboundCorrespondenceDueDate = LocalDate.now().plusDays(7))
+            obligationDetails.copy(inboundCorrespondenceDueDate = LocalDate.now(clock).plusDays(7))
           val obligationDetailsDueYesterday =
-            obligationDetails.copy(inboundCorrespondenceDueDate = LocalDate.now().minusDays(1))
+            obligationDetails.copy(inboundCorrespondenceDueDate = LocalDate.now(clock).minusDays(1))
           val result                        = service.extractReturns(Seq(obligationDetailsDueYesterday, obligationDetailsDueNextWeek))
 
           result mustBe Returns(
@@ -529,7 +529,7 @@ class AlcoholDutyServiceSpec extends SpecBase with TestData {
                     inboundCorrespondenceFromDate = periodStart,
                     inboundCorrespondenceToDate = periodEnd,
                     inboundCorrespondenceDateReceived = None,
-                    inboundCorrespondenceDueDate = LocalDate.now().plusDays(1),
+                    inboundCorrespondenceDueDate = LocalDate.now(clock).plusDays(1),
                     periodKey = "11AA"
                   )
                 )
@@ -574,7 +574,7 @@ class AlcoholDutyServiceSpec extends SpecBase with TestData {
                     inboundCorrespondenceFromDate = periodStart,
                     inboundCorrespondenceToDate = periodEnd,
                     inboundCorrespondenceDateReceived = None,
-                    inboundCorrespondenceDueDate = LocalDate.now().plusDays(1),
+                    inboundCorrespondenceDueDate = LocalDate.now(clock).plusDays(1),
                     periodKey = "11AA"
                   )
                 )
@@ -664,7 +664,7 @@ class AlcoholDutyServiceSpec extends SpecBase with TestData {
                   inboundCorrespondenceFromDate = periodStart,
                   inboundCorrespondenceToDate = periodEnd,
                   inboundCorrespondenceDateReceived = None,
-                  inboundCorrespondenceDueDate = LocalDate.now().plusDays(1),
+                  inboundCorrespondenceDueDate = LocalDate.now(clock).plusDays(1),
                   periodKey = "11AA"
                 )
               )
@@ -768,8 +768,13 @@ class AlcoholDutyServiceSpec extends SpecBase with TestData {
     val obligationDataConnector      = mock[ObligationDataConnector]
     val financialDataConnector       = mock[FinancialDataConnector]
     val appConfig                    = mock[AppConfig]
-    val service                      =
-      new AlcoholDutyService(subscriptionSummaryConnector, obligationDataConnector, financialDataConnector, appConfig)
+    val service                      = new AlcoholDutyService(
+      subscriptionSummaryConnector,
+      obligationDataConnector,
+      financialDataConnector,
+      appConfig,
+      clock
+    )
 
     when(appConfig.ofpAsSeparateRegimeEnabled).thenReturn(true)
 
