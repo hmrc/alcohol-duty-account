@@ -23,7 +23,7 @@ import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.{Status => _, _}
-import org.scalatestplus.play.guice.GuiceOneAppPerSuite
+import org.scalatestplus.play.guice.GuiceOneServerPerSuite
 import play.api.http._
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.mvc.{Result, Results}
@@ -39,7 +39,7 @@ import scala.concurrent.{ExecutionContext, Future}
 
 abstract class ISpecBase
     extends AnyFreeSpec
-    with GuiceOneAppPerSuite
+    with GuiceOneServerPerSuite
     with Matchers
     with Inspectors
     with ScalaFutures
