@@ -29,7 +29,7 @@ import uk.gov.hmrc.alcoholdutyaccount.models.subscription.{AdrSubscriptionSummar
 import java.time.{Clock, Instant, LocalDate, ZoneId}
 
 trait TestData extends ModelGenerators {
-  val clock = Clock.fixed(Instant.ofEpochMilli(1718118467838L), ZoneId.of(ukTimeZoneStringId))
+  val clock = Clock.fixed(Instant.ofEpochMilli(1718118467838L), ZoneId.of("UTC"))
 
   val dummyUUID = "01234567-89ab-cdef-0123-456789abcdef"
 

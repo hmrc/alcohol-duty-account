@@ -21,11 +21,12 @@ import play.api.http.Status.{INTERNAL_SERVER_ERROR, NOT_FOUND}
 import play.api.{Logger, Logging}
 import uk.gov.hmrc.alcoholdutyaccount.config.AppConfig
 import uk.gov.hmrc.alcoholdutyaccount.models.hods.{ObligationData, ObligationDetails, ObligationStatus, Open}
+import uk.gov.hmrc.alcoholdutyaccount.utils.DateTimeHelper.instantToLocalDate
 import uk.gov.hmrc.http._
 import uk.gov.hmrc.http.client.HttpClientV2
 import uk.gov.hmrc.play.bootstrap.backend.http.ErrorResponse
 
-import java.time.{Clock, LocalDate}
+import java.time.{Clock, Instant, LocalDate, ZoneId}
 import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
@@ -88,7 +89,7 @@ class ObligationDataConnector @Inject() (
   private def getQueryParams(obligationStatusFilter: Option[ObligationStatus]): Seq[(String, String)] = {
     // date filter headers should only be added if the status is not defined or is not Open (according to api specs)
     val dateFilterHeaders =
-      Seq("from" -> config.obligationDataFilterStartDate, "to" -> LocalDate.now(clock).toString)
+      Seq("from" -> config.obligationDataFilterStartDate, "to" -> instantToLocalDate(Instant.now(clock)).toString)
     obligationStatusFilter match {
       case Some(Open)   => Seq("status" -> Open.value)
       case Some(status) => Seq("status" -> status.value) ++ dateFilterHeaders
@@ -108,7 +109,7 @@ class ObligationDataConnector @Inject() (
   private def filterOutFutureObligations(obligationData: ObligationData): ObligationData =
     obligationData.copy(obligations = obligationData.obligations.flatMap { obligation =>
       val filteredDetails: Seq[ObligationDetails] = obligation.obligationDetails.filter { obligationDetail =>
-        obligationDetail.inboundCorrespondenceToDate.isBefore(LocalDate.now(clock))
+        obligationDetail.inboundCorrespondenceToDate.isBefore(instantToLocalDate(Instant.now(clock)))
       }
       // This code makes empty obligations of format ObligationData(obligations = Seq.empty), matching how they are currently returned
       if (filteredDetails.nonEmpty) Some(obligation.copy(obligationDetails = filteredDetails)) else None
