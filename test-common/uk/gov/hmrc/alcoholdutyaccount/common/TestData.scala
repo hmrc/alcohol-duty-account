@@ -19,12 +19,11 @@ package uk.gov.hmrc.alcoholdutyaccount.common
 import org.scalacheck.Gen
 import play.api.libs.json.{Json, OFormat}
 import uk.gov.hmrc.alcoholdutyaccount.common.generators.ModelGenerators
-import uk.gov.hmrc.alcoholdutyaccount.config.Constants.ukTimeZoneStringId
-import uk.gov.hmrc.alcoholdutyaccount.models.{AdrObligationData, ObligationStatus, ReturnPeriod}
 import uk.gov.hmrc.alcoholdutyaccount.models.hods._
 import uk.gov.hmrc.alcoholdutyaccount.models.payments.TransactionType.{Return, toMainTransactionType}
 import uk.gov.hmrc.alcoholdutyaccount.models.payments.{HistoricPayments, OpenPayments, TransactionType}
 import uk.gov.hmrc.alcoholdutyaccount.models.subscription.{AdrSubscriptionSummary, AlcoholRegime, ApprovalStatus}
+import uk.gov.hmrc.alcoholdutyaccount.models.{AdrObligationData, ObligationStatus, ReturnPeriod}
 
 import java.time.{Clock, Instant, LocalDate, ZoneId}
 
