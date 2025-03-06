@@ -22,15 +22,16 @@ import play.api.Logging
 import play.api.http.Status.NOT_FOUND
 import uk.gov.hmrc.alcoholdutyaccount.config.AppConfig
 import uk.gov.hmrc.alcoholdutyaccount.connectors.{FinancialDataConnector, ObligationDataConnector, SubscriptionSummaryConnector}
-import uk.gov.hmrc.alcoholdutyaccount.models.subscription.ApprovalStatus.{DeRegistered, Revoked, SmallCiderProducer}
 import uk.gov.hmrc.alcoholdutyaccount.models._
-import uk.gov.hmrc.alcoholdutyaccount.models.hods.{FinancialTransaction, FinancialTransactionDocument, ObligationData, ObligationDetails, ObligationStatus, Open}
+import uk.gov.hmrc.alcoholdutyaccount.models.hods.{ObligationStatus, _}
 import uk.gov.hmrc.alcoholdutyaccount.models.payments.TransactionType
+import uk.gov.hmrc.alcoholdutyaccount.models.subscription.ApprovalStatus.{DeRegistered, Revoked, SmallCiderProducer}
 import uk.gov.hmrc.alcoholdutyaccount.models.subscription.{AdrSubscriptionSummary, ApprovalStatus}
+import uk.gov.hmrc.alcoholdutyaccount.utils.DateTimeHelper.instantToLocalDate
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.bootstrap.backend.http.ErrorResponse
 
-import java.time.{LocalDate, ZoneId}
+import java.time.{Clock, Instant}
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -39,7 +40,8 @@ class AlcoholDutyService @Inject() (
   subscriptionSummaryConnector: SubscriptionSummaryConnector,
   obligationDataConnector: ObligationDataConnector,
   financialDataConnector: FinancialDataConnector,
-  appConfig: AppConfig
+  appConfig: AppConfig,
+  clock: Clock
 )(implicit ec: ExecutionContext)
     extends Logging {
 
@@ -137,7 +139,7 @@ class AlcoholDutyService @Inject() (
     if (obligationDetails.isEmpty) {
       Returns()
     } else {
-      val now = LocalDate.now(ZoneId.of("Europe/London"))
+      val now = instantToLocalDate(Instant.now(clock))
 
       val dueReturnExists: Boolean    =
         obligationDetails.exists(_.inboundCorrespondenceDueDate.isAfter(now.minusDays(1)))

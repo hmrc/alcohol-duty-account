@@ -16,6 +16,9 @@
 
 package uk.gov.hmrc.alcoholdutyaccount.controllers
 
+import play.api.Application
+import play.api.inject.bind
+import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.Json
 import play.api.test.FakeRequest
 import uk.gov.hmrc.alcoholdutyaccount.base.ISpecBase
@@ -25,10 +28,16 @@ import uk.gov.hmrc.alcoholdutyaccount.models.hods.{Fulfilled, Open}
 import uk.gov.hmrc.http.HeaderNames
 import uk.gov.hmrc.play.bootstrap.backend.http.ErrorResponse
 
-import java.time.{LocalDate, ZoneId}
+import java.time.{Clock, LocalDate}
 
 class ObligationDetailsIntegrationSpec extends ISpecBase {
   protected val endpointName = "obligation"
+
+  override def fakeApplication(): Application =
+    GuiceApplicationBuilder()
+      .configure(additionalAppConfig)
+      .overrides(bind(classOf[Clock]).toInstance(clock))
+      .build()
 
   "the open obligation details endpoint must" - {
     "respond with OK if able to fetch data that matches the period key" in new SetUp {
@@ -210,7 +219,7 @@ class ObligationDetailsIntegrationSpec extends ISpecBase {
     )
 
     private val dateFilterHeadersHeaders =
-      Seq("from" -> "2023-09-01", "to" -> LocalDate.now(ZoneId.of("Europe/London")).toString)
+      Seq("from" -> "2023-09-01", "to" -> LocalDate.now(clock).toString)
 
     val expectedQueryParamsFulfilled     =
       Seq("status" -> Fulfilled.value) ++ dateFilterHeadersHeaders

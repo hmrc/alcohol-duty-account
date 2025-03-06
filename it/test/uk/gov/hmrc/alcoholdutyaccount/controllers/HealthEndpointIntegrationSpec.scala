@@ -16,20 +16,12 @@
 
 package uk.gov.hmrc.alcoholdutyaccount.controllers
 
-import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
-import org.scalatest.matchers.must.Matchers
-import org.scalatest.wordspec.AnyWordSpec
-import org.scalatestplus.play.guice.GuiceOneServerPerSuite
 import play.api.Application
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.ws.WSClient
+import uk.gov.hmrc.alcoholdutyaccount.base.ISpecBase
 
-class HealthEndpointIntegrationSpec
-    extends AnyWordSpec
-    with Matchers
-    with ScalaFutures
-    with IntegrationPatience
-    with GuiceOneServerPerSuite {
+class HealthEndpointIntegrationSpec extends ISpecBase {
 
   private val wsClient = app.injector.instanceOf[WSClient]
   private val baseUrl  = s"http://localhost:$port"
@@ -39,8 +31,8 @@ class HealthEndpointIntegrationSpec
       .configure("metrics.enabled" -> false)
       .build()
 
-  "service health endpoint" must {
-    "respond with 200 status" in {
+  "service health endpoint" - {
+    "must respond with 200 status" in {
       val response =
         wsClient
           .url(s"$baseUrl/ping/ping")

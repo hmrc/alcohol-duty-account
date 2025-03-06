@@ -16,11 +16,18 @@
 
 package uk.gov.hmrc.alcoholdutyaccount.utils
 
-import java.time.Instant
+import uk.gov.hmrc.alcoholdutyaccount.config.Constants.ukTimeZoneStringId
+
+import java.time.{Instant, LocalDate, ZoneId}
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
+import java.util.TimeZone
 
 object DateTimeHelper {
+  private val ukTimeZone: ZoneId = TimeZone.getTimeZone(ukTimeZoneStringId).toZoneId
+
+  def instantToLocalDate(instant: Instant): LocalDate = LocalDate.ofInstant(instant, ukTimeZone)
+
   def formatISOInstantSeconds(now: Instant): String =
     DateTimeFormatter.ISO_INSTANT.format(now.truncatedTo(ChronoUnit.SECONDS))
 }
