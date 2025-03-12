@@ -710,8 +710,8 @@ trait TestData extends ModelGenerators {
   val noOpenPayments: OpenPayments = OpenPayments(
     outstandingPayments = Seq.empty,
     totalOutstandingPayments = BigDecimal(0),
-    unallocatedPayments = Seq.empty,
-    totalUnallocatedPayments = BigDecimal(0),
+    creditAvailablePayments = Seq.empty,
+    totalCreditAvailable = BigDecimal(0),
     totalOpenPaymentsAmount = BigDecimal(0)
   )
 

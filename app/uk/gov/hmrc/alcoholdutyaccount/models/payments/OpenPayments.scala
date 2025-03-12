@@ -33,20 +33,22 @@ object OutstandingPayment {
   implicit val outstandingPaymentFormat: OFormat[OutstandingPayment] = Json.format[OutstandingPayment]
 }
 
-case class UnallocatedPayment(
+case class CreditAvailablePayment(
+  transactionType: TransactionType,
   paymentDate: LocalDate,
-  unallocatedAmount: BigDecimal
+  chargeReference: Option[String],
+  amount: BigDecimal
 ) extends OpenPayment
 
-object UnallocatedPayment {
-  implicit val unallocatedPaymentFormat: OFormat[UnallocatedPayment] = Json.format[UnallocatedPayment]
+object CreditAvailablePayment {
+  implicit val creditAvailablePaymentFormat: OFormat[CreditAvailablePayment] = Json.format[CreditAvailablePayment]
 }
 
 case class OpenPayments(
   outstandingPayments: Seq[OutstandingPayment],
   totalOutstandingPayments: BigDecimal,
-  unallocatedPayments: Seq[UnallocatedPayment],
-  totalUnallocatedPayments: BigDecimal,
+  creditAvailablePayments: Seq[CreditAvailablePayment],
+  totalCreditAvailable: BigDecimal,
   totalOpenPaymentsAmount: BigDecimal
 )
 

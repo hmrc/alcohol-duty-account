@@ -24,7 +24,7 @@ import uk.gov.hmrc.alcoholdutyaccount.models.ReturnPeriod
 import uk.gov.hmrc.alcoholdutyaccount.models.ErrorCodes
 import uk.gov.hmrc.alcoholdutyaccount.models.hods.{FinancialTransaction, FinancialTransactionDocument, FinancialTransactionItem}
 import uk.gov.hmrc.alcoholdutyaccount.models.payments.TransactionType.{PaymentOnAccount, RPI}
-import uk.gov.hmrc.alcoholdutyaccount.models.payments.{HistoricPayment, HistoricPayments, OpenPayment, OpenPayments, OutstandingPayment, TransactionType, UnallocatedPayment}
+import uk.gov.hmrc.alcoholdutyaccount.models.payments.{CreditAvailablePayment, HistoricPayment, HistoricPayments, OpenPayment, OpenPayments, OutstandingPayment, TransactionType}
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.bootstrap.backend.http.ErrorResponse
 
@@ -45,7 +45,7 @@ class PaymentsService @Inject() (
 
   private case class PaymentTotals(
     totalOutstandingPayments: BigDecimal,
-    totalUnallocatedPayments: BigDecimal,
+    totalCreditAvailable: BigDecimal,
     totalOpenPaymentsAmount: BigDecimal
   )
 
@@ -202,15 +202,15 @@ class PaymentsService @Inject() (
 
   private def calculateTotalBalance(
     outstandingPayments: Seq[OutstandingPayment],
-    unallocatedPayments: Seq[UnallocatedPayment]
+    creditAvailablePayments: Seq[CreditAvailablePayment]
   ): PaymentTotals = {
     val totalOutstandingPayments = outstandingPayments.map(_.remainingAmount).sum
-    val totalUnallocatedPayments = unallocatedPayments.map(_.unallocatedAmount).sum
+    val totalCreditAvailable     = creditAvailablePayments.map(_.amount).sum
 
     PaymentTotals(
       totalOutstandingPayments = totalOutstandingPayments,
-      totalUnallocatedPayments = totalUnallocatedPayments,
-      totalOpenPaymentsAmount = totalOutstandingPayments + totalUnallocatedPayments
+      totalCreditAvailable = totalCreditAvailable,
+      totalOpenPaymentsAmount = totalOutstandingPayments + totalCreditAvailable
     )
   }
 
@@ -225,10 +225,12 @@ class PaymentsService @Inject() (
   ): OpenPayment = {
     val transactionType = financialTransactionData.transactionType
 
-    if (transactionType == PaymentOnAccount) {
-      UnallocatedPayment(
+    if (transactionType == PaymentOnAccount || transactionType == RPI || outstandingAmount < 0) {
+      CreditAvailablePayment(
+        transactionType = transactionType,
         paymentDate = financialTransactionData.dueDate,
-        unallocatedAmount = outstandingAmount
+        chargeReference = financialTransactionData.maybeChargeReference,
+        amount = outstandingAmount
       )
     } else {
       OutstandingPayment(
@@ -269,24 +271,24 @@ class PaymentsService @Inject() (
     }
 
   private def buildOpenPaymentsPayload(openPayments: List[OpenPayment]): OpenPayments = {
-    val (outstandingPayments, unallocatedPayments) =
-      openPayments.foldLeft((List.empty[OutstandingPayment], List.empty[UnallocatedPayment])) {
-        case ((outstandingPayments, unallocatedPayments), openPayment) =>
+    val (outstandingPayments, creditAvailablePayments) =
+      openPayments.foldLeft((List.empty[OutstandingPayment], List.empty[CreditAvailablePayment])) {
+        case ((outstandingPayments, creditAvailablePayments), openPayment) =>
           openPayment match {
-            case outstandingPayment @ OutstandingPayment(_, _, _, _) =>
-              (outstandingPayment :: outstandingPayments, unallocatedPayments)
-            case unallocatedPayment @ UnallocatedPayment(_, _)       =>
-              (outstandingPayments, unallocatedPayment :: unallocatedPayments)
+            case outstandingPayment @ OutstandingPayment(_, _, _, _)         =>
+              (outstandingPayment :: outstandingPayments, creditAvailablePayments)
+            case creditAvailablePayment @ CreditAvailablePayment(_, _, _, _) =>
+              (outstandingPayments, creditAvailablePayment :: creditAvailablePayments)
           }
       }
 
-    val paymentTotals = calculateTotalBalance(outstandingPayments, unallocatedPayments)
+    val paymentTotals = calculateTotalBalance(outstandingPayments, creditAvailablePayments)
 
     OpenPayments(
       outstandingPayments = outstandingPayments,
       totalOutstandingPayments = paymentTotals.totalOutstandingPayments,
-      unallocatedPayments = unallocatedPayments,
-      totalUnallocatedPayments = paymentTotals.totalUnallocatedPayments,
+      creditAvailablePayments = creditAvailablePayments,
+      totalCreditAvailable = paymentTotals.totalCreditAvailable,
       totalOpenPaymentsAmount = paymentTotals.totalOpenPaymentsAmount
     )
   }

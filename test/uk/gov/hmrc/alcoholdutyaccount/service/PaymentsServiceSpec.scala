@@ -21,7 +21,7 @@ import uk.gov.hmrc.alcoholdutyaccount.base.SpecBase
 import uk.gov.hmrc.alcoholdutyaccount.connectors.FinancialDataConnector
 import uk.gov.hmrc.alcoholdutyaccount.models.{ErrorCodes, ReturnPeriod}
 import uk.gov.hmrc.alcoholdutyaccount.models.hods.FinancialTransactionDocument
-import uk.gov.hmrc.alcoholdutyaccount.models.payments.{HistoricPayment, HistoricPayments, OpenPayments, OutstandingPayment, TransactionType, UnallocatedPayment}
+import uk.gov.hmrc.alcoholdutyaccount.models.payments.{CreditAvailablePayment, HistoricPayment, HistoricPayments, OpenPayments, OutstandingPayment, TransactionType}
 import uk.gov.hmrc.play.bootstrap.backend.http.ErrorResponse
 
 import scala.concurrent.Future
@@ -63,8 +63,8 @@ class PaymentsServiceSpec extends SpecBase {
                   )
                 ),
                 totalOutstandingPayments = BigDecimal("9000"),
-                unallocatedPayments = Seq.empty,
-                totalUnallocatedPayments = BigDecimal("0"),
+                creditAvailablePayments = Seq.empty,
+                totalCreditAvailable = BigDecimal("0"),
                 totalOpenPaymentsAmount = BigDecimal("9000")
               )
             )
@@ -89,8 +89,8 @@ class PaymentsServiceSpec extends SpecBase {
                   )
                 ),
                 totalOutstandingPayments = BigDecimal("5000"),
-                unallocatedPayments = Seq.empty,
-                totalUnallocatedPayments = BigDecimal("0"),
+                creditAvailablePayments = Seq.empty,
+                totalCreditAvailable = BigDecimal("0"),
                 totalOpenPaymentsAmount = BigDecimal("5000")
               )
             )
@@ -115,8 +115,8 @@ class PaymentsServiceSpec extends SpecBase {
                   )
                 ),
                 totalOutstandingPayments = BigDecimal("7000"),
-                unallocatedPayments = Seq.empty,
-                totalUnallocatedPayments = BigDecimal("0"),
+                creditAvailablePayments = Seq.empty,
+                totalCreditAvailable = BigDecimal("0"),
                 totalOpenPaymentsAmount = BigDecimal("7000")
               )
             )
@@ -147,8 +147,8 @@ class PaymentsServiceSpec extends SpecBase {
                 )
               )
               openPayments.totalOutstandingPayments mustBe BigDecimal("7000")
-              openPayments.unallocatedPayments      mustBe Seq.empty
-              openPayments.totalUnallocatedPayments mustBe BigDecimal("0")
+              openPayments.creditAvailablePayments  mustBe Seq.empty
+              openPayments.totalCreditAvailable     mustBe BigDecimal("0")
               openPayments.totalOpenPaymentsAmount  mustBe BigDecimal("7000")
           }
         }
@@ -162,8 +162,8 @@ class PaymentsServiceSpec extends SpecBase {
               OpenPayments(
                 outstandingPayments = Seq.empty,
                 totalOutstandingPayments = BigDecimal("0"),
-                unallocatedPayments = Seq.empty,
-                totalUnallocatedPayments = BigDecimal("0"),
+                creditAvailablePayments = Seq.empty,
+                totalCreditAvailable = BigDecimal("0"),
                 totalOpenPaymentsAmount = BigDecimal("0")
               )
             )
@@ -179,8 +179,8 @@ class PaymentsServiceSpec extends SpecBase {
               OpenPayments(
                 outstandingPayments = Seq.empty,
                 totalOutstandingPayments = BigDecimal("0"),
-                unallocatedPayments = Seq.empty,
-                totalUnallocatedPayments = BigDecimal("0"),
+                creditAvailablePayments = Seq.empty,
+                totalCreditAvailable = BigDecimal("0"),
                 totalOpenPaymentsAmount = BigDecimal("0")
               )
             )
@@ -196,13 +196,15 @@ class PaymentsServiceSpec extends SpecBase {
               OpenPayments(
                 outstandingPayments = Seq.empty,
                 totalOutstandingPayments = BigDecimal("0"),
-                unallocatedPayments = Seq(
-                  UnallocatedPayment(
+                creditAvailablePayments = Seq(
+                  CreditAvailablePayment(
+                    transactionType = TransactionType.PaymentOnAccount,
                     paymentDate = singlePaymentOnAccount.financialTransactions.head.items.head.dueDate.get,
-                    unallocatedAmount = BigDecimal("-9000")
+                    chargeReference = singlePaymentOnAccount.financialTransactions.head.chargeReference,
+                    amount = BigDecimal("-9000")
                   )
                 ),
-                totalUnallocatedPayments = BigDecimal("-9000"),
+                totalCreditAvailable = BigDecimal("-9000"),
                 totalOpenPaymentsAmount = BigDecimal("-9000")
               )
             )
@@ -218,13 +220,15 @@ class PaymentsServiceSpec extends SpecBase {
               OpenPayments(
                 outstandingPayments = Seq.empty,
                 totalOutstandingPayments = BigDecimal("0"),
-                unallocatedPayments = Seq(
-                  UnallocatedPayment(
+                creditAvailablePayments = Seq(
+                  CreditAvailablePayment(
+                    transactionType = TransactionType.PaymentOnAccount,
                     paymentDate = singlePaymentOnAccount.financialTransactions.head.items.head.dueDate.get,
-                    unallocatedAmount = BigDecimal("-1000")
+                    chargeReference = singlePaymentOnAccount.financialTransactions.head.chargeReference,
+                    amount = BigDecimal("-1000")
                   )
                 ),
-                totalUnallocatedPayments = BigDecimal("-1000"),
+                totalCreditAvailable = BigDecimal("-1000"),
                 totalOpenPaymentsAmount = BigDecimal("-1000")
               )
             )
@@ -242,17 +246,21 @@ class PaymentsServiceSpec extends SpecBase {
             case Right(openPayments) =>
               openPayments.outstandingPayments      mustBe Seq.empty
               openPayments.totalOutstandingPayments mustBe BigDecimal("0")
-              openPayments.unallocatedPayments        must contain theSameElementsAs Seq(
-                UnallocatedPayment(
+              openPayments.creditAvailablePayments    must contain theSameElementsAs Seq(
+                CreditAvailablePayment(
+                  transactionType = TransactionType.PaymentOnAccount,
                   paymentDate = twoSeparatePaymentsOnAccountOpen.financialTransactions(0).items.head.dueDate.get,
-                  unallocatedAmount = BigDecimal("-5000")
+                  chargeReference = twoSeparatePaymentsOnAccountOpen.financialTransactions(0).chargeReference,
+                  amount = BigDecimal("-5000")
                 ),
-                UnallocatedPayment(
+                CreditAvailablePayment(
+                  transactionType = TransactionType.PaymentOnAccount,
                   paymentDate = twoSeparatePaymentsOnAccountOpen.financialTransactions(1).items.head.dueDate.get,
-                  unallocatedAmount = BigDecimal("-2000")
+                  chargeReference = twoSeparatePaymentsOnAccountOpen.financialTransactions(1).chargeReference,
+                  amount = BigDecimal("-2000")
                 )
               )
-              openPayments.totalUnallocatedPayments mustBe BigDecimal("-7000")
+              openPayments.totalCreditAvailable     mustBe BigDecimal("-7000")
               openPayments.totalOpenPaymentsAmount  mustBe BigDecimal("-7000")
           }
         }
@@ -280,18 +288,20 @@ class PaymentsServiceSpec extends SpecBase {
                   )
                 ),
                 totalOutstandingPayments = BigDecimal("5000"),
-                unallocatedPayments = Seq(
-                  UnallocatedPayment(
+                creditAvailablePayments = Seq(
+                  CreditAvailablePayment(
+                    transactionType = TransactionType.PaymentOnAccount,
                     paymentDate = onePartiallyPaidReturnLineItemAndOnePartiallyAllocatedPaymentOnAccount
                       .financialTransactions(1)
                       .items
                       .head
                       .dueDate
                       .get,
-                    unallocatedAmount = BigDecimal("-2000")
+                    chargeReference = None,
+                    amount = BigDecimal("-2000")
                   )
                 ),
-                totalUnallocatedPayments = BigDecimal("-2000"),
+                totalCreditAvailable = BigDecimal("-2000"),
                 totalOpenPaymentsAmount = BigDecimal("3000")
               )
             )
@@ -314,8 +324,8 @@ class PaymentsServiceSpec extends SpecBase {
                   )
                 ),
                 totalOutstandingPayments = BigDecimal("50"),
-                unallocatedPayments = Seq.empty,
-                totalUnallocatedPayments = BigDecimal("0"),
+                creditAvailablePayments = Seq.empty,
+                totalCreditAvailable = BigDecimal("0"),
                 totalOpenPaymentsAmount = BigDecimal("50")
               )
             )
@@ -329,17 +339,17 @@ class PaymentsServiceSpec extends SpecBase {
           whenReady(paymentsService.getOpenPayments(appaId).value) {
             _ mustBe Right(
               OpenPayments(
-                outstandingPayments = Seq(
-                  OutstandingPayment(
+                outstandingPayments = Seq.empty,
+                totalOutstandingPayments = BigDecimal("0"),
+                creditAvailablePayments = Seq(
+                  CreditAvailablePayment(
                     transactionType = TransactionType.RPI,
-                    dueDate = singleRPI.financialTransactions.head.items.head.dueDate.get,
+                    paymentDate = singleRPI.financialTransactions.head.items.head.dueDate.get,
                     chargeReference = singleRPI.financialTransactions.head.chargeReference,
-                    remainingAmount = BigDecimal("-50")
+                    amount = BigDecimal("-50")
                   )
                 ),
-                totalOutstandingPayments = BigDecimal("-50"),
-                unallocatedPayments = Seq.empty,
-                totalUnallocatedPayments = BigDecimal("0"),
+                totalCreditAvailable = BigDecimal("-50"),
                 totalOpenPaymentsAmount = BigDecimal("-50")
               )
             )
