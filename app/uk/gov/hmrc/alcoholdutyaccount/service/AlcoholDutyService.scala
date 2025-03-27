@@ -20,7 +20,6 @@ import cats.data.{EitherT, OptionT}
 import cats.implicits._
 import play.api.Logging
 import play.api.http.Status.NOT_FOUND
-import uk.gov.hmrc.alcoholdutyaccount.config.AppConfig
 import uk.gov.hmrc.alcoholdutyaccount.connectors.{FinancialDataConnector, ObligationDataConnector, SubscriptionSummaryConnector}
 import uk.gov.hmrc.alcoholdutyaccount.models._
 import uk.gov.hmrc.alcoholdutyaccount.models.hods.{ObligationStatus, _}
@@ -40,7 +39,6 @@ class AlcoholDutyService @Inject() (
   subscriptionSummaryConnector: SubscriptionSummaryConnector,
   obligationDataConnector: ObligationDataConnector,
   financialDataConnector: FinancialDataConnector,
-  appConfig: AppConfig,
   clock: Clock
 )(implicit ec: ExecutionContext)
     extends Logging {
@@ -50,7 +48,7 @@ class AlcoholDutyService @Inject() (
   )(implicit hc: HeaderCarrier): EitherT[Future, ErrorResponse, AdrSubscriptionSummary] =
     subscriptionSummaryConnector
       .getSubscriptionSummary(alcoholDutyReference)
-      .subflatMap(AdrSubscriptionSummary.fromSubscriptionSummary(_, appConfig.ofpAsSeparateRegimeEnabled))
+      .subflatMap(AdrSubscriptionSummary.fromSubscriptionSummary)
 
   def getOpenObligations(
     alcoholDutyReference: String,

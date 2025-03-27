@@ -767,16 +767,12 @@ class AlcoholDutyServiceSpec extends SpecBase {
     val subscriptionSummaryConnector = mock[SubscriptionSummaryConnector]
     val obligationDataConnector      = mock[ObligationDataConnector]
     val financialDataConnector       = mock[FinancialDataConnector]
-    val appConfig                    = mock[AppConfig]
     val service                      = new AlcoholDutyService(
       subscriptionSummaryConnector,
       obligationDataConnector,
       financialDataConnector,
-      appConfig,
       clock
     )
-
-    when(appConfig.ofpAsSeparateRegimeEnabled).thenReturn(true)
 
     val periodStart = LocalDate.of(2023, 1, 1)
     val periodEnd   = LocalDate.of(2023, 1, 31)
