@@ -23,7 +23,7 @@ import uk.gov.hmrc.alcoholdutyaccount.connectors.FinancialDataConnector
 import uk.gov.hmrc.alcoholdutyaccount.models.ReturnPeriod
 import uk.gov.hmrc.alcoholdutyaccount.models.ErrorCodes
 import uk.gov.hmrc.alcoholdutyaccount.models.hods.{FinancialTransaction, FinancialTransactionDocument, FinancialTransactionItem}
-import uk.gov.hmrc.alcoholdutyaccount.models.payments.TransactionType.{PaymentOnAccount, RPI}
+import uk.gov.hmrc.alcoholdutyaccount.models.payments.TransactionType.{Overpayment, RPI}
 import uk.gov.hmrc.alcoholdutyaccount.models.payments.{HistoricPayment, HistoricPayments, OpenPayment, OpenPayments, OutstandingPayment, TransactionType, UnallocatedPayment}
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.bootstrap.backend.http.ErrorResponse
@@ -136,19 +136,19 @@ class PaymentsService @Inject() (
         Right(transactionType)
       }
 
-  private def warnIfPaymentOnAccountAndAmountsDontMatch(
+  private def warnIfOverpaymentAndAmountsDontMatch(
     sapDocumentNumber: String,
     transactionType: TransactionType,
     financialTransactionsForDocument: Seq[FinancialTransaction]
   ): Unit =
     if (
-      transactionType == PaymentOnAccount &&
+      transactionType == Overpayment &&
       financialTransactionsForDocument.exists(financialTransactionLineItem =>
         !financialTransactionLineItem.outstandingAmount.contains(financialTransactionLineItem.originalAmount)
       )
     ) {
       logger.warn(
-        s"Expected original and outstanding amounts to match on payment on account on financial transaction $sapDocumentNumber."
+        s"Expected original and outstanding amounts to match on overpayment on financial transaction $sapDocumentNumber."
       )
     }
 
@@ -191,7 +191,7 @@ class PaymentsService @Inject() (
                                            )
       transactionType                   <- getTransactionTypeAndWarnIfOpenRPI(sapDocumentNumber, mainTransactionType, onlyOpenItems)
       _                                  =
-        warnIfPaymentOnAccountAndAmountsDontMatch(sapDocumentNumber, transactionType, financialTransactionsForDocument)
+        warnIfOverpaymentAndAmountsDontMatch(sapDocumentNumber, transactionType, financialTransactionsForDocument)
       _                                  = warnIfRPIAndIsPositive(sapDocumentNumber, transactionType, financialTransactionsForDocument)
     } yield FinancialTransactionData(
       transactionType,
@@ -225,7 +225,7 @@ class PaymentsService @Inject() (
   ): OpenPayment = {
     val transactionType = financialTransactionData.transactionType
 
-    if (transactionType == PaymentOnAccount) {
+    if (transactionType == Overpayment) {
       UnallocatedPayment(
         paymentDate = financialTransactionData.dueDate,
         unallocatedAmount = outstandingAmount
@@ -246,8 +246,8 @@ class PaymentsService @Inject() (
     EitherT {
       Future.successful(
         financialTransactionDocument.financialTransactions
-          .filter(transaction => // Ignore payments on account that aren't ZADP
-            !TransactionType.isPaymentOnAccount(
+          .filter(transaction => // Ignore overpayments that aren't ZADP
+            !TransactionType.isOverpayment(
               transaction.mainTransaction
             ) || transaction.contractObjectType.contains(contractObjectType)
           )
@@ -322,7 +322,7 @@ class PaymentsService @Inject() (
       financialTransactionDocument.financialTransactions
         .filter(transaction =>
           TransactionType.isRPI(transaction.mainTransaction) ||
-            !(TransactionType.isPaymentOnAccount(transaction.mainTransaction) || isTransactionFullyOpen(transaction))
+            !(TransactionType.isOverpayment(transaction.mainTransaction) || isTransactionFullyOpen(transaction))
         )
         .groupBy(_.sapDocumentNumber)
         .map { case (sapDocumentNumber, financialTransactionsForDocument) =>

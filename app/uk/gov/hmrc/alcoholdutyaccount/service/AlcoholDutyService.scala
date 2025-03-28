@@ -170,7 +170,7 @@ class AlcoholDutyService @Inject() (
     financialTransactions: Seq[FinancialTransaction]
   ): Seq[FinancialTransaction] =
     financialTransactions.filter(financialTransaction =>
-      !TransactionType.isPaymentOnAccount(financialTransaction.mainTransaction) ||
+      !TransactionType.isOverpayment(financialTransaction.mainTransaction) ||
         financialTransaction.contractObjectType.contains("ZADP")
     )
 

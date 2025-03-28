@@ -489,7 +489,7 @@ trait TestData extends ModelGenerators {
     )
   }
 
-  val singlePaymentOnAccount: FinancialTransactionDocument = {
+  val singleOverpayment: FinancialTransactionDocument = {
     val sapDocumentNumber = sapDocumentNumberGen.sample.get
     val chargeReference   = chargeReferenceGen.sample.get
 
@@ -499,13 +499,13 @@ trait TestData extends ModelGenerators {
       originalAmount = BigDecimal("-9000"),
       maybeOutstandingAmount = Some(BigDecimal("-9000")),
       dueDate = ReturnPeriod.fromPeriodKeyOrThrow(periodKey).dueDate(),
-      transactionType = TransactionType.PaymentOnAccount,
+      transactionType = TransactionType.Overpayment,
       maybePeriodKey = Some(periodKey),
       maybeChargeReference = Some(chargeReference)
     )
   }
 
-  def twoSeparatePaymentsOnAccount(onlyOpenItems: Boolean): FinancialTransactionDocument = {
+  def twoSeparateOverpayments(onlyOpenItems: Boolean): FinancialTransactionDocument = {
     val sapDocumentNumber  = sapDocumentNumberGen.sample.get
     val chargeReference    = chargeReferenceGen.sample.get
     val sapDocumentNumber2 = sapDocumentNumberGen.sample.get
@@ -519,7 +519,7 @@ trait TestData extends ModelGenerators {
           originalAmount = BigDecimal("-5000"),
           maybeOutstandingAmount = Some(BigDecimal("-5000")),
           dueDate = ReturnPeriod.fromPeriodKeyOrThrow(periodKey).dueDate(),
-          transactionType = TransactionType.PaymentOnAccount,
+          transactionType = TransactionType.Overpayment,
           maybePeriodKey = Some(periodKey),
           maybeChargeReference = Some(chargeReference)
         ),
@@ -529,7 +529,7 @@ trait TestData extends ModelGenerators {
           originalAmount = BigDecimal("-2000"),
           maybeOutstandingAmount = Some(BigDecimal("-2000")),
           dueDate = ReturnPeriod.fromPeriodKeyOrThrow(periodKey2).dueDate(),
-          transactionType = TransactionType.PaymentOnAccount,
+          transactionType = TransactionType.Overpayment,
           maybePeriodKey = Some(periodKey2),
           maybeChargeReference = Some(chargeReference2)
         )
@@ -638,7 +638,7 @@ trait TestData extends ModelGenerators {
           originalAmount = BigDecimal("-1000.00"),
           maybeOutstandingAmount = Some(BigDecimal("-1000.00")),
           dueDate = ReturnPeriod.fromPeriodKeyOrThrow("24AH").periodFromDate(),
-          transactionType = TransactionType.PaymentOnAccount,
+          transactionType = TransactionType.Overpayment,
           maybePeriodKey = None,
           maybeChargeReference = None
         ),
@@ -648,7 +648,7 @@ trait TestData extends ModelGenerators {
           originalAmount = BigDecimal("-500.00"),
           maybeOutstandingAmount = Some(BigDecimal("-500.00")),
           dueDate = ReturnPeriod.fromPeriodKeyOrThrow("24AH").periodFromDate(),
-          transactionType = TransactionType.PaymentOnAccount,
+          transactionType = TransactionType.Overpayment,
           maybePeriodKey = None,
           maybeChargeReference = None
         ),
