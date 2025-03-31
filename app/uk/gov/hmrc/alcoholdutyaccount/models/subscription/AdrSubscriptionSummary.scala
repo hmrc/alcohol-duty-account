@@ -31,10 +31,9 @@ case class AdrSubscriptionSummary(
 object AdrSubscriptionSummary {
 
   def fromSubscriptionSummary(
-    subscriptionSummary: SubscriptionSummary,
-    ofpAsSeparateRegimeEnabled: Boolean
+    subscriptionSummary: SubscriptionSummary
   ): Either[ErrorResponse, AdrSubscriptionSummary] = {
-    val regimes = mapRegimes(subscriptionSummary.typeOfAlcoholApprovedFor, ofpAsSeparateRegimeEnabled)
+    val regimes = mapRegimes(subscriptionSummary.typeOfAlcoholApprovedFor)
 
     if (regimes.isEmpty) {
       Left(ErrorResponse(INTERNAL_SERVER_ERROR, "Expected at least one approved regime to be provided"))
@@ -48,30 +47,7 @@ object AdrSubscriptionSummary {
     }
   }
 
-  /**
-    * When updated subscription is available, the toggle will be set to call the new mapping
-    * Once happy with it, delete the toggle, and the old code replacing the code in mapRegimes with that in
-    * mapRegimesNew
-    */
-  private def mapRegimes(
-    typeOfAlcohol: Set[hods.ApprovalType],
-    ofpAsSeparateRegimeEnabled: Boolean
-  ): Set[AlcoholRegime] =
-    if (ofpAsSeparateRegimeEnabled) {
-      mapRegimesNew(typeOfAlcohol)
-    } else {
-      mapRegimesOld(typeOfAlcohol)
-    }
-
-  private def mapRegimesOld(typeOfAlcohol: Set[hods.ApprovalType]): Set[AlcoholRegime] = typeOfAlcohol.flatMap {
-    case hods.Beer                  => Seq(Beer)
-    case hods.CiderOrPerry          => Seq(Cider, OtherFermentedProduct)
-    case hods.Wine                  => Seq(Wine, OtherFermentedProduct)
-    case hods.Spirits               => Seq(Spirits)
-    case hods.OtherFermentedProduct => Seq(OtherFermentedProduct) // So as not to break if only has OFP after change
-  }
-
-  private def mapRegimesNew(typeOfAlcohol: Set[hods.ApprovalType]): Set[AlcoholRegime] = typeOfAlcohol.flatMap {
+  private def mapRegimes(typeOfAlcohol: Set[hods.ApprovalType]): Set[AlcoholRegime] = typeOfAlcohol.flatMap {
     case hods.Beer                  => Seq(Beer)
     case hods.CiderOrPerry          => Seq(Cider)
     case hods.Wine                  => Seq(Wine)

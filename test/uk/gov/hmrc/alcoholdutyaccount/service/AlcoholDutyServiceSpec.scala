@@ -21,12 +21,11 @@ import org.mockito.ArgumentMatchersSugar.*
 import org.mockito.cats.IdiomaticMockitoCats.StubbingOpsCats
 import uk.gov.hmrc.alcoholdutyaccount.base.SpecBase
 import uk.gov.hmrc.alcoholdutyaccount.common.TestData
-import uk.gov.hmrc.alcoholdutyaccount.config.AppConfig
 import uk.gov.hmrc.alcoholdutyaccount.connectors.{FinancialDataConnector, ObligationDataConnector, SubscriptionSummaryConnector}
-import uk.gov.hmrc.alcoholdutyaccount.models.subscription.ApprovalStatus.{Approved, DeRegistered, Insolvent, Revoked, SmallCiderProducer}
 import uk.gov.hmrc.alcoholdutyaccount.models._
-import uk.gov.hmrc.alcoholdutyaccount.models.hods.{Beer, FinancialTransaction, FinancialTransactionDocument, FinancialTransactionItem, Obligation, ObligationData, ObligationDetails, Open, SubscriptionSummary}
+import uk.gov.hmrc.alcoholdutyaccount.models.hods._
 import uk.gov.hmrc.alcoholdutyaccount.models.subscription.ApprovalStatus
+import uk.gov.hmrc.alcoholdutyaccount.models.subscription.ApprovalStatus.{Approved, DeRegistered, Insolvent, Revoked, SmallCiderProducer}
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.bootstrap.backend.http.ErrorResponse
 
@@ -767,16 +766,12 @@ class AlcoholDutyServiceSpec extends SpecBase {
     val subscriptionSummaryConnector = mock[SubscriptionSummaryConnector]
     val obligationDataConnector      = mock[ObligationDataConnector]
     val financialDataConnector       = mock[FinancialDataConnector]
-    val appConfig                    = mock[AppConfig]
     val service                      = new AlcoholDutyService(
       subscriptionSummaryConnector,
       obligationDataConnector,
       financialDataConnector,
-      appConfig,
       clock
     )
-
-    when(appConfig.ofpAsSeparateRegimeEnabled).thenReturn(true)
 
     val periodStart = LocalDate.of(2023, 1, 1)
     val periodEnd   = LocalDate.of(2023, 1, 31)
