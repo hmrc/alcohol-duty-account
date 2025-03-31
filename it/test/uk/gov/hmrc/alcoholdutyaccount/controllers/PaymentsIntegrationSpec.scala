@@ -370,7 +370,7 @@ class PaymentsIntegrationSpec extends ISpecBase with ConnectorTestHelpers {
         |      ]
         |    },
         |    {
-        |      "chargeType": "Payment on account",
+        |      "chargeType": "Overpayment",
         |      "mainType": "On account",
         |      "businessPartner": "$businessPartner",
         |      "contractAccountCategory": "51",
@@ -392,7 +392,7 @@ class PaymentsIntegrationSpec extends ISpecBase with ConnectorTestHelpers {
         |      ]
         |    },
         |    {
-        |      "chargeType": "Payment on account",
+        |      "chargeType": "Overpayment",
         |      "mainType": "On account",
         |      "businessPartner": "$businessPartner",
         |      "contractAccountCategory": "51",

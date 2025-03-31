@@ -262,7 +262,7 @@ class PaymentsServiceSpec extends SpecBase {
           when(mockFinancialDataConnector.getOnlyOpenFinancialData(appaId))
             .thenReturn(
               EitherT.pure[Future, ErrorResponse](
-                onePartiallyPaidReturnLineItemAndOnePartiallyAllocatedPaymentOnAccount
+                onePartiallyPaidReturnLineItemAndOnePartiallyAllocatedOverpayment
               )
             )
 
@@ -273,16 +273,16 @@ class PaymentsServiceSpec extends SpecBase {
                   OutstandingPayment(
                     transactionType = TransactionType.Return,
                     dueDate =
-                      onePartiallyPaidReturnLineItemAndOnePartiallyAllocatedPaymentOnAccount.financialTransactions.head.items.head.dueDate.get,
+                      onePartiallyPaidReturnLineItemAndOnePartiallyAllocatedOverpayment.financialTransactions.head.items.head.dueDate.get,
                     chargeReference =
-                      onePartiallyPaidReturnLineItemAndOnePartiallyAllocatedPaymentOnAccount.financialTransactions.head.chargeReference,
+                      onePartiallyPaidReturnLineItemAndOnePartiallyAllocatedOverpayment.financialTransactions.head.chargeReference,
                     remainingAmount = BigDecimal("5000")
                   )
                 ),
                 totalOutstandingPayments = BigDecimal("5000"),
                 unallocatedPayments = Seq(
                   UnallocatedPayment(
-                    paymentDate = onePartiallyPaidReturnLineItemAndOnePartiallyAllocatedPaymentOnAccount
+                    paymentDate = onePartiallyPaidReturnLineItemAndOnePartiallyAllocatedOverpayment
                       .financialTransactions(1)
                       .items
                       .head
@@ -821,7 +821,7 @@ class PaymentsServiceSpec extends SpecBase {
     )
 
     // Test edge case which mustn't happen as overpayments must reduce original amount
-    val onePartiallyPaidReturnLineItemAndOnePartiallyAllocatedPaymentOnAccount: FinancialTransactionDocument =
+    val onePartiallyPaidReturnLineItemAndOnePartiallyAllocatedOverpayment: FinancialTransactionDocument =
       combineFinancialTransactionDocuments(
         Seq(
           createFinancialDocument(
