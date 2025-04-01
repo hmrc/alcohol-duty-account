@@ -164,11 +164,11 @@ class AlcoholDutyService @Inject() (
     }
   )
 
-  private def removeNonZADPPaymentsOnAccount(
+  private def removeNonZADPOverpayments(
     financialTransactions: Seq[FinancialTransaction]
   ): Seq[FinancialTransaction] =
     financialTransactions.filter(financialTransaction =>
-      !TransactionType.isPaymentOnAccount(financialTransaction.mainTransaction) ||
+      !TransactionType.isOverpayment(financialTransaction.mainTransaction) ||
         financialTransaction.contractObjectType.contains("ZADP")
     )
 
@@ -177,7 +177,7 @@ class AlcoholDutyService @Inject() (
   )(implicit hc: HeaderCarrier): Future[Option[Payments]] =
     getFinancialDataForBtaTile(alcoholDutyReference)
       .fold(Option.empty[Payments])(financialData =>
-        Some(extractPayments(removeNonZADPPaymentsOnAccount(financialData.financialTransactions)))
+        Some(extractPayments(removeNonZADPOverpayments(financialData.financialTransactions)))
       )
 
   private[service] def extractPayments(financialTransactions: Seq[FinancialTransaction]): Payments = {

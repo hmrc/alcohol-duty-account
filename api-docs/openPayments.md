@@ -38,7 +38,7 @@ If NOT_FOUND is returned by the downstream API, empty arrays of outstandingPayme
 | Field Name                            | Description                                  | Data Type     | Mandatory/Optional | Notes                                                      |
 |---------------------------------------|----------------------------------------------|---------------|--------------------|------------------------------------------------------------|
 | outstandingPayments                   | The outstanding payments array               | Array(Items)  | Mandatory          |                                                            |
-| outstandingPayments.transactionType   | The type of transaction this refers to       | Enum          | Mandatory          | Return, PaymentOnAccount, LPI, RPI                         |
+| outstandingPayments.transactionType   | The type of transaction this refers to       | Enum          | Mandatory          | Return, Overpayment, LPI, RPI                              |
 | outstandingPayments.dueDate           | The date the payment is due (or applied)     | Date          | Mandatory          | YYYY-MM-DD                                                 |
 | outstandingPayments.chargeReference   | The charge reference if applicable           | String        | Optional           |                                                            |
 | outstandingPayments.remainingAmount   | The remaining amount to pay                  | Numeric       | Mandatory          | Positive if a debt, negative if a credit                   |

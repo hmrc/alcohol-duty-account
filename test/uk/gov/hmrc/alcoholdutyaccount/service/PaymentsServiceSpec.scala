@@ -153,9 +153,9 @@ class PaymentsServiceSpec extends SpecBase {
           }
         }
 
-        "must ignore payments on account that have no contract object type" in new SetUp {
+        "must ignore overpayments that have no contract object type" in new SetUp {
           when(mockFinancialDataConnector.getOnlyOpenFinancialData(appaId))
-            .thenReturn(EitherT.pure[Future, ErrorResponse](singlePaymentOnAccountNoContractObjectType))
+            .thenReturn(EitherT.pure[Future, ErrorResponse](singleOverpaymentNoContractObjectType))
 
           whenReady(paymentsService.getOpenPayments(appaId).value) {
             _ mustBe Right(
@@ -170,9 +170,9 @@ class PaymentsServiceSpec extends SpecBase {
           }
         }
 
-        "must ignore payments on account that are not contract object type ZADP" in new SetUp {
+        "must ignore overpayments that are not contract object type ZADP" in new SetUp {
           when(mockFinancialDataConnector.getOnlyOpenFinancialData(appaId))
-            .thenReturn(EitherT.pure[Future, ErrorResponse](singlePaymentOnAccountNotZADP))
+            .thenReturn(EitherT.pure[Future, ErrorResponse](singleOverpaymentNotZADP))
 
           whenReady(paymentsService.getOpenPayments(appaId).value) {
             _ mustBe Right(
@@ -187,9 +187,9 @@ class PaymentsServiceSpec extends SpecBase {
           }
         }
 
-        "when processing a single fully unallocated payment on account" in new SetUp {
+        "when processing a single fully unallocated overpayment" in new SetUp {
           when(mockFinancialDataConnector.getOnlyOpenFinancialData(appaId))
-            .thenReturn(EitherT.pure[Future, ErrorResponse](singlePaymentOnAccount))
+            .thenReturn(EitherT.pure[Future, ErrorResponse](singleOverpayment))
 
           whenReady(paymentsService.getOpenPayments(appaId).value) {
             _ mustBe Right(
@@ -198,7 +198,7 @@ class PaymentsServiceSpec extends SpecBase {
                 totalOutstandingPayments = BigDecimal("0"),
                 unallocatedPayments = Seq(
                   UnallocatedPayment(
-                    paymentDate = singlePaymentOnAccount.financialTransactions.head.items.head.dueDate.get,
+                    paymentDate = singleOverpayment.financialTransactions.head.items.head.dueDate.get,
                     unallocatedAmount = BigDecimal("-9000")
                   )
                 ),
@@ -209,9 +209,9 @@ class PaymentsServiceSpec extends SpecBase {
           }
         }
 
-        "must warn when processing a single fully unallocated payment on account where original and outstanding amounts don't match (coverage)" in new SetUp {
+        "must warn when processing a single fully unallocated overpayment where original and outstanding amounts don't match (coverage)" in new SetUp {
           when(mockFinancialDataConnector.getOnlyOpenFinancialData(appaId))
-            .thenReturn(EitherT.pure[Future, ErrorResponse](singlePaymentOnAccountAmountMismatch))
+            .thenReturn(EitherT.pure[Future, ErrorResponse](singleOverpaymentAmountMismatch))
 
           whenReady(paymentsService.getOpenPayments(appaId).value) {
             _ mustBe Right(
@@ -220,7 +220,7 @@ class PaymentsServiceSpec extends SpecBase {
                 totalOutstandingPayments = BigDecimal("0"),
                 unallocatedPayments = Seq(
                   UnallocatedPayment(
-                    paymentDate = singlePaymentOnAccount.financialTransactions.head.items.head.dueDate.get,
+                    paymentDate = singleOverpayment.financialTransactions.head.items.head.dueDate.get,
                     unallocatedAmount = BigDecimal("-1000")
                   )
                 ),
@@ -231,11 +231,11 @@ class PaymentsServiceSpec extends SpecBase {
           }
         }
 
-        "when processing two separate payments on account" in new SetUp { // This probably won't happen, but check it can be handled
-          val twoSeparatePaymentsOnAccountOpen = twoSeparatePaymentsOnAccount(true)
+        "when processing two separate overpayments" in new SetUp { // This probably won't happen, but check it can be handled
+          val twoSeparateOverpaymentsOpen = twoSeparateOverpayments(true)
 
           when(mockFinancialDataConnector.getOnlyOpenFinancialData(appaId))
-            .thenReturn(EitherT.pure[Future, ErrorResponse](twoSeparatePaymentsOnAccountOpen))
+            .thenReturn(EitherT.pure[Future, ErrorResponse](twoSeparateOverpaymentsOpen))
 
           whenReady(paymentsService.getOpenPayments(appaId).value) {
             case Left(_)             => fail()
@@ -244,11 +244,11 @@ class PaymentsServiceSpec extends SpecBase {
               openPayments.totalOutstandingPayments mustBe BigDecimal("0")
               openPayments.unallocatedPayments        must contain theSameElementsAs Seq(
                 UnallocatedPayment(
-                  paymentDate = twoSeparatePaymentsOnAccountOpen.financialTransactions(0).items.head.dueDate.get,
+                  paymentDate = twoSeparateOverpaymentsOpen.financialTransactions(0).items.head.dueDate.get,
                   unallocatedAmount = BigDecimal("-5000")
                 ),
                 UnallocatedPayment(
-                  paymentDate = twoSeparatePaymentsOnAccountOpen.financialTransactions(1).items.head.dueDate.get,
+                  paymentDate = twoSeparateOverpaymentsOpen.financialTransactions(1).items.head.dueDate.get,
                   unallocatedAmount = BigDecimal("-2000")
                 )
               )
@@ -257,12 +257,12 @@ class PaymentsServiceSpec extends SpecBase {
           }
         }
 
-        // This is a test edge case which mustn't happen in real life, to check the outstanding amount is used from payment on account
-        "when processing a single partially outstanding return and a partially allocated payment on account" in new SetUp {
+        // This is a test edge case which mustn't happen in real life, to check the outstanding amount is used from overpayment
+        "when processing a single partially outstanding return and a partially allocated overpayment" in new SetUp {
           when(mockFinancialDataConnector.getOnlyOpenFinancialData(appaId))
             .thenReturn(
               EitherT.pure[Future, ErrorResponse](
-                onePartiallyPaidReturnLineItemAndOnePartiallyAllocatedPaymentOnAccount
+                onePartiallyPaidReturnLineItemAndOnePartiallyAllocatedOverpayment
               )
             )
 
@@ -273,16 +273,16 @@ class PaymentsServiceSpec extends SpecBase {
                   OutstandingPayment(
                     transactionType = TransactionType.Return,
                     dueDate =
-                      onePartiallyPaidReturnLineItemAndOnePartiallyAllocatedPaymentOnAccount.financialTransactions.head.items.head.dueDate.get,
+                      onePartiallyPaidReturnLineItemAndOnePartiallyAllocatedOverpayment.financialTransactions.head.items.head.dueDate.get,
                     chargeReference =
-                      onePartiallyPaidReturnLineItemAndOnePartiallyAllocatedPaymentOnAccount.financialTransactions.head.chargeReference,
+                      onePartiallyPaidReturnLineItemAndOnePartiallyAllocatedOverpayment.financialTransactions.head.chargeReference,
                     remainingAmount = BigDecimal("5000")
                   )
                 ),
                 totalOutstandingPayments = BigDecimal("5000"),
                 unallocatedPayments = Seq(
                   UnallocatedPayment(
-                    paymentDate = onePartiallyPaidReturnLineItemAndOnePartiallyAllocatedPaymentOnAccount
+                    paymentDate = onePartiallyPaidReturnLineItemAndOnePartiallyAllocatedOverpayment
                       .financialTransactions(1)
                       .items
                       .head
@@ -586,9 +586,9 @@ class PaymentsServiceSpec extends SpecBase {
           }
         }
 
-        "when just payment on account (no historic payments returned)" in new SetUp {
+        "when just overpayment (no historic payments returned)" in new SetUp {
           when(mockFinancialDataConnector.getNotOnlyOpenFinancialData(appaId = appaId, year = year))
-            .thenReturn(EitherT.pure[Future, ErrorResponse](twoSeparatePaymentsOnAccount(false)))
+            .thenReturn(EitherT.pure[Future, ErrorResponse](twoSeparateOverpayments(false)))
 
           whenReady(paymentsService.getHistoricPayments(appaId, year).value) {
             _ mustBe Right(HistoricPayments(year, Seq.empty))
@@ -808,20 +808,20 @@ class PaymentsServiceSpec extends SpecBase {
     val singlePartiallyOutstandingReturnOpen      = singlePartiallyOutstandingReturn(onlyOpenItems = true)
     val twoLineItemPartiallyOutstandingReturnOpen = twoLineItemPartiallyOutstandingReturn(onlyOpenItems = true)
 
-    val singlePaymentOnAccountAmountMismatch = singlePaymentOnAccount.copy(financialTransactions =
-      singlePaymentOnAccount.financialTransactions.map(_.copy(outstandingAmount = Some(BigDecimal("-1000"))))
+    val singleOverpaymentAmountMismatch = singleOverpayment.copy(financialTransactions =
+      singleOverpayment.financialTransactions.map(_.copy(outstandingAmount = Some(BigDecimal("-1000"))))
     )
 
-    val singlePaymentOnAccountNoContractObjectType = singlePaymentOnAccount.copy(financialTransactions =
-      singlePaymentOnAccount.financialTransactions.map(_.copy(contractObjectType = None))
+    val singleOverpaymentNoContractObjectType = singleOverpayment.copy(financialTransactions =
+      singleOverpayment.financialTransactions.map(_.copy(contractObjectType = None))
     )
 
-    val singlePaymentOnAccountNotZADP = singlePaymentOnAccount.copy(financialTransactions =
-      singlePaymentOnAccount.financialTransactions.map(_.copy(contractObjectType = Some("blah")))
+    val singleOverpaymentNotZADP = singleOverpayment.copy(financialTransactions =
+      singleOverpayment.financialTransactions.map(_.copy(contractObjectType = Some("blah")))
     )
 
-    // Test edge case which mustn't happen as payments on account must reduce original amount
-    val onePartiallyPaidReturnLineItemAndOnePartiallyAllocatedPaymentOnAccount: FinancialTransactionDocument =
+    // Test edge case which mustn't happen as overpayments must reduce original amount
+    val onePartiallyPaidReturnLineItemAndOnePartiallyAllocatedOverpayment: FinancialTransactionDocument =
       combineFinancialTransactionDocuments(
         Seq(
           createFinancialDocument(
@@ -840,7 +840,7 @@ class PaymentsServiceSpec extends SpecBase {
             originalAmount = BigDecimal("-2000"),
             maybeOutstandingAmount = Some(BigDecimal("-2000")),
             dueDate = ReturnPeriod.fromPeriodKeyOrThrow(periodKey).dueDate(),
-            transactionType = TransactionType.PaymentOnAccount,
+            transactionType = TransactionType.Overpayment,
             maybePeriodKey = Some(periodKey),
             maybeChargeReference = None
           )

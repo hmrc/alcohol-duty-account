@@ -29,7 +29,7 @@ object TransactionType extends Enum[TransactionType] with PlayJsonEnum[Transacti
     val mainTransactionType: String = "6074"
   }
 
-  case object PaymentOnAccount extends TransactionType {
+  case object Overpayment extends TransactionType {
     val mainTransactionType: String = "0060"
   }
 
@@ -42,17 +42,17 @@ object TransactionType extends Enum[TransactionType] with PlayJsonEnum[Transacti
   }
 
   def fromMainTransactionType(mainTransactionType: String): Option[TransactionType] = mainTransactionType match {
-    case Return.mainTransactionType           => Some(Return)
-    case PaymentOnAccount.mainTransactionType => Some(PaymentOnAccount)
-    case LPI.mainTransactionType              => Some(LPI)
-    case RPI.mainTransactionType              => Some(RPI)
-    case _                                    => None
+    case Return.mainTransactionType      => Some(Return)
+    case Overpayment.mainTransactionType => Some(Overpayment)
+    case LPI.mainTransactionType         => Some(LPI)
+    case RPI.mainTransactionType         => Some(RPI)
+    case _                               => None
   }
 
   def toMainTransactionType(transactionType: TransactionType): String = transactionType.mainTransactionType
 
   def isRPI(mainTransactionType: String): Boolean = mainTransactionType == RPI.mainTransactionType
 
-  def isPaymentOnAccount(mainTransactionType: String): Boolean =
-    mainTransactionType == PaymentOnAccount.mainTransactionType
+  def isOverpayment(mainTransactionType: String): Boolean =
+    mainTransactionType == Overpayment.mainTransactionType
 }

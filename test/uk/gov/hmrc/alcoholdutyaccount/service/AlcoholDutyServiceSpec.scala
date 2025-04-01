@@ -489,18 +489,18 @@ class AlcoholDutyServiceSpec extends SpecBase {
         }
       }
 
-      "filter any payments on account that are missing contractObjectType" in new SetUp {
+      "filter any overpayments that are missing contractObjectType" in new SetUp {
         when(financialDataConnector.getOnlyOpenFinancialData(*)(*))
-          .thenReturn(EitherT.pure(singlePaymentOnAccountNoContractObjectType))
+          .thenReturn(EitherT.pure(singleOverpaymentNoContractObjectType))
 
         service.getPaymentInformation(appaId).onComplete { result =>
           result mustBe Success(Some(Payments()))
         }
       }
 
-      "filter any payments on account that are not of contractObjectType ZADP" in new SetUp {
+      "filter any overpayments that are not of contractObjectType ZADP" in new SetUp {
         when(financialDataConnector.getOnlyOpenFinancialData(*)(*))
-          .thenReturn(EitherT.pure(singlePaymentOnAccountNotZADP))
+          .thenReturn(EitherT.pure(singleOverpaymentNotZADP))
 
         service.getPaymentInformation(appaId).onComplete { result =>
           result mustBe Success(Some(Payments()))
@@ -795,12 +795,12 @@ class AlcoholDutyServiceSpec extends SpecBase {
       )
     )
 
-    val singlePaymentOnAccountNoContractObjectType = singlePaymentOnAccount.copy(financialTransactions =
-      singlePaymentOnAccount.financialTransactions.map(_.copy(contractObjectType = None))
+    val singleOverpaymentNoContractObjectType = singleOverpayment.copy(financialTransactions =
+      singleOverpayment.financialTransactions.map(_.copy(contractObjectType = None))
     )
 
-    val singlePaymentOnAccountNotZADP = singlePaymentOnAccount.copy(financialTransactions =
-      singlePaymentOnAccount.financialTransactions.map(_.copy(contractObjectType = Some("blah")))
+    val singleOverpaymentNotZADP = singleOverpayment.copy(financialTransactions =
+      singleOverpayment.financialTransactions.map(_.copy(contractObjectType = Some("blah")))
     )
   }
 }
