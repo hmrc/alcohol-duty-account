@@ -58,7 +58,7 @@ trait WireMockHelper {
 
   def stubGetFault(
     url: String,
-    fault: Fault = Fault.CONNECTION_RESET_BY_PEER
+    fault: Fault = Fault.EMPTY_RESPONSE
   ): Unit =
     wireMockServer.stubFor(
       WireMock.get(urlEqualTo(stripToPath(url))).willReturn(aResponse().withFault(fault))
@@ -74,7 +74,7 @@ trait WireMockHelper {
   def stubGetFaultWithParameters(
     url: String,
     parameters: Seq[(String, String)],
-    fault: Fault = Fault.CONNECTION_RESET_BY_PEER
+    fault: Fault = Fault.EMPTY_RESPONSE
   ): Unit =
     wireMockServer.stubFor(
       WireMock
