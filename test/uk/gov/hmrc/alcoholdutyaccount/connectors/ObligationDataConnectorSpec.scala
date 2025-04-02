@@ -146,7 +146,7 @@ class ObligationDataConnectorSpec extends SpecBase with ConnectorTestHelpers {
       "if an exception thrown when fetching obligation data" in new SetUp {
         stubGetFaultWithParameters(url, expectedQueryParamsOpen)
         whenReady(connector.getObligationDetails(appaId, Some(obligationFilterOpen)).value) { result =>
-          result mustBe Left(ErrorResponse(INTERNAL_SERVER_ERROR, "Connection reset by peer"))
+          result mustBe Left(ErrorResponse(INTERNAL_SERVER_ERROR, "Remotely closed"))
           verifyGetWithParameters(url, expectedQueryParamsOpen)
         }
       }
