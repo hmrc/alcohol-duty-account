@@ -1,0 +1,93 @@
+/*
+ * Copyright 2025 HM Revenue & Customs
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package uk.gov.hmrc.alcoholdutyaccount.utils.payments
+
+import cats.data.EitherT
+import cats.implicits._
+import play.api.Logging
+import uk.gov.hmrc.alcoholdutyaccount.models.ReturnPeriod
+import uk.gov.hmrc.alcoholdutyaccount.models.hods.{FinancialTransaction, FinancialTransactionDocument}
+import uk.gov.hmrc.alcoholdutyaccount.models.payments.TransactionType.RPI
+import uk.gov.hmrc.alcoholdutyaccount.models.payments.{HistoricPayment, TransactionType}
+import uk.gov.hmrc.play.bootstrap.backend.http.ErrorResponse
+
+import java.time.YearMonth
+import javax.inject.Inject
+import scala.concurrent.{ExecutionContext, Future}
+
+class HistoricFinancialDataExtractor @Inject()(
+  financialDataValidator: FinancialDataValidator
+)(implicit ec: ExecutionContext)
+    extends Logging {
+
+  def extractHistoricPayments(
+                               financialTransactionDocument: FinancialTransactionDocument
+                             ): EitherT[Future, ErrorResponse, List[HistoricPayment]] =
+    EitherT.fromEither(
+      financialTransactionDocument.financialTransactions
+        .filter(transaction =>
+          TransactionType.isRPI(transaction.mainTransaction) ||
+            !(TransactionType.isOverpayment(transaction.mainTransaction) || isTransactionFullyOpen(transaction))
+        )
+        .groupBy(_.sapDocumentNumber)
+        .map { case (sapDocumentNumber, financialTransactionsForDocument) =>
+          financialDataValidator
+            .validateAndGetFinancialTransactionData(
+              sapDocumentNumber,
+              financialTransactionsForDocument,
+              onlyOpenItems = false
+            )
+            .map { financialTransactionData =>
+              val totalAmountPaid = calculateTotalAmountPaid(financialTransactionsForDocument)
+
+              if (totalAmountPaid > 0 && financialTransactionData.transactionType != RPI) {
+                Some(
+                  HistoricPayment(
+                    period = financialTransactionData.maybePeriodKey
+                      .flatMap(ReturnPeriod.fromPeriodKey)
+                      .getOrElse(ReturnPeriod(YearMonth.from(financialTransactionData.dueDate))),
+                    transactionType = financialTransactionData.transactionType,
+                    chargeReference = financialTransactionData.maybeChargeReference,
+                    amountPaid = totalAmountPaid
+                  )
+                )
+              } else {
+                None
+              }
+            }
+        }
+        .toList
+        .sequence
+        .map(_.flatten)
+    )
+
+  private def calculateTotalAmountPaid(
+    financialTransactionsForDocument: Seq[FinancialTransaction]
+  ): BigDecimal =
+    financialTransactionsForDocument
+      .map(transaction =>
+        if (TransactionType.isRPI(transaction.mainTransaction)) {
+          transaction.originalAmount
+        } else {
+          transaction.clearedAmount.getOrElse(BigDecimal(0))
+        }
+      )
+      .sum
+
+  private def isTransactionFullyOpen(financialTransaction: FinancialTransaction): Boolean =
+    financialTransaction.clearedAmount.isEmpty
+}

@@ -19,12 +19,15 @@ package uk.gov.hmrc.alcoholdutyaccount.service
 import cats.data.EitherT
 import uk.gov.hmrc.alcoholdutyaccount.base.SpecBase
 import uk.gov.hmrc.alcoholdutyaccount.connectors.FinancialDataConnector
-import uk.gov.hmrc.alcoholdutyaccount.models.{ErrorCodes, ReturnPeriod}
 import uk.gov.hmrc.alcoholdutyaccount.models.hods.FinancialTransactionDocument
-import uk.gov.hmrc.alcoholdutyaccount.models.payments.{HistoricPayment, HistoricPayments, OpenPayments, OutstandingPayment, TransactionType, UnallocatedPayment}
+import uk.gov.hmrc.alcoholdutyaccount.models.payments._
+import uk.gov.hmrc.alcoholdutyaccount.models.{ErrorCodes, ReturnPeriod}
+import uk.gov.hmrc.alcoholdutyaccount.utils.payments.{FinancialDataValidator, HistoricFinancialDataExtractor, OpenFinancialDataExtractor}
 import uk.gov.hmrc.play.bootstrap.backend.http.ErrorResponse
 
 import scala.concurrent.Future
+
+// TODO Can this spec be split out into the various payment util specs (validator, historic and open financial data extractor)
 
 class PaymentsServiceSpec extends SpecBase {
   "PaymentsService" - {
@@ -359,6 +362,7 @@ class PaymentsServiceSpec extends SpecBase {
         }
       }
 
+      // TODO candidate for moving into Financial Data Validator spec
       "if no items are present on the first line item" in new SetUp {
         val noItemsOnFinancialDocument = singleFullyOutstandingReturn.copy(financialTransactions =
           Seq(singleFullyOutstandingReturn.financialTransactions.head.copy(items = Seq.empty))
@@ -372,6 +376,7 @@ class PaymentsServiceSpec extends SpecBase {
         }
       }
 
+      // TODO candidate for moving into Financial Data Validator spec
       "if no due date is present on the first item of the first line item of a document" in new SetUp {
         val noDueDatePresentOnFirstItem = singleFullyOutstandingReturn.copy(financialTransactions =
           Seq(
@@ -389,6 +394,7 @@ class PaymentsServiceSpec extends SpecBase {
         }
       }
 
+      // TODO candidate for moving into Financial Data Validator spec
       "if no items are present on the subsequent line items" in new SetUp {
         val noItemsOnSecondLineItem = twoLineItemPartiallyOutstandingReturnOpen.copy(financialTransactions =
           Seq(
@@ -405,6 +411,7 @@ class PaymentsServiceSpec extends SpecBase {
         }
       }
 
+      // TODO candidate for moving into Financial Data Validator spec
       "if all transaction types on a document aren't the same" in new SetUp {
         val mismatchedTransactionTypesOnLineItems =
           twoLineItemPartiallyOutstandingReturnOpen.copy(financialTransactions =
@@ -424,6 +431,7 @@ class PaymentsServiceSpec extends SpecBase {
         }
       }
 
+      // TODO candidate for moving into Financial Data Validator spec
       "if all period key is there on some, but not all document entries" in new SetUp {
         val mismatchedTransactionTypesOnLineItems =
           twoLineItemPartiallyOutstandingReturnOpen.copy(financialTransactions =
@@ -443,6 +451,7 @@ class PaymentsServiceSpec extends SpecBase {
         }
       }
 
+      // TODO candidate for moving into Financial Data Validator spec
       "if all period keys are present, but do not match on all document line items" in new SetUp {
         val mismatchedTransactionTypesOnLineItems =
           twoLineItemPartiallyOutstandingReturnOpen.copy(financialTransactions =
@@ -462,6 +471,7 @@ class PaymentsServiceSpec extends SpecBase {
         }
       }
 
+      // TODO candidate for moving into Financial Data Validator spec
       "if chargeReference is missing on the first, but present on the second line item of a document" in new SetUp {
         val missingChargeReferencesOnSecondLineItem =
           twoLineItemPartiallyOutstandingReturnOpen.copy(financialTransactions =
@@ -479,6 +489,7 @@ class PaymentsServiceSpec extends SpecBase {
         }
       }
 
+      // TODO candidate for moving into Financial Data Validator spec
       "if chargeReference is present on the first, but not the second line item of a document" in new SetUp {
         val missingChargeReferencesOnSecondLineItem =
           twoLineItemPartiallyOutstandingReturnOpen.copy(financialTransactions =
@@ -496,6 +507,7 @@ class PaymentsServiceSpec extends SpecBase {
         }
       }
 
+      // TODO candidate for moving into Financial Data Validator spec
       "if all chargeReferences on a document aren't the same if present on the first" in new SetUp {
         val mismatchedChargeReferencesOnLineItems =
           twoLineItemPartiallyOutstandingReturnOpen.copy(financialTransactions =
@@ -513,6 +525,7 @@ class PaymentsServiceSpec extends SpecBase {
         }
       }
 
+      // TODO candidate for moving into Financial Data Validator spec
       "if no due date is present on any subsequent items of a document" in new SetUp {
         val noDueDatePresentOnSecondItemOfDocument = singlePartiallyOutstandingReturnOpen.copy(financialTransactions =
           Seq(
@@ -533,6 +546,7 @@ class PaymentsServiceSpec extends SpecBase {
         }
       }
 
+      // TODO candidate for moving into Financial Data Validator spec
       "if any due date on any subsequent items of a document doesn't match the first" in new SetUp {
         val mismatchedDueDatePresentOnSecondItemOfDocument =
           singlePartiallyOutstandingReturnOpen.copy(financialTransactions =
@@ -555,6 +569,7 @@ class PaymentsServiceSpec extends SpecBase {
         }
       }
 
+      // TODO candidate for moving into Financial Data Validator spec
       "if the document has an unknown [to ADR] transaction type" in new SetUp {
         val badTransactionType     = "1111"
         val unknownTransactionType = singleFullyOutstandingReturn.copy(financialTransactions =
@@ -758,50 +773,61 @@ class PaymentsServiceSpec extends SpecBase {
       }
     }
 
-    "when calling calculateOutstandingAmount" - {
-      "and outstanding amount is missing for some reason" - {
-        "the total can be calculated by assuming it is 0 (coverage)" in new SetUp {
-          paymentsService.calculateOutstandingAmount(
-            Seq(
-              twoLineItemPartiallyOutstandingReturnOpen.financialTransactions(0).copy(outstandingAmount = None),
-              twoLineItemPartiallyOutstandingReturnOpen.financialTransactions(1)
-            )
-          ) mustBe BigDecimal("2000")
-        }
-      }
-    }
-
-    "when calling validateAndGetFinancialTransactionData" - {
-      "and there is no financial transactions for a document which must not be possible" - {
-        "it must return an error gracefully (coverage)" in new SetUp {
-          val sapDocumentNumber = sapDocumentNumberGen.sample.get
-
-          paymentsService.validateAndGetFinancialTransactionData(
-            sapDocumentNumber,
-            Seq.empty,
-            onlyOpenItems = true
-          ) mustBe Left(
-            ErrorCodes.unexpectedResponse
-          )
-        }
-      }
-    }
+    // TODO move these tests into the payment util specs
+//    "when calling calculateOutstandingAmount" - {
+//      "and outstanding amount is missing for some reason" - {
+//        "the total can be calculated by assuming it is 0 (coverage)" in new SetUp {
+//          paymentsService.calculateOutstandingAmount(
+//            Seq(
+//              twoLineItemPartiallyOutstandingReturnOpen.financialTransactions(0).copy(outstandingAmount = None),
+//              twoLineItemPartiallyOutstandingReturnOpen.financialTransactions(1)
+//            )
+//          ) mustBe BigDecimal("2000")
+//        }
+//      }
+//    }
+//
+    // TODO candidate for moving into Financial Data Validator spec
+//    "when calling validateAndGetFinancialTransactionData" - {
+//      "and there is no financial transactions for a document which must not be possible" - {
+//        "it must return an error gracefully (coverage)" in new SetUp {
+//          val sapDocumentNumber = sapDocumentNumberGen.sample.get
+//
+//          paymentsService.validateAndGetFinancialTransactionData(
+//            sapDocumentNumber,
+//            Seq.empty,
+//            onlyOpenItems = true
+//          ) mustBe Left(
+//            ErrorCodes.unexpectedResponse
+//          )
+//        }
+//      }
+//    }
   }
 
-  "when calling calculateTotalAmountPaid" - {
-    "and there is no clearedAmount and it's not an RPI" - {
-      "it must count it as 0 (coverage)" in new SetUp {
-        paymentsService.calculateTotalAmountPaid(singleFullyOutstandingReturn.financialTransactions) mustBe BigDecimal(
-          "0"
-        )
-      }
-    }
-  }
+//  "when calling calculateTotalAmountPaid" - {
+//    "and there is no clearedAmount and it's not an RPI" - {
+//      "it must count it as 0 (coverage)" in new SetUp {
+//        paymentsService.calculateTotalAmountPaid(singleFullyOutstandingReturn.financialTransactions) mustBe BigDecimal(
+//          "0"
+//        )
+//      }
+//    }
+//  }
 
   class SetUp {
-    val mockFinancialDataConnector = mock[FinancialDataConnector]
+    val mockFinancialDataConnector: FinancialDataConnector             = mock[FinancialDataConnector]
+    val financialDataValidator: FinancialDataValidator                 = new FinancialDataValidator()
+    val historicFinancialDataExtractor: HistoricFinancialDataExtractor = new HistoricFinancialDataExtractor(
+      financialDataValidator
+    )
+    val openFinancialDataExtractor: OpenFinancialDataExtractor         = new OpenFinancialDataExtractor(financialDataValidator)
 
-    val paymentsService = new PaymentsService(mockFinancialDataConnector)
+    val paymentsService = new PaymentsService(
+      mockFinancialDataConnector,
+      historicFinancialDataExtractor,
+      openFinancialDataExtractor
+    )
 
     val year = 2024
 
