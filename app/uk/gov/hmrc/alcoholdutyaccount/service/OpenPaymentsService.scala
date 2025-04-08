@@ -14,26 +14,39 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.alcoholdutyaccount.utils.payments
+package uk.gov.hmrc.alcoholdutyaccount.service
 
 import cats.data.EitherT
 import cats.implicits._
 import play.api.Logging
+import uk.gov.hmrc.alcoholdutyaccount.connectors.FinancialDataConnector
 import uk.gov.hmrc.alcoholdutyaccount.models.hods.{FinancialTransaction, FinancialTransactionDocument}
 import uk.gov.hmrc.alcoholdutyaccount.models.payments.TransactionType.Overpayment
 import uk.gov.hmrc.alcoholdutyaccount.models.payments._
+import uk.gov.hmrc.alcoholdutyaccount.utils.payments.PaymentsValidator
+import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.bootstrap.backend.http.ErrorResponse
 
 import javax.inject.Inject
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
-class OpenFinancialDataExtractor @Inject() (
-  financialDataValidator: FinancialDataValidator
-) extends Logging {
+class OpenPaymentsService @Inject() (
+  financialDataConnector: FinancialDataConnector,
+  financialDataValidator: PaymentsValidator
+)(implicit ec: ExecutionContext)
+    extends Logging {
 
   private val contractObjectType = "ZADP"
 
-  def extractOpenPayments(
+  def getOpenPayments(
+    appaId: String
+  )(implicit hc: HeaderCarrier): EitherT[Future, ErrorResponse, OpenPayments] =
+    for {
+      financialTransactionDocument <- financialDataConnector.getOnlyOpenFinancialData(appaId)
+      openPayments                 <- extractOpenPayments(financialTransactionDocument)
+    } yield buildOpenPaymentsPayload(openPayments)
+
+  private def extractOpenPayments(
     financialTransactionDocument: FinancialTransactionDocument
   ): EitherT[Future, ErrorResponse, List[OpenPayment]] =
     EitherT {
@@ -62,7 +75,7 @@ class OpenFinancialDataExtractor @Inject() (
       )
     }
 
-  def buildOpenPaymentsPayload(openPayments: List[OpenPayment]): OpenPayments = {
+  private def buildOpenPaymentsPayload(openPayments: List[OpenPayment]): OpenPayments = {
     val (outstandingPayments, unallocatedPayments) =
       openPayments.foldLeft((List.empty[OutstandingPayment], List.empty[UnallocatedPayment])) {
         case ((outstandingPayments, unallocatedPayments), openPayment) =>
@@ -99,7 +112,7 @@ class OpenFinancialDataExtractor @Inject() (
     )
   }
 
-  private def calculateOutstandingAmount(
+  private[service] def calculateOutstandingAmount(
     financialTransactionsForDocument: Seq[FinancialTransaction]
   ): BigDecimal =
     financialTransactionsForDocument.map(_.outstandingAmount.getOrElse(BigDecimal(0))).sum

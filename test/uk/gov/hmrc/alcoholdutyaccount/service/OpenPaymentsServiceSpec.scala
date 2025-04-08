@@ -22,14 +22,12 @@ import uk.gov.hmrc.alcoholdutyaccount.connectors.FinancialDataConnector
 import uk.gov.hmrc.alcoholdutyaccount.models.hods.FinancialTransactionDocument
 import uk.gov.hmrc.alcoholdutyaccount.models.payments._
 import uk.gov.hmrc.alcoholdutyaccount.models.{ErrorCodes, ReturnPeriod}
-import uk.gov.hmrc.alcoholdutyaccount.utils.payments.{FinancialDataValidator, HistoricFinancialDataExtractor, OpenFinancialDataExtractor}
+import uk.gov.hmrc.alcoholdutyaccount.utils.payments.PaymentsValidator
 import uk.gov.hmrc.play.bootstrap.backend.http.ErrorResponse
 
 import scala.concurrent.Future
 
-// TODO Can this spec be split out into the various payment util specs (validator, historic and open financial data extractor)
-
-class PaymentsServiceSpec extends SpecBase {
+class OpenPaymentsServiceSpec extends SpecBase {
   "PaymentsService" - {
     "when calling getOpenPayments" - {
       "a successful and correct response must be returned" - {
@@ -362,7 +360,6 @@ class PaymentsServiceSpec extends SpecBase {
         }
       }
 
-      // TODO candidate for moving into Financial Data Validator spec
       "if no items are present on the first line item" in new SetUp {
         val noItemsOnFinancialDocument = singleFullyOutstandingReturn.copy(financialTransactions =
           Seq(singleFullyOutstandingReturn.financialTransactions.head.copy(items = Seq.empty))
@@ -376,7 +373,6 @@ class PaymentsServiceSpec extends SpecBase {
         }
       }
 
-      // TODO candidate for moving into Financial Data Validator spec
       "if no due date is present on the first item of the first line item of a document" in new SetUp {
         val noDueDatePresentOnFirstItem = singleFullyOutstandingReturn.copy(financialTransactions =
           Seq(
@@ -394,7 +390,6 @@ class PaymentsServiceSpec extends SpecBase {
         }
       }
 
-      // TODO candidate for moving into Financial Data Validator spec
       "if no items are present on the subsequent line items" in new SetUp {
         val noItemsOnSecondLineItem = twoLineItemPartiallyOutstandingReturnOpen.copy(financialTransactions =
           Seq(
@@ -411,7 +406,6 @@ class PaymentsServiceSpec extends SpecBase {
         }
       }
 
-      // TODO candidate for moving into Financial Data Validator spec
       "if all transaction types on a document aren't the same" in new SetUp {
         val mismatchedTransactionTypesOnLineItems =
           twoLineItemPartiallyOutstandingReturnOpen.copy(financialTransactions =
@@ -431,7 +425,6 @@ class PaymentsServiceSpec extends SpecBase {
         }
       }
 
-      // TODO candidate for moving into Financial Data Validator spec
       "if all period key is there on some, but not all document entries" in new SetUp {
         val mismatchedTransactionTypesOnLineItems =
           twoLineItemPartiallyOutstandingReturnOpen.copy(financialTransactions =
@@ -451,7 +444,6 @@ class PaymentsServiceSpec extends SpecBase {
         }
       }
 
-      // TODO candidate for moving into Financial Data Validator spec
       "if all period keys are present, but do not match on all document line items" in new SetUp {
         val mismatchedTransactionTypesOnLineItems =
           twoLineItemPartiallyOutstandingReturnOpen.copy(financialTransactions =
@@ -471,7 +463,6 @@ class PaymentsServiceSpec extends SpecBase {
         }
       }
 
-      // TODO candidate for moving into Financial Data Validator spec
       "if chargeReference is missing on the first, but present on the second line item of a document" in new SetUp {
         val missingChargeReferencesOnSecondLineItem =
           twoLineItemPartiallyOutstandingReturnOpen.copy(financialTransactions =
@@ -489,7 +480,6 @@ class PaymentsServiceSpec extends SpecBase {
         }
       }
 
-      // TODO candidate for moving into Financial Data Validator spec
       "if chargeReference is present on the first, but not the second line item of a document" in new SetUp {
         val missingChargeReferencesOnSecondLineItem =
           twoLineItemPartiallyOutstandingReturnOpen.copy(financialTransactions =
@@ -507,7 +497,6 @@ class PaymentsServiceSpec extends SpecBase {
         }
       }
 
-      // TODO candidate for moving into Financial Data Validator spec
       "if all chargeReferences on a document aren't the same if present on the first" in new SetUp {
         val mismatchedChargeReferencesOnLineItems =
           twoLineItemPartiallyOutstandingReturnOpen.copy(financialTransactions =
@@ -525,7 +514,6 @@ class PaymentsServiceSpec extends SpecBase {
         }
       }
 
-      // TODO candidate for moving into Financial Data Validator spec
       "if no due date is present on any subsequent items of a document" in new SetUp {
         val noDueDatePresentOnSecondItemOfDocument = singlePartiallyOutstandingReturnOpen.copy(financialTransactions =
           Seq(
@@ -546,7 +534,6 @@ class PaymentsServiceSpec extends SpecBase {
         }
       }
 
-      // TODO candidate for moving into Financial Data Validator spec
       "if any due date on any subsequent items of a document doesn't match the first" in new SetUp {
         val mismatchedDueDatePresentOnSecondItemOfDocument =
           singlePartiallyOutstandingReturnOpen.copy(financialTransactions =
@@ -569,7 +556,6 @@ class PaymentsServiceSpec extends SpecBase {
         }
       }
 
-      // TODO candidate for moving into Financial Data Validator spec
       "if the document has an unknown [to ADR] transaction type" in new SetUp {
         val badTransactionType     = "1111"
         val unknownTransactionType = singleFullyOutstandingReturn.copy(financialTransactions =
@@ -585,252 +571,41 @@ class PaymentsServiceSpec extends SpecBase {
       }
     }
 
-    "when calling getHistoricPayments" - {
-      "a successful and correct response must be returned" - {
-        "handle no financial data (nil return or no data for the period)" in new SetUp {
-          when(mockFinancialDataConnector.getNotOnlyOpenFinancialData(appaId = appaId, year = year))
-            .thenReturn(EitherT.pure[Future, ErrorResponse](emptyFinancialDocument))
-
-          whenReady(paymentsService.getHistoricPayments(appaId, year).value) { historicPayments =>
-            historicPayments mustBe Right(
-              HistoricPayments(
-                year,
-                Seq.empty
-              )
+    "when calling calculateOutstandingAmount" - {
+      "and outstanding amount is missing for some reason" - {
+        "the total can be calculated by assuming it is 0 (coverage)" in new SetUp {
+          paymentsService.calculateOutstandingAmount(
+            Seq(
+              twoLineItemPartiallyOutstandingReturnOpen.financialTransactions(0).copy(outstandingAmount = None),
+              twoLineItemPartiallyOutstandingReturnOpen.financialTransactions(1)
             )
-          }
-        }
-
-        "when just overpayment (no historic payments returned)" in new SetUp {
-          when(mockFinancialDataConnector.getNotOnlyOpenFinancialData(appaId = appaId, year = year))
-            .thenReturn(EitherT.pure[Future, ErrorResponse](twoSeparateOverpayments(false)))
-
-          whenReady(paymentsService.getHistoricPayments(appaId, year).value) {
-            _ mustBe Right(HistoricPayments(year, Seq.empty))
-          }
-        }
-
-        "when just RPI which must be filtered as it's a negative amount" in new SetUp {
-          when(mockFinancialDataConnector.getNotOnlyOpenFinancialData(appaId = appaId, year = year))
-            .thenReturn(EitherT.pure[Future, ErrorResponse](singleRPI))
-
-          whenReady(paymentsService.getHistoricPayments(appaId, year).value) {
-            _ mustBe Right(
-              HistoricPayments(
-                year,
-                Seq.empty
-              )
-            )
-          }
-        }
-
-        // This is a test edge case which mustn't happen in real life, RPIs must always be negative
-        "when processing a single positive RPI it appear with a warning" in new SetUp {
-          when(mockFinancialDataConnector.getNotOnlyOpenFinancialData(appaId = appaId, year = year))
-            .thenReturn(
-              EitherT.pure[Future, ErrorResponse](singlePositiveRPI)
-            )
-
-          whenReady(paymentsService.getHistoricPayments(appaId, year).value) {
-            _ mustBe Right(
-              HistoricPayments(
-                year = year,
-                payments = Seq.empty
-              )
-            )
-          }
-        }
-
-        "when fully open returns (nothing returned)" in new SetUp {
-          when(mockFinancialDataConnector.getNotOnlyOpenFinancialData(appaId = appaId, year = year))
-            .thenReturn(EitherT.pure[Future, ErrorResponse](singleFullyOutstandingReturn))
-
-          whenReady(paymentsService.getHistoricPayments(appaId, year).value) {
-            _ mustBe Right(HistoricPayments(year, Seq.empty))
-          }
-        }
-
-        "when refunded (mustn't show)" in new SetUp {
-          when(mockFinancialDataConnector.getNotOnlyOpenFinancialData(appaId = appaId, year = year))
-            .thenReturn(EitherT.pure[Future, ErrorResponse](singleRefundedReturn))
-
-          whenReady(paymentsService.getHistoricPayments(appaId, year).value) { historicPayments =>
-            historicPayments mustBe Right(
-              HistoricPayments(
-                year,
-                Seq.empty
-              )
-            )
-          }
-        }
-
-        "when partial open return (the paid part)" in new SetUp {
-          when(mockFinancialDataConnector.getNotOnlyOpenFinancialData(appaId = appaId, year = year))
-            .thenReturn(EitherT.pure[Future, ErrorResponse](singlePartiallyOutstandingReturn(onlyOpenItems = false)))
-
-          whenReady(paymentsService.getHistoricPayments(appaId, year).value) { historicPayments =>
-            val chargeReference = historicPayments.toOption.get.payments.headOption.flatMap(_.chargeReference)
-            historicPayments mustBe Right(
-              HistoricPayments(
-                year,
-                Seq(
-                  HistoricPayment(
-                    ReturnPeriod.fromPeriodKeyOrThrow(periodKey),
-                    TransactionType.Return,
-                    chargeReference,
-                    BigDecimal("4000")
-                  )
-                )
-              )
-            )
-          }
-        }
-
-        "when fully paid (the original amount)" in new SetUp {
-          when(mockFinancialDataConnector.getNotOnlyOpenFinancialData(appaId = appaId, year = year))
-            .thenReturn(EitherT.pure[Future, ErrorResponse](singlePaidReturn))
-
-          whenReady(paymentsService.getHistoricPayments(appaId, year).value) { historicPayments =>
-            val chargeReference = historicPayments.toOption.get.payments.headOption.flatMap(_.chargeReference)
-            historicPayments mustBe Right(
-              HistoricPayments(
-                year,
-                Seq(
-                  HistoricPayment(
-                    ReturnPeriod.fromPeriodKeyOrThrow(periodKey),
-                    TransactionType.Return,
-                    chargeReference,
-                    BigDecimal("9000")
-                  )
-                )
-              )
-            )
-          }
-        }
-
-        "filter out nil returns where amounts offset to 0" in new SetUp {
-          when(mockFinancialDataConnector.getNotOnlyOpenFinancialData(appaId = appaId, year = year))
-            .thenReturn(EitherT.pure[Future, ErrorResponse](nilReturnLineItemsCancelling))
-
-          whenReady(paymentsService.getHistoricPayments(appaId, year).value) { historicPayments =>
-            historicPayments mustBe Right(
-              HistoricPayments(
-                year,
-                Seq.empty
-              )
-            )
-          }
-        }
-
-        "filter out fully open returns leaving the remaining ones" in new SetUp {
-          when(mockFinancialDataConnector.getNotOnlyOpenFinancialData(appaId = appaId, year = year))
-            .thenReturn(EitherT.pure[Future, ErrorResponse](twoSeparateReturnsOneFullyPaid))
-
-          whenReady(paymentsService.getHistoricPayments(appaId, year).value) { historicPayments =>
-            val chargeReference = historicPayments.toOption.get.payments.headOption.flatMap(_.chargeReference)
-
-            historicPayments mustBe Right(
-              HistoricPayments(
-                year,
-                Seq(
-                  HistoricPayment(
-                    ReturnPeriod.fromPeriodKeyOrThrow("24AE"),
-                    TransactionType.Return,
-                    chargeReference,
-                    BigDecimal("9000")
-                  )
-                )
-              )
-            )
-          }
-        }
-
-        "for multiple statuses" in new SetUp {
-          when(mockFinancialDataConnector.getNotOnlyOpenFinancialData(appaId = appaId, year = year))
-            .thenReturn(EitherT.pure[Future, ErrorResponse](multipleStatuses(onlyOpenItems = false)))
-
-          whenReady(paymentsService.getHistoricPayments(appaId, year).value) {
-            case Right(HistoricPayments(`year`, payments)) =>
-              payments.map(payment =>
-                payment.copy(chargeReference = payment.chargeReference.map(_ => "ChargeRef"))
-              ) must contain theSameElementsAs Seq(
-                HistoricPayment(
-                  ReturnPeriod.fromPeriodKeyOrThrow("24AD"),
-                  TransactionType.Return,
-                  Some("ChargeRef"),
-                  BigDecimal("2000")
-                ),
-                HistoricPayment(
-                  ReturnPeriod.fromPeriodKeyOrThrow("24AB"),
-                  TransactionType.LPI,
-                  Some("ChargeRef"),
-                  BigDecimal("10")
-                )
-              )
-            case _                                         => fail()
-          }
+          ) mustBe BigDecimal("2000")
         }
       }
     }
 
-    // TODO move these tests into the payment util specs
-//    "when calling calculateOutstandingAmount" - {
-//      "and outstanding amount is missing for some reason" - {
-//        "the total can be calculated by assuming it is 0 (coverage)" in new SetUp {
-//          paymentsService.calculateOutstandingAmount(
-//            Seq(
-//              twoLineItemPartiallyOutstandingReturnOpen.financialTransactions(0).copy(outstandingAmount = None),
-//              twoLineItemPartiallyOutstandingReturnOpen.financialTransactions(1)
-//            )
-//          ) mustBe BigDecimal("2000")
-//        }
-//      }
-//    }
-//
-    // TODO candidate for moving into Financial Data Validator spec
-//    "when calling validateAndGetFinancialTransactionData" - {
-//      "and there is no financial transactions for a document which must not be possible" - {
-//        "it must return an error gracefully (coverage)" in new SetUp {
-//          val sapDocumentNumber = sapDocumentNumberGen.sample.get
-//
-//          paymentsService.validateAndGetFinancialTransactionData(
-//            sapDocumentNumber,
-//            Seq.empty,
-//            onlyOpenItems = true
-//          ) mustBe Left(
-//            ErrorCodes.unexpectedResponse
-//          )
-//        }
-//      }
-//    }
+    "when calling validateAndGetFinancialTransactionData" - {
+      "and there is no financial transactions for a document which must not be possible" - {
+        "it must return an error gracefully (coverage)" in new SetUp {
+          val sapDocumentNumber = sapDocumentNumberGen.sample.get
+
+          paymentsValidator.validateAndGetFinancialTransactionData(
+            sapDocumentNumber,
+            Seq.empty,
+            onlyOpenItems = true
+          ) mustBe Left(
+            ErrorCodes.unexpectedResponse
+          )
+        }
+      }
+    }
   }
 
-//  "when calling calculateTotalAmountPaid" - {
-//    "and there is no clearedAmount and it's not an RPI" - {
-//      "it must count it as 0 (coverage)" in new SetUp {
-//        paymentsService.calculateTotalAmountPaid(singleFullyOutstandingReturn.financialTransactions) mustBe BigDecimal(
-//          "0"
-//        )
-//      }
-//    }
-//  }
-
   class SetUp {
-    val mockFinancialDataConnector: FinancialDataConnector             = mock[FinancialDataConnector]
-    val financialDataValidator: FinancialDataValidator                 = new FinancialDataValidator()
-    val historicFinancialDataExtractor: HistoricFinancialDataExtractor = new HistoricFinancialDataExtractor(
-      financialDataValidator
-    )
-    val openFinancialDataExtractor: OpenFinancialDataExtractor         = new OpenFinancialDataExtractor(financialDataValidator)
-
-    val paymentsService = new PaymentsService(
-      mockFinancialDataConnector,
-      historicFinancialDataExtractor,
-      openFinancialDataExtractor
-    )
-
-    val year = 2024
-
+    val mockFinancialDataConnector                = mock[FinancialDataConnector]
+    val paymentsValidator: PaymentsValidator      = new PaymentsValidator()
+    val paymentsService                           = new OpenPaymentsService(mockFinancialDataConnector, paymentsValidator)
+    val year                                      = 2024
     val singlePartiallyOutstandingReturnOpen      = singlePartiallyOutstandingReturn(onlyOpenItems = true)
     val twoLineItemPartiallyOutstandingReturnOpen = twoLineItemPartiallyOutstandingReturn(onlyOpenItems = true)
 

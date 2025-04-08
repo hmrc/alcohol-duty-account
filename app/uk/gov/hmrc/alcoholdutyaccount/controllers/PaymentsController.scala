@@ -23,7 +23,7 @@ import play.api.mvc.{Action, AnyContent, ControllerComponents}
 import uk.gov.hmrc.alcoholdutyaccount.config.AppConfig
 import uk.gov.hmrc.alcoholdutyaccount.controllers.actions.{AuthorisedAction, CheckAppaIdAction}
 import uk.gov.hmrc.alcoholdutyaccount.models.ErrorCodes
-import uk.gov.hmrc.alcoholdutyaccount.service.PaymentsService
+import uk.gov.hmrc.alcoholdutyaccount.service.{HistoricPaymentsService, OpenPaymentsService}
 import uk.gov.hmrc.alcoholdutyaccount.utils.DateTimeHelper.instantToLocalDate
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 import uk.gov.hmrc.play.bootstrap.backend.http.ErrorResponse
@@ -35,7 +35,8 @@ import scala.concurrent.{ExecutionContext, Future}
 class PaymentsController @Inject() (
   authorise: AuthorisedAction,
   checkAppaId: CheckAppaIdAction,
-  paymentsService: PaymentsService,
+  openPaymentsService: OpenPaymentsService,
+  historicPaymentsService: HistoricPaymentsService,
   appConfig: AppConfig,
   cc: ControllerComponents,
   clock: Clock
@@ -48,7 +49,7 @@ class PaymentsController @Inject() (
 
   def openPayments(appaId: String): Action[AnyContent] =
     (authorise andThen checkAppaId(appaId)).async { implicit request =>
-      paymentsService
+      openPaymentsService
         .getOpenPayments(appaId)
         .fold(
           errorResponse => {
@@ -74,7 +75,7 @@ class PaymentsController @Inject() (
     (authorise andThen checkAppaId(appaId)).async { implicit request =>
       val historicPayments = for {
         _                <- validateYear(year)
-        historicPayments <- paymentsService.getHistoricPayments(appaId, year)
+        historicPayments <- historicPaymentsService.getHistoricPayments(appaId, year)
       } yield historicPayments
 
       historicPayments.fold(

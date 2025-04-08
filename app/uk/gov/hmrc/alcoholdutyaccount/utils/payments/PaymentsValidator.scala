@@ -27,13 +27,13 @@ import uk.gov.hmrc.play.bootstrap.backend.http.ErrorResponse
 import java.time.LocalDate
 import javax.inject.Inject
 
-class FinancialDataValidator @Inject()() extends Logging {
+class PaymentsValidator @Inject() () extends Logging {
 
   def validateAndGetFinancialTransactionData(
-                                              sapDocumentNumber: String,
-                                              financialTransactionsForDocument: Seq[FinancialTransaction],
-                                              onlyOpenItems: Boolean
-                                            ): Either[ErrorResponse, FinancialTransactionData] =
+    sapDocumentNumber: String,
+    financialTransactionsForDocument: Seq[FinancialTransaction],
+    onlyOpenItems: Boolean
+  ): Either[ErrorResponse, FinancialTransactionData] =
     // Various data has to be consistent across line items, so we need the first to obtain the data to compare against the rest
     for {
       firstFinancialTransactionLineItem <-
@@ -43,13 +43,13 @@ class FinancialDataValidator @Inject()() extends Logging {
       maybeChargeReference               = firstFinancialTransactionLineItem.chargeReference
       dueDate                           <- getFirstItemDueDate(sapDocumentNumber, firstFinancialTransactionLineItem)
       _                                 <- validateFinancialLineItems(
-        sapDocumentNumber,
-        financialTransactionsForDocument,
-        mainTransactionType,
-        maybePeriodKey,
-        maybeChargeReference,
-        dueDate
-      )
+                                             sapDocumentNumber,
+                                             financialTransactionsForDocument,
+                                             mainTransactionType,
+                                             maybePeriodKey,
+                                             maybeChargeReference,
+                                             dueDate
+                                           )
       transactionType                   <- getTransactionTypeAndWarnIfOpenRPI(sapDocumentNumber, mainTransactionType, onlyOpenItems)
       _                                  =
         warnIfOverpaymentAndAmountsDontMatch(sapDocumentNumber, transactionType, financialTransactionsForDocument)
@@ -62,10 +62,10 @@ class FinancialDataValidator @Inject()() extends Logging {
     )
 
   private def getTransactionTypeAndWarnIfOpenRPI(
-                                                  sapDocumentNumber: String,
-                                                  mainTransactionType: String,
-                                                  onlyOpenItems: Boolean
-                                                ): Either[ErrorResponse, TransactionType] =
+    sapDocumentNumber: String,
+    mainTransactionType: String,
+    onlyOpenItems: Boolean
+  ): Either[ErrorResponse, TransactionType] =
     TransactionType
       .fromMainTransactionType(mainTransactionType)
       .fold[Either[ErrorResponse, TransactionType]] {
@@ -84,15 +84,15 @@ class FinancialDataValidator @Inject()() extends Logging {
       }
 
   private def warnIfOverpaymentAndAmountsDontMatch(
-                                                    sapDocumentNumber: String,
-                                                    transactionType: TransactionType,
-                                                    financialTransactionsForDocument: Seq[FinancialTransaction]
-                                                  ): Unit =
+    sapDocumentNumber: String,
+    transactionType: TransactionType,
+    financialTransactionsForDocument: Seq[FinancialTransaction]
+  ): Unit =
     if (
       transactionType == Overpayment &&
-        financialTransactionsForDocument.exists(financialTransactionLineItem =>
-          !financialTransactionLineItem.outstandingAmount.contains(financialTransactionLineItem.originalAmount)
-        )
+      financialTransactionsForDocument.exists(financialTransactionLineItem =>
+        !financialTransactionLineItem.outstandingAmount.contains(financialTransactionLineItem.originalAmount)
+      )
     ) {
       logger.warn(
         s"Expected original and outstanding amounts to match on overpayment on financial transaction $sapDocumentNumber."
@@ -100,15 +100,15 @@ class FinancialDataValidator @Inject()() extends Logging {
     }
 
   private def warnIfRPIAndIsPositive(
-                                      sapDocumentNumber: String,
-                                      transactionType: TransactionType,
-                                      financialTransactionsForDocument: Seq[FinancialTransaction]
-                                    ): Unit =
+    sapDocumentNumber: String,
+    transactionType: TransactionType,
+    financialTransactionsForDocument: Seq[FinancialTransaction]
+  ): Unit =
     if (
       transactionType == RPI &&
-        financialTransactionsForDocument.exists(financialTransactionLineItem =>
-          financialTransactionLineItem.outstandingAmount.exists(_ > 0) || financialTransactionLineItem.originalAmount > 0
-        )
+      financialTransactionsForDocument.exists(financialTransactionLineItem =>
+        financialTransactionLineItem.outstandingAmount.exists(_ > 0) || financialTransactionLineItem.originalAmount > 0
+      )
     ) {
       logger.warn(
         s"Expected original and outstanding amounts of an RPI to be non-positive on financial transaction $sapDocumentNumber."
@@ -116,13 +116,13 @@ class FinancialDataValidator @Inject()() extends Logging {
     }
 
   private def validateFinancialLineItems(
-                                          sapDocumentNumber: String,
-                                          financialTransactionsForDocument: Seq[FinancialTransaction],
-                                          mainTransactionType: String,
-                                          maybePeriodKey: Option[String],
-                                          maybeChargeReference: Option[String],
-                                          dueDate: LocalDate
-                                        ): Either[ErrorResponse, Unit] =
+    sapDocumentNumber: String,
+    financialTransactionsForDocument: Seq[FinancialTransaction],
+    mainTransactionType: String,
+    maybePeriodKey: Option[String],
+    maybeChargeReference: Option[String],
+    dueDate: LocalDate
+  ): Either[ErrorResponse, Unit] =
     // Will need to identity check most fields on the first lines item so that due dates are also checked on all its items
     financialTransactionsForDocument
       .map(financialTransaction =>
@@ -151,9 +151,9 @@ class FinancialDataValidator @Inject()() extends Logging {
       .map(_ => ())
 
   private def getFirstItemDueDate(
-                                   sapDocumentNumber: String,
-                                   financialTransactionLineItem: FinancialTransaction
-                                 ): Either[ErrorResponse, LocalDate] =
+    sapDocumentNumber: String,
+    financialTransactionLineItem: FinancialTransaction
+  ): Either[ErrorResponse, LocalDate] =
     financialTransactionLineItem.items.toList match {
       case FinancialTransactionItem(_, Some(dueDate), _) :: _ => Right(dueDate)
       case FinancialTransactionItem(_, None, _) :: _          =>
@@ -165,9 +165,9 @@ class FinancialDataValidator @Inject()() extends Logging {
     }
 
   private def getFirstFinancialTransactionLineItem(
-                                                    sapDocumentNumber: String,
-                                                    financialTransactionsForDocument: Seq[FinancialTransaction]
-                                                  ): Either[ErrorResponse, FinancialTransaction] =
+    sapDocumentNumber: String,
+    financialTransactionsForDocument: Seq[FinancialTransaction]
+  ): Either[ErrorResponse, FinancialTransaction] =
     financialTransactionsForDocument.toList match {
       case firstFinancialTransactionLineItem :: _ => Right(firstFinancialTransactionLineItem)
       case _                                      =>

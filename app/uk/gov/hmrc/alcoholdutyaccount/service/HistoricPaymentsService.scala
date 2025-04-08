@@ -14,29 +14,43 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.alcoholdutyaccount.utils.payments
+package uk.gov.hmrc.alcoholdutyaccount.service
 
 import cats.data.EitherT
 import cats.implicits._
 import play.api.Logging
+import uk.gov.hmrc.alcoholdutyaccount.connectors.FinancialDataConnector
 import uk.gov.hmrc.alcoholdutyaccount.models.ReturnPeriod
 import uk.gov.hmrc.alcoholdutyaccount.models.hods.{FinancialTransaction, FinancialTransactionDocument}
 import uk.gov.hmrc.alcoholdutyaccount.models.payments.TransactionType.RPI
-import uk.gov.hmrc.alcoholdutyaccount.models.payments.{HistoricPayment, TransactionType}
+import uk.gov.hmrc.alcoholdutyaccount.models.payments.{HistoricPayment, HistoricPayments, TransactionType}
+import uk.gov.hmrc.alcoholdutyaccount.utils.payments.PaymentsValidator
+import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.bootstrap.backend.http.ErrorResponse
 
 import java.time.YearMonth
 import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
 
-class HistoricFinancialDataExtractor @Inject()(
-  financialDataValidator: FinancialDataValidator
+class HistoricPaymentsService @Inject() (
+  financialDataConnector: FinancialDataConnector,
+  financialDataValidator: PaymentsValidator
 )(implicit ec: ExecutionContext)
     extends Logging {
 
-  def extractHistoricPayments(
-                               financialTransactionDocument: FinancialTransactionDocument
-                             ): EitherT[Future, ErrorResponse, List[HistoricPayment]] =
+  def getHistoricPayments(
+    appaId: String,
+    year: Int
+  )(implicit hc: HeaderCarrier): EitherT[Future, ErrorResponse, HistoricPayments] =
+    for {
+      financialTransactionDocument <-
+        financialDataConnector.getNotOnlyOpenFinancialData(appaId = appaId, year = year)
+      historicPayments             <- extractHistoricPayments(financialTransactionDocument)
+    } yield HistoricPayments(year, historicPayments)
+
+  private def extractHistoricPayments(
+    financialTransactionDocument: FinancialTransactionDocument
+  ): EitherT[Future, ErrorResponse, List[HistoricPayment]] =
     EitherT.fromEither(
       financialTransactionDocument.financialTransactions
         .filter(transaction =>
@@ -75,7 +89,7 @@ class HistoricFinancialDataExtractor @Inject()(
         .map(_.flatten)
     )
 
-  private def calculateTotalAmountPaid(
+  private[service] def calculateTotalAmountPaid(
     financialTransactionsForDocument: Seq[FinancialTransaction]
   ): BigDecimal =
     financialTransactionsForDocument
