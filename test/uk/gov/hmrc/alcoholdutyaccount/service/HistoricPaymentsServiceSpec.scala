@@ -229,51 +229,10 @@ class HistoricPaymentsServiceSpec extends SpecBase {
   }
 
   class SetUp {
-    val mockFinancialDataConnector                = mock[FinancialDataConnector]
-    val paymentsValidator: PaymentsValidator      = new PaymentsValidator()
-    val paymentsService                           = new HistoricPaymentsService(mockFinancialDataConnector, paymentsValidator)
-    val year                                      = 2024
-    val singlePartiallyOutstandingReturnOpen      = singlePartiallyOutstandingReturn(onlyOpenItems = true)
-    val twoLineItemPartiallyOutstandingReturnOpen = twoLineItemPartiallyOutstandingReturn(onlyOpenItems = true)
-
-    val singleOverpaymentAmountMismatch = singleOverpayment.copy(financialTransactions =
-      singleOverpayment.financialTransactions.map(_.copy(outstandingAmount = Some(BigDecimal("-1000"))))
-    )
-
-    val singleOverpaymentNoContractObjectType = singleOverpayment.copy(financialTransactions =
-      singleOverpayment.financialTransactions.map(_.copy(contractObjectType = None))
-    )
-
-    val singleOverpaymentNotZADP = singleOverpayment.copy(financialTransactions =
-      singleOverpayment.financialTransactions.map(_.copy(contractObjectType = Some("blah")))
-    )
-
-    // Test edge case which mustn't happen as overpayments must reduce original amount
-    val onePartiallyPaidReturnLineItemAndOnePartiallyAllocatedOverpayment: FinancialTransactionDocument =
-      combineFinancialTransactionDocuments(
-        Seq(
-          createFinancialDocument(
-            onlyOpenItems = true,
-            sapDocumentNumber = sapDocumentNumberGen.sample.get,
-            originalAmount = BigDecimal("9000"),
-            maybeOutstandingAmount = Some(BigDecimal("5000")),
-            dueDate = ReturnPeriod.fromPeriodKeyOrThrow(periodKey).dueDate(),
-            transactionType = TransactionType.Return,
-            maybePeriodKey = Some(periodKey),
-            maybeChargeReference = Some(chargeReferenceGen.sample.get)
-          ),
-          createFinancialDocument(
-            onlyOpenItems = true,
-            sapDocumentNumber = sapDocumentNumberGen.sample.get,
-            originalAmount = BigDecimal("-2000"),
-            maybeOutstandingAmount = Some(BigDecimal("-2000")),
-            dueDate = ReturnPeriod.fromPeriodKeyOrThrow(periodKey).dueDate(),
-            transactionType = TransactionType.Overpayment,
-            maybePeriodKey = Some(periodKey),
-            maybeChargeReference = None
-          )
-        )
-      )
+    val mockFinancialDataConnector           = mock[FinancialDataConnector]
+    val paymentsValidator: PaymentsValidator = new PaymentsValidator()
+    val paymentsService                      = new HistoricPaymentsService(mockFinancialDataConnector, paymentsValidator)
+    val year                                 = 2024
 
     // mustn't happen, RPI must be negative
     val singlePositiveRPI: FinancialTransactionDocument = {

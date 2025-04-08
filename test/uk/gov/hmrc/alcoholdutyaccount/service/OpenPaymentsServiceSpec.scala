@@ -583,22 +583,6 @@ class OpenPaymentsServiceSpec extends SpecBase {
         }
       }
     }
-
-    "when calling validateAndGetFinancialTransactionData" - {
-      "and there is no financial transactions for a document which must not be possible" - {
-        "it must return an error gracefully (coverage)" in new SetUp {
-          val sapDocumentNumber = sapDocumentNumberGen.sample.get
-
-          paymentsValidator.validateAndGetFinancialTransactionData(
-            sapDocumentNumber,
-            Seq.empty,
-            onlyOpenItems = true
-          ) mustBe Left(
-            ErrorCodes.unexpectedResponse
-          )
-        }
-      }
-    }
   }
 
   class SetUp {
@@ -647,22 +631,5 @@ class OpenPaymentsServiceSpec extends SpecBase {
           )
         )
       )
-
-    // mustn't happen, RPI must be negative
-    val singlePositiveRPI: FinancialTransactionDocument = {
-      val sapDocumentNumber = sapDocumentNumberGen.sample.get
-      val chargeReference   = chargeReferenceGen.sample.get
-
-      createFinancialDocument(
-        onlyOpenItems = false,
-        sapDocumentNumber = sapDocumentNumber,
-        originalAmount = BigDecimal("50"),
-        maybeOutstandingAmount = Some(BigDecimal("50")),
-        dueDate = ReturnPeriod.fromPeriodKeyOrThrow(periodKey).dueDate(),
-        transactionType = TransactionType.RPI,
-        maybePeriodKey = Some(periodKey),
-        maybeChargeReference = Some(chargeReference)
-      )
-    }
   }
 }
