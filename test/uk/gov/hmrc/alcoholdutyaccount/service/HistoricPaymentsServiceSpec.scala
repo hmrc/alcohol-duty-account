@@ -68,7 +68,6 @@ class HistoricPaymentsServiceSpec extends SpecBase {
           }
         }
 
-        // This is a test edge case which mustn't happen in real life, RPIs must always be negative
         "when processing a single positive RPI it appear with a warning" in new SetUp {
           when(mockFinancialDataConnector.getNotOnlyOpenFinancialData(appaId = appaId, year = year))
             .thenReturn(
@@ -229,12 +228,11 @@ class HistoricPaymentsServiceSpec extends SpecBase {
   }
 
   class SetUp {
-    val mockFinancialDataConnector           = mock[FinancialDataConnector]
-    val paymentsValidator: PaymentsValidator = new PaymentsValidator()
-    val paymentsService                      = new HistoricPaymentsService(mockFinancialDataConnector, paymentsValidator)
-    val year                                 = 2024
+    val mockFinancialDataConnector: FinancialDataConnector = mock[FinancialDataConnector]
+    val paymentsValidator: PaymentsValidator               = new PaymentsValidator()
+    val paymentsService                                    = new HistoricPaymentsService(mockFinancialDataConnector, paymentsValidator)
+    val year                                               = 2024
 
-    // mustn't happen, RPI must be negative
     val singlePositiveRPI: FinancialTransactionDocument = {
       val sapDocumentNumber = sapDocumentNumberGen.sample.get
       val chargeReference   = chargeReferenceGen.sample.get

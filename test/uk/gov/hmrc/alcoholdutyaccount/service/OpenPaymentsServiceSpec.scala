@@ -258,7 +258,6 @@ class OpenPaymentsServiceSpec extends SpecBase {
           }
         }
 
-        // This is a test edge case which mustn't happen in real life, to check the outstanding amount is used from overpayment
         "when processing a single partially outstanding return and a partially allocated overpayment" in new SetUp {
           when(mockFinancialDataConnector.getOnlyOpenFinancialData(appaId))
             .thenReturn(
@@ -323,7 +322,7 @@ class OpenPaymentsServiceSpec extends SpecBase {
           }
         }
 
-        "when processing a single fully outstanding RPI" in new SetUp { // This mustn't appear as an open payment
+        "when processing a single fully outstanding RPI" in new SetUp {
           when(mockFinancialDataConnector.getOnlyOpenFinancialData(appaId))
             .thenReturn(EitherT.pure[Future, ErrorResponse](singleRPI))
 
@@ -605,7 +604,6 @@ class OpenPaymentsServiceSpec extends SpecBase {
       singleOverpayment.financialTransactions.map(_.copy(contractObjectType = Some("blah")))
     )
 
-    // Test edge case which mustn't happen as overpayments must reduce original amount
     val onePartiallyPaidReturnLineItemAndOnePartiallyAllocatedOverpayment: FinancialTransactionDocument =
       combineFinancialTransactionDocuments(
         Seq(

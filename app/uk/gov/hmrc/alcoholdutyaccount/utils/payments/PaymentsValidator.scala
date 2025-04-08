@@ -34,7 +34,6 @@ class PaymentsValidator @Inject() () extends Logging {
     financialTransactionsForDocument: Seq[FinancialTransaction],
     onlyOpenItems: Boolean
   ): Either[ErrorResponse, FinancialTransactionData] =
-    // Various data has to be consistent across line items, so we need the first to obtain the data to compare against the rest
     for {
       firstFinancialTransactionLineItem <-
         getFirstFinancialTransactionLineItem(sapDocumentNumber, financialTransactionsForDocument)
@@ -123,7 +122,6 @@ class PaymentsValidator @Inject() () extends Logging {
     maybeChargeReference: Option[String],
     dueDate: LocalDate
   ): Either[ErrorResponse, Unit] =
-    // Will need to identity check most fields on the first lines item so that due dates are also checked on all its items
     financialTransactionsForDocument
       .map(financialTransaction =>
         if (financialTransaction.items.isEmpty) {
@@ -139,7 +137,7 @@ class PaymentsValidator @Inject() () extends Logging {
         }
       )
       .toList
-      .sequence // Right is a list of whether all validation checks passed (true)
+      .sequence
       .filterOrElse(
         _.forall(identity), {
           logger.warn(
