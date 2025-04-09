@@ -62,8 +62,7 @@ class HistoricPaymentsService @Inject() (
           financialDataValidator
             .validateAndGetFinancialTransactionData(
               sapDocumentNumber,
-              financialTransactionsForDocument,
-              onlyOpenItems = false
+              financialTransactionsForDocument
             )
             .map { financialTransactionData =>
               val totalAmountPaid = calculateTotalAmountPaid(financialTransactionsForDocument)

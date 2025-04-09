@@ -62,8 +62,7 @@ class OpenPaymentsService @Inject() (
             financialDataValidator
               .validateAndGetFinancialTransactionData(
                 sapDocumentNumber,
-                financialTransactionsForDocument,
-                onlyOpenItems = true
+                financialTransactionsForDocument
               )
               .map {
                 val outstandingAmount = calculateOutstandingAmount(financialTransactionsForDocument)

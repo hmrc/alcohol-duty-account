@@ -20,7 +20,6 @@ import cats.implicits._
 import play.api.Logging
 import uk.gov.hmrc.alcoholdutyaccount.models.ErrorCodes
 import uk.gov.hmrc.alcoholdutyaccount.models.hods.{FinancialTransaction, FinancialTransactionItem}
-import uk.gov.hmrc.alcoholdutyaccount.models.payments.TransactionType.{Overpayment, RPI}
 import uk.gov.hmrc.alcoholdutyaccount.models.payments.{FinancialTransactionData, TransactionType}
 import uk.gov.hmrc.play.bootstrap.backend.http.ErrorResponse
 
@@ -31,8 +30,7 @@ class PaymentsValidator @Inject() () extends Logging {
 
   def validateAndGetFinancialTransactionData(
     sapDocumentNumber: String,
-    financialTransactionsForDocument: Seq[FinancialTransaction],
-    onlyOpenItems: Boolean
+    financialTransactionsForDocument: Seq[FinancialTransaction]
   ): Either[ErrorResponse, FinancialTransactionData] =
     for {
       firstFinancialTransactionLineItem <-
@@ -49,10 +47,7 @@ class PaymentsValidator @Inject() () extends Logging {
                                              maybeChargeReference,
                                              dueDate
                                            )
-      transactionType                   <- getTransactionTypeAndWarnIfOpenRPI(sapDocumentNumber, mainTransactionType, onlyOpenItems)
-      _                                  =
-        warnIfOverpaymentAndAmountsDontMatch(sapDocumentNumber, transactionType, financialTransactionsForDocument)
-      _                                  = warnIfRPIAndIsPositive(sapDocumentNumber, transactionType, financialTransactionsForDocument)
+      transactionType                   <- getTransactionType(sapDocumentNumber, mainTransactionType)
     } yield FinancialTransactionData(
       transactionType,
       maybePeriodKey,
@@ -60,10 +55,9 @@ class PaymentsValidator @Inject() () extends Logging {
       maybeChargeReference
     )
 
-  private def getTransactionTypeAndWarnIfOpenRPI(
+  private def getTransactionType(
     sapDocumentNumber: String,
-    mainTransactionType: String,
-    onlyOpenItems: Boolean
+    mainTransactionType: String
   ): Either[ErrorResponse, TransactionType] =
     TransactionType
       .fromMainTransactionType(mainTransactionType)
@@ -73,46 +67,8 @@ class PaymentsValidator @Inject() () extends Logging {
         )
         Left(ErrorCodes.unexpectedResponse)
       } { transactionType =>
-        if (transactionType == RPI && onlyOpenItems) {
-          logger.warn(
-            s"Unexpected RPI in open payments on financial transaction $sapDocumentNumber."
-          )
-        }
-
         Right(transactionType)
       }
-
-  private def warnIfOverpaymentAndAmountsDontMatch(
-    sapDocumentNumber: String,
-    transactionType: TransactionType,
-    financialTransactionsForDocument: Seq[FinancialTransaction]
-  ): Unit =
-    if (
-      transactionType == Overpayment &&
-      financialTransactionsForDocument.exists(financialTransactionLineItem =>
-        !financialTransactionLineItem.outstandingAmount.contains(financialTransactionLineItem.originalAmount)
-      )
-    ) {
-      logger.warn(
-        s"Expected original and outstanding amounts to match on overpayment on financial transaction $sapDocumentNumber."
-      )
-    }
-
-  private def warnIfRPIAndIsPositive(
-    sapDocumentNumber: String,
-    transactionType: TransactionType,
-    financialTransactionsForDocument: Seq[FinancialTransaction]
-  ): Unit =
-    if (
-      transactionType == RPI &&
-      financialTransactionsForDocument.exists(financialTransactionLineItem =>
-        financialTransactionLineItem.outstandingAmount.exists(_ > 0) || financialTransactionLineItem.originalAmount > 0
-      )
-    ) {
-      logger.warn(
-        s"Expected original and outstanding amounts of an RPI to be non-positive on financial transaction $sapDocumentNumber."
-      )
-    }
 
   private def validateFinancialLineItems(
     sapDocumentNumber: String,

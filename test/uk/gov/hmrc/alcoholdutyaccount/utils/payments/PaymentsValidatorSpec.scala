@@ -28,8 +28,7 @@ class PaymentsValidatorSpec extends SpecBase {
 
           paymentsValidator.validateAndGetFinancialTransactionData(
             sapDocumentNumber,
-            Seq.empty,
-            onlyOpenItems = true
+            Seq.empty
           ) mustBe Left(
             ErrorCodes.unexpectedResponse
           )
