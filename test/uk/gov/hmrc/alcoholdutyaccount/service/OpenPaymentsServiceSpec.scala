@@ -19,14 +19,15 @@ package uk.gov.hmrc.alcoholdutyaccount.service
 import cats.data.EitherT
 import uk.gov.hmrc.alcoholdutyaccount.base.SpecBase
 import uk.gov.hmrc.alcoholdutyaccount.connectors.FinancialDataConnector
-import uk.gov.hmrc.alcoholdutyaccount.models.{ErrorCodes, ReturnPeriod}
 import uk.gov.hmrc.alcoholdutyaccount.models.hods.FinancialTransactionDocument
-import uk.gov.hmrc.alcoholdutyaccount.models.payments.{HistoricPayment, HistoricPayments, OpenPayments, OutstandingPayment, TransactionType, UnallocatedPayment}
+import uk.gov.hmrc.alcoholdutyaccount.models.payments._
+import uk.gov.hmrc.alcoholdutyaccount.models.{ErrorCodes, ReturnPeriod}
+import uk.gov.hmrc.alcoholdutyaccount.utils.payments.PaymentsValidator
 import uk.gov.hmrc.play.bootstrap.backend.http.ErrorResponse
 
 import scala.concurrent.Future
 
-class PaymentsServiceSpec extends SpecBase {
+class OpenPaymentsServiceSpec extends SpecBase {
   "PaymentsService" - {
     "when calling getOpenPayments" - {
       "a successful and correct response must be returned" - {
@@ -257,7 +258,6 @@ class PaymentsServiceSpec extends SpecBase {
           }
         }
 
-        // This is a test edge case which mustn't happen in real life, to check the outstanding amount is used from overpayment
         "when processing a single partially outstanding return and a partially allocated overpayment" in new SetUp {
           when(mockFinancialDataConnector.getOnlyOpenFinancialData(appaId))
             .thenReturn(
@@ -322,7 +322,7 @@ class PaymentsServiceSpec extends SpecBase {
           }
         }
 
-        "when processing a single fully outstanding RPI" in new SetUp { // This mustn't appear as an open payment
+        "when processing a single fully outstanding RPI" in new SetUp {
           when(mockFinancialDataConnector.getOnlyOpenFinancialData(appaId))
             .thenReturn(EitherT.pure[Future, ErrorResponse](singleRPI))
 
@@ -570,194 +570,6 @@ class PaymentsServiceSpec extends SpecBase {
       }
     }
 
-    "when calling getHistoricPayments" - {
-      "a successful and correct response must be returned" - {
-        "handle no financial data (nil return or no data for the period)" in new SetUp {
-          when(mockFinancialDataConnector.getNotOnlyOpenFinancialData(appaId = appaId, year = year))
-            .thenReturn(EitherT.pure[Future, ErrorResponse](emptyFinancialDocument))
-
-          whenReady(paymentsService.getHistoricPayments(appaId, year).value) { historicPayments =>
-            historicPayments mustBe Right(
-              HistoricPayments(
-                year,
-                Seq.empty
-              )
-            )
-          }
-        }
-
-        "when just overpayment (no historic payments returned)" in new SetUp {
-          when(mockFinancialDataConnector.getNotOnlyOpenFinancialData(appaId = appaId, year = year))
-            .thenReturn(EitherT.pure[Future, ErrorResponse](twoSeparateOverpayments(false)))
-
-          whenReady(paymentsService.getHistoricPayments(appaId, year).value) {
-            _ mustBe Right(HistoricPayments(year, Seq.empty))
-          }
-        }
-
-        "when just RPI which must be filtered as it's a negative amount" in new SetUp {
-          when(mockFinancialDataConnector.getNotOnlyOpenFinancialData(appaId = appaId, year = year))
-            .thenReturn(EitherT.pure[Future, ErrorResponse](singleRPI))
-
-          whenReady(paymentsService.getHistoricPayments(appaId, year).value) {
-            _ mustBe Right(
-              HistoricPayments(
-                year,
-                Seq.empty
-              )
-            )
-          }
-        }
-
-        // This is a test edge case which mustn't happen in real life, RPIs must always be negative
-        "when processing a single positive RPI it appear with a warning" in new SetUp {
-          when(mockFinancialDataConnector.getNotOnlyOpenFinancialData(appaId = appaId, year = year))
-            .thenReturn(
-              EitherT.pure[Future, ErrorResponse](singlePositiveRPI)
-            )
-
-          whenReady(paymentsService.getHistoricPayments(appaId, year).value) {
-            _ mustBe Right(
-              HistoricPayments(
-                year = year,
-                payments = Seq.empty
-              )
-            )
-          }
-        }
-
-        "when fully open returns (nothing returned)" in new SetUp {
-          when(mockFinancialDataConnector.getNotOnlyOpenFinancialData(appaId = appaId, year = year))
-            .thenReturn(EitherT.pure[Future, ErrorResponse](singleFullyOutstandingReturn))
-
-          whenReady(paymentsService.getHistoricPayments(appaId, year).value) {
-            _ mustBe Right(HistoricPayments(year, Seq.empty))
-          }
-        }
-
-        "when refunded (mustn't show)" in new SetUp {
-          when(mockFinancialDataConnector.getNotOnlyOpenFinancialData(appaId = appaId, year = year))
-            .thenReturn(EitherT.pure[Future, ErrorResponse](singleRefundedReturn))
-
-          whenReady(paymentsService.getHistoricPayments(appaId, year).value) { historicPayments =>
-            historicPayments mustBe Right(
-              HistoricPayments(
-                year,
-                Seq.empty
-              )
-            )
-          }
-        }
-
-        "when partial open return (the paid part)" in new SetUp {
-          when(mockFinancialDataConnector.getNotOnlyOpenFinancialData(appaId = appaId, year = year))
-            .thenReturn(EitherT.pure[Future, ErrorResponse](singlePartiallyOutstandingReturn(onlyOpenItems = false)))
-
-          whenReady(paymentsService.getHistoricPayments(appaId, year).value) { historicPayments =>
-            val chargeReference = historicPayments.toOption.get.payments.headOption.flatMap(_.chargeReference)
-            historicPayments mustBe Right(
-              HistoricPayments(
-                year,
-                Seq(
-                  HistoricPayment(
-                    ReturnPeriod.fromPeriodKeyOrThrow(periodKey),
-                    TransactionType.Return,
-                    chargeReference,
-                    BigDecimal("4000")
-                  )
-                )
-              )
-            )
-          }
-        }
-
-        "when fully paid (the original amount)" in new SetUp {
-          when(mockFinancialDataConnector.getNotOnlyOpenFinancialData(appaId = appaId, year = year))
-            .thenReturn(EitherT.pure[Future, ErrorResponse](singlePaidReturn))
-
-          whenReady(paymentsService.getHistoricPayments(appaId, year).value) { historicPayments =>
-            val chargeReference = historicPayments.toOption.get.payments.headOption.flatMap(_.chargeReference)
-            historicPayments mustBe Right(
-              HistoricPayments(
-                year,
-                Seq(
-                  HistoricPayment(
-                    ReturnPeriod.fromPeriodKeyOrThrow(periodKey),
-                    TransactionType.Return,
-                    chargeReference,
-                    BigDecimal("9000")
-                  )
-                )
-              )
-            )
-          }
-        }
-
-        "filter out nil returns where amounts offset to 0" in new SetUp {
-          when(mockFinancialDataConnector.getNotOnlyOpenFinancialData(appaId = appaId, year = year))
-            .thenReturn(EitherT.pure[Future, ErrorResponse](nilReturnLineItemsCancelling))
-
-          whenReady(paymentsService.getHistoricPayments(appaId, year).value) { historicPayments =>
-            historicPayments mustBe Right(
-              HistoricPayments(
-                year,
-                Seq.empty
-              )
-            )
-          }
-        }
-
-        "filter out fully open returns leaving the remaining ones" in new SetUp {
-          when(mockFinancialDataConnector.getNotOnlyOpenFinancialData(appaId = appaId, year = year))
-            .thenReturn(EitherT.pure[Future, ErrorResponse](twoSeparateReturnsOneFullyPaid))
-
-          whenReady(paymentsService.getHistoricPayments(appaId, year).value) { historicPayments =>
-            val chargeReference = historicPayments.toOption.get.payments.headOption.flatMap(_.chargeReference)
-
-            historicPayments mustBe Right(
-              HistoricPayments(
-                year,
-                Seq(
-                  HistoricPayment(
-                    ReturnPeriod.fromPeriodKeyOrThrow("24AE"),
-                    TransactionType.Return,
-                    chargeReference,
-                    BigDecimal("9000")
-                  )
-                )
-              )
-            )
-          }
-        }
-
-        "for multiple statuses" in new SetUp {
-          when(mockFinancialDataConnector.getNotOnlyOpenFinancialData(appaId = appaId, year = year))
-            .thenReturn(EitherT.pure[Future, ErrorResponse](multipleStatuses(onlyOpenItems = false)))
-
-          whenReady(paymentsService.getHistoricPayments(appaId, year).value) {
-            case Right(HistoricPayments(`year`, payments)) =>
-              payments.map(payment =>
-                payment.copy(chargeReference = payment.chargeReference.map(_ => "ChargeRef"))
-              ) must contain theSameElementsAs Seq(
-                HistoricPayment(
-                  ReturnPeriod.fromPeriodKeyOrThrow("24AD"),
-                  TransactionType.Return,
-                  Some("ChargeRef"),
-                  BigDecimal("2000")
-                ),
-                HistoricPayment(
-                  ReturnPeriod.fromPeriodKeyOrThrow("24AB"),
-                  TransactionType.LPI,
-                  Some("ChargeRef"),
-                  BigDecimal("10")
-                )
-              )
-            case _                                         => fail()
-          }
-        }
-      }
-    }
-
     "when calling calculateOutstandingAmount" - {
       "and outstanding amount is missing for some reason" - {
         "the total can be calculated by assuming it is 0 (coverage)" in new SetUp {
@@ -770,41 +582,13 @@ class PaymentsServiceSpec extends SpecBase {
         }
       }
     }
-
-    "when calling validateAndGetFinancialTransactionData" - {
-      "and there is no financial transactions for a document which must not be possible" - {
-        "it must return an error gracefully (coverage)" in new SetUp {
-          val sapDocumentNumber = sapDocumentNumberGen.sample.get
-
-          paymentsService.validateAndGetFinancialTransactionData(
-            sapDocumentNumber,
-            Seq.empty,
-            onlyOpenItems = true
-          ) mustBe Left(
-            ErrorCodes.unexpectedResponse
-          )
-        }
-      }
-    }
-  }
-
-  "when calling calculateTotalAmountPaid" - {
-    "and there is no clearedAmount and it's not an RPI" - {
-      "it must count it as 0 (coverage)" in new SetUp {
-        paymentsService.calculateTotalAmountPaid(singleFullyOutstandingReturn.financialTransactions) mustBe BigDecimal(
-          "0"
-        )
-      }
-    }
   }
 
   class SetUp {
-    val mockFinancialDataConnector = mock[FinancialDataConnector]
-
-    val paymentsService = new PaymentsService(mockFinancialDataConnector)
-
-    val year = 2024
-
+    val mockFinancialDataConnector                = mock[FinancialDataConnector]
+    val paymentsValidator: PaymentsValidator      = new PaymentsValidator()
+    val paymentsService                           = new OpenPaymentsService(mockFinancialDataConnector, paymentsValidator)
+    val year                                      = 2024
     val singlePartiallyOutstandingReturnOpen      = singlePartiallyOutstandingReturn(onlyOpenItems = true)
     val twoLineItemPartiallyOutstandingReturnOpen = twoLineItemPartiallyOutstandingReturn(onlyOpenItems = true)
 
@@ -820,7 +604,6 @@ class PaymentsServiceSpec extends SpecBase {
       singleOverpayment.financialTransactions.map(_.copy(contractObjectType = Some("blah")))
     )
 
-    // Test edge case which mustn't happen as overpayments must reduce original amount
     val onePartiallyPaidReturnLineItemAndOnePartiallyAllocatedOverpayment: FinancialTransactionDocument =
       combineFinancialTransactionDocuments(
         Seq(
@@ -846,22 +629,5 @@ class PaymentsServiceSpec extends SpecBase {
           )
         )
       )
-
-    // mustn't happen, RPI must be negative
-    val singlePositiveRPI: FinancialTransactionDocument = {
-      val sapDocumentNumber = sapDocumentNumberGen.sample.get
-      val chargeReference   = chargeReferenceGen.sample.get
-
-      createFinancialDocument(
-        onlyOpenItems = false,
-        sapDocumentNumber = sapDocumentNumber,
-        originalAmount = BigDecimal("50"),
-        maybeOutstandingAmount = Some(BigDecimal("50")),
-        dueDate = ReturnPeriod.fromPeriodKeyOrThrow(periodKey).dueDate(),
-        transactionType = TransactionType.RPI,
-        maybePeriodKey = Some(periodKey),
-        maybeChargeReference = Some(chargeReference)
-      )
-    }
   }
 }

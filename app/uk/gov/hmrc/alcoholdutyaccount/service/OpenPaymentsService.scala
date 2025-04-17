@@ -1,0 +1,140 @@
+/*
+ * Copyright 2025 HM Revenue & Customs
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package uk.gov.hmrc.alcoholdutyaccount.service
+
+import cats.data.EitherT
+import cats.implicits._
+import play.api.Logging
+import uk.gov.hmrc.alcoholdutyaccount.connectors.FinancialDataConnector
+import uk.gov.hmrc.alcoholdutyaccount.models.hods.{FinancialTransaction, FinancialTransactionDocument}
+import uk.gov.hmrc.alcoholdutyaccount.models.payments.TransactionType.Overpayment
+import uk.gov.hmrc.alcoholdutyaccount.models.payments._
+import uk.gov.hmrc.alcoholdutyaccount.utils.payments.PaymentsValidator
+import uk.gov.hmrc.http.HeaderCarrier
+import uk.gov.hmrc.play.bootstrap.backend.http.ErrorResponse
+
+import javax.inject.Inject
+import scala.concurrent.{ExecutionContext, Future}
+
+class OpenPaymentsService @Inject() (
+  financialDataConnector: FinancialDataConnector,
+  financialDataValidator: PaymentsValidator
+)(implicit ec: ExecutionContext)
+    extends Logging {
+
+  private val contractObjectType = "ZADP"
+
+  def getOpenPayments(
+    appaId: String
+  )(implicit hc: HeaderCarrier): EitherT[Future, ErrorResponse, OpenPayments] =
+    for {
+      financialTransactionDocument <- financialDataConnector.getOnlyOpenFinancialData(appaId)
+      openPayments                 <- extractOpenPayments(financialTransactionDocument)
+    } yield buildOpenPaymentsPayload(openPayments)
+
+  private def extractOpenPayments(
+    financialTransactionDocument: FinancialTransactionDocument
+  ): EitherT[Future, ErrorResponse, List[OpenPayment]] =
+    EitherT {
+      Future.successful(
+        financialTransactionDocument.financialTransactions
+          .filter(transaction => // Ignore overpayments that aren't ZADP
+            !TransactionType.isOverpayment(
+              transaction.mainTransaction
+            ) || transaction.contractObjectType.contains(contractObjectType)
+          )
+          .groupBy(_.sapDocumentNumber)
+          .map { case (sapDocumentNumber, financialTransactionsForDocument) =>
+            financialDataValidator
+              .validateAndGetFinancialTransactionData(
+                sapDocumentNumber,
+                financialTransactionsForDocument
+              )
+              .map {
+                val outstandingAmount = calculateOutstandingAmount(financialTransactionsForDocument)
+                buildOpenPayment(_, outstandingAmount)
+              }
+          }
+          .toList
+          .sequence
+      )
+    }
+
+  private def buildOpenPaymentsPayload(openPayments: List[OpenPayment]): OpenPayments = {
+    val (outstandingPayments, unallocatedPayments) =
+      openPayments.foldLeft((List.empty[OutstandingPayment], List.empty[UnallocatedPayment])) {
+        case ((outstandingPayments, unallocatedPayments), openPayment) =>
+          openPayment match {
+            case outstandingPayment @ OutstandingPayment(_, _, _, _) =>
+              (outstandingPayment :: outstandingPayments, unallocatedPayments)
+            case unallocatedPayment @ UnallocatedPayment(_, _)       =>
+              (outstandingPayments, unallocatedPayment :: unallocatedPayments)
+          }
+      }
+
+    val paymentTotals = calculateTotalBalance(outstandingPayments, unallocatedPayments)
+
+    OpenPayments(
+      outstandingPayments = outstandingPayments,
+      totalOutstandingPayments = paymentTotals.totalOutstandingPayments,
+      unallocatedPayments = unallocatedPayments,
+      totalUnallocatedPayments = paymentTotals.totalUnallocatedPayments,
+      totalOpenPaymentsAmount = paymentTotals.totalOpenPaymentsAmount
+    )
+  }
+
+  private def calculateTotalBalance(
+    outstandingPayments: Seq[OutstandingPayment],
+    unallocatedPayments: Seq[UnallocatedPayment]
+  ): PaymentTotals = {
+    val totalOutstandingPayments = outstandingPayments.map(_.remainingAmount).sum
+    val totalUnallocatedPayments = unallocatedPayments.map(_.unallocatedAmount).sum
+
+    PaymentTotals(
+      totalOutstandingPayments = totalOutstandingPayments,
+      totalUnallocatedPayments = totalUnallocatedPayments,
+      totalOpenPaymentsAmount = totalOutstandingPayments + totalUnallocatedPayments
+    )
+  }
+
+  private[service] def calculateOutstandingAmount(
+    financialTransactionsForDocument: Seq[FinancialTransaction]
+  ): BigDecimal =
+    financialTransactionsForDocument.map(_.outstandingAmount.getOrElse(BigDecimal(0))).sum
+
+  private def buildOpenPayment(
+    financialTransactionData: FinancialTransactionData,
+    outstandingAmount: BigDecimal
+  ): OpenPayment = {
+    val transactionType = financialTransactionData.transactionType
+
+    if (transactionType == Overpayment) {
+      UnallocatedPayment(
+        paymentDate = financialTransactionData.dueDate,
+        unallocatedAmount = outstandingAmount
+      )
+    } else {
+      OutstandingPayment(
+        transactionType = transactionType,
+        dueDate = financialTransactionData.dueDate,
+        chargeReference = financialTransactionData.maybeChargeReference,
+        remainingAmount = outstandingAmount
+      )
+    }
+  }
+
+}

@@ -25,7 +25,7 @@ import play.api.test.Helpers
 import uk.gov.hmrc.alcoholdutyaccount.base.SpecBase
 import uk.gov.hmrc.alcoholdutyaccount.models.ErrorCodes
 import uk.gov.hmrc.alcoholdutyaccount.models.payments.OpenPayments
-import uk.gov.hmrc.alcoholdutyaccount.service.PaymentsService
+import uk.gov.hmrc.alcoholdutyaccount.service.{HistoricPaymentsService, OpenPaymentsService}
 import uk.gov.hmrc.play.bootstrap.backend.http.ErrorResponse
 
 import java.time.LocalDate
@@ -36,7 +36,7 @@ class PaymentsControllerSpec extends SpecBase {
   "PaymentsController" - {
     "when calling outstandingPayments" - {
       "return OK when the service returns success" in new SetUp {
-        mockPaymentsService.getOpenPayments(eqTo(appaId))(*) returnsF noOpenPayments
+        mockOpenPaymentsService.getOpenPayments(eqTo(appaId))(*) returnsF noOpenPayments
 
         val result: Future[Result] = controller.openPayments(appaId)(fakeRequest)
         status(result)        mustBe OK
@@ -44,7 +44,7 @@ class PaymentsControllerSpec extends SpecBase {
       }
 
       "return any error returned from the service" in new SetUp {
-        when(mockPaymentsService.getOpenPayments(eqTo(appaId))(*))
+        when(mockOpenPaymentsService.getOpenPayments(eqTo(appaId))(*))
           .thenReturn(EitherT.leftT[Future, OpenPayments](ErrorCodes.unexpectedResponse))
 
         val result: Future[Result] = controller.openPayments(appaId)(fakeRequest)
@@ -55,7 +55,7 @@ class PaymentsControllerSpec extends SpecBase {
 
     "when calling historicPayments" - {
       "return OK when the service returns success" in new SetUp {
-        mockPaymentsService.getHistoricPayments(eqTo(appaId), eqTo(year))(*) returnsF noHistoricPayments
+        mockHistoricPaymentsService.getHistoricPayments(eqTo(appaId), eqTo(year))(*) returnsF noHistoricPayments
 
         val result: Future[Result] = controller.historicPayments(appaId, year)(fakeRequest)
         status(result)        mustBe OK
@@ -63,7 +63,7 @@ class PaymentsControllerSpec extends SpecBase {
       }
 
       "return any error returned from the service" in new SetUp {
-        when(mockPaymentsService.getHistoricPayments(eqTo(appaId), eqTo(year))(*))
+        when(mockHistoricPaymentsService.getHistoricPayments(eqTo(appaId), eqTo(year))(*))
           .thenReturn(EitherT.fromEither(Left(ErrorCodes.unexpectedResponse)))
 
         val result: Future[Result] = controller.historicPayments(appaId, year)(fakeRequest)
@@ -88,10 +88,19 @@ class PaymentsControllerSpec extends SpecBase {
   }
 
   class SetUp {
-    val mockPaymentsService: PaymentsService = mock[PaymentsService]
-    val cc                                   = Helpers.stubControllerComponents()
-    val controller                           =
-      new PaymentsController(fakeAuthorisedAction, fakeCheckAppaIdAction, mockPaymentsService, appConfig, cc, clock)
+    val mockOpenPaymentsService: OpenPaymentsService         = mock[OpenPaymentsService]
+    val mockHistoricPaymentsService: HistoricPaymentsService = mock[HistoricPaymentsService]
+    val cc                                                   = Helpers.stubControllerComponents()
+
+    val controller = new PaymentsController(
+      fakeAuthorisedAction,
+      fakeCheckAppaIdAction,
+      mockOpenPaymentsService,
+      mockHistoricPaymentsService,
+      appConfig,
+      cc,
+      clock
+    )
 
     val year: Int = 2024
   }
