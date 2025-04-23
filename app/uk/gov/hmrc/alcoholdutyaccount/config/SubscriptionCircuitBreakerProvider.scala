@@ -25,12 +25,16 @@ import scala.concurrent.ExecutionContext
 import scala.concurrent.duration.FiniteDuration
 
 @Singleton
-class SubscriptionCircuitBreakerProvider @Inject()(config: Configuration)(implicit ec: ExecutionContext, sys: ActorSystem)
-    extends Provider[CircuitBreaker] {
+class SubscriptionCircuitBreakerProvider @Inject() (config: Configuration)(implicit
+  ec: ExecutionContext,
+  sys: ActorSystem
+) extends Provider[CircuitBreaker] {
 
   private val maxFailures  = config.get[Int]("microservice.services.subscription.circuit-breaker.max-failures")
-  private val callTimeout  = config.get[FiniteDuration]("microservice.services.subscription.circuit-breaker.call-timeout")
-  private val resetTimeout = config.get[FiniteDuration]("microservice.services.subscription.circuit-breaker.reset-timeout")
+  private val callTimeout  =
+    config.get[FiniteDuration]("microservice.services.subscription.circuit-breaker.call-timeout")
+  private val resetTimeout =
+    config.get[FiniteDuration]("microservice.services.subscription.circuit-breaker.reset-timeout")
 
   override def get(): CircuitBreaker =
     new CircuitBreaker(
