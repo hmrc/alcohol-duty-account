@@ -17,6 +17,7 @@
 package uk.gov.hmrc.alcoholdutyaccount.config
 
 import com.google.inject.AbstractModule
+import org.apache.pekko.pattern.CircuitBreaker
 import uk.gov.hmrc.alcoholdutyaccount.controllers.actions.{AuthorisedAction, BaseAuthorisedAction}
 
 import java.time.{Clock, ZoneOffset}
@@ -27,5 +28,6 @@ class Module extends AbstractModule {
     bind(classOf[AppConfig]).asEagerSingleton()
     bind(classOf[AuthorisedAction]).to(classOf[BaseAuthorisedAction]).asEagerSingleton()
     bind(classOf[Clock]).toInstance(Clock.systemDefaultZone.withZone(ZoneOffset.UTC))
+    bind(classOf[CircuitBreaker]).toProvider(classOf[SubscriptionCircuitBreakerProvider])
   }
 }

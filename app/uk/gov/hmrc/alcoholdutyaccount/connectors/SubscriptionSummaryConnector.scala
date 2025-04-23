@@ -16,14 +16,13 @@
 
 package uk.gov.hmrc.alcoholdutyaccount.connectors
 
-import cats.data.EitherT
 import play.api.Logging
 import play.api.http.Status.{BAD_REQUEST, INTERNAL_SERVER_ERROR, NOT_FOUND}
-import uk.gov.hmrc.alcoholdutyaccount.config.AppConfig
+import uk.gov.hmrc.alcoholdutyaccount.config.{AppConfig, SubscriptionCircuitBreakerProvider}
 import uk.gov.hmrc.alcoholdutyaccount.connectors.helpers.HIPHeaders
 import uk.gov.hmrc.alcoholdutyaccount.models.hods.{SubscriptionSummary, SubscriptionSummarySuccess}
-import uk.gov.hmrc.http.client.HttpClientV2
 import uk.gov.hmrc.http._
+import uk.gov.hmrc.http.client.HttpClientV2
 import uk.gov.hmrc.play.bootstrap.backend.http.ErrorResponse
 
 import javax.inject.Inject
@@ -33,6 +32,7 @@ import scala.util.{Failure, Success, Try}
 class SubscriptionSummaryConnector @Inject() (
   config: AppConfig,
   headers: HIPHeaders,
+  subscriptionCircuitBreakerProvider: SubscriptionCircuitBreakerProvider,
   implicit val httpClient: HttpClientV2
 )(implicit ec: ExecutionContext)
     extends HttpReadsInstances
@@ -40,11 +40,9 @@ class SubscriptionSummaryConnector @Inject() (
 
   def getSubscriptionSummary(
     appaId: String
-  )(implicit hc: HeaderCarrier): EitherT[Future, ErrorResponse, SubscriptionSummary] =
-    EitherT {
-
+  )(implicit hc: HeaderCarrier): Future[Either[ErrorResponse, SubscriptionSummary]] =
+    subscriptionCircuitBreakerProvider.get().withCircuitBreaker {
       logger.info(s"Fetching subscription summary for appaId $appaId")
-
       httpClient
         .get(url"${config.getSubscriptionUrl(appaId)}")
         .setHeader(headers.subscriptionHeaders(): _*)

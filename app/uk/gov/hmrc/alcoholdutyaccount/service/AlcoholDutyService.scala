@@ -46,9 +46,14 @@ class AlcoholDutyService @Inject() (
   def getSubscriptionSummary(
     alcoholDutyReference: String
   )(implicit hc: HeaderCarrier): EitherT[Future, ErrorResponse, AdrSubscriptionSummary] =
-    subscriptionSummaryConnector
-      .getSubscriptionSummary(alcoholDutyReference)
-      .subflatMap(AdrSubscriptionSummary.fromSubscriptionSummary)
+    EitherT {
+      subscriptionSummaryConnector
+        .getSubscriptionSummary(alcoholDutyReference)
+        .map {
+          case Left(error)    => Left(error)
+          case Right(summary) => AdrSubscriptionSummary.fromSubscriptionSummary(summary)
+        }
+    }
 
   def getOpenObligations(
     alcoholDutyReference: String,
@@ -81,16 +86,17 @@ class AlcoholDutyService @Inject() (
   def getAlcoholDutyCardData(
     alcoholDutyReference: String
   )(implicit hc: HeaderCarrier): EitherT[Future, ErrorResponse, AlcoholDutyCardData] =
-    subscriptionSummaryConnector
-      .getSubscriptionSummary(alcoholDutyReference)
+    getSubscriptionSummary(alcoholDutyReference)
       .flatMapF { subscriptionSummary =>
-        val approvalStatus = ApprovalStatus.fromSubscriptionSummary(subscriptionSummary)
         if (
-          approvalStatus == SmallCiderProducer ||
-          approvalStatus == DeRegistered ||
-          approvalStatus == Revoked
-        ) { Future.successful(Right(RestrictedCardData(alcoholDutyReference, approvalStatus))) }
-        else { getObligationAndFinancialInfo(alcoholDutyReference, approvalStatus) }
+          subscriptionSummary.approvalStatus == SmallCiderProducer ||
+          subscriptionSummary.approvalStatus == DeRegistered ||
+          subscriptionSummary.approvalStatus == Revoked
+        ) {
+          Future.successful(Right(RestrictedCardData(alcoholDutyReference, subscriptionSummary.approvalStatus)))
+        } else {
+          getObligationAndFinancialInfo(alcoholDutyReference, subscriptionSummary.approvalStatus)
+        }
       }
       .recover { case errorResponse: ErrorResponse =>
         logger.warn(
