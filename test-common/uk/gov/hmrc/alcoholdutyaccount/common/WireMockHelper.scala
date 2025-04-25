@@ -33,8 +33,20 @@ trait WireMockHelper {
     endpointNames
       .flatMap(endpointName =>
         Seq(
-          s"$endpointConfigurationPath.$endpointName.host" -> wireMockHost,
-          s"$endpointConfigurationPath.$endpointName.port" -> wireMockPort
+          s"$endpointConfigurationPath.$endpointName.host"          -> wireMockHost,
+          s"$endpointConfigurationPath.$endpointName.port"          -> wireMockPort,
+          "microservice.services.subscription.retry.retry-attempts" -> 0
+        )
+      )
+      .toMap
+
+  protected def getWireMockAppConfigWithRetry(endpointNames: Seq[String]): Map[String, Any] =
+    endpointNames
+      .flatMap(endpointName =>
+        Seq(
+          s"$endpointConfigurationPath.$endpointName.host"          -> wireMockHost,
+          s"$endpointConfigurationPath.$endpointName.port"          -> wireMockPort,
+          "microservice.services.subscription.retry.retry-attempts" -> 1
         )
       )
       .toMap
@@ -89,6 +101,9 @@ trait WireMockHelper {
 
   def verifyGet(url: String): Unit =
     wireMockServer.verify(getRequestedFor(urlEqualTo(stripToPath(url))))
+
+  def verifyGetRetry(url: String): Unit =
+    wireMockServer.verify(2, getRequestedFor(urlEqualTo(stripToPath(url))))
 
   def verifyGetWithParameters(url: String, parameters: Seq[(String, String)]): Unit =
     wireMockServer.verify(getRequestedFor(urlEqualTo(urlWithParameters(url, parameters))))
