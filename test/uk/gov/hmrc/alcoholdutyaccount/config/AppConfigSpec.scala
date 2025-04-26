@@ -20,32 +20,37 @@ import uk.gov.hmrc.alcoholdutyaccount.base.SpecBase
 
 class SpecBaseWithConfigOverrides extends SpecBase {
   override def configOverrides: Map[String, Any] = Map(
-    "appName"                                                    -> "appName",
-    "microservice.services.subscription.protocol"                -> "http",
-    "microservice.services.subscription.host"                    -> "subscriptionhost",
-    "microservice.services.subscription.port"                    -> 12345,
-    "microservice.services.subscription.clientId"                -> "subscription clientId",
-    "microservice.services.subscription.secret"                  -> "subscription secret",
-    "microservice.services.subscription.url.subscriptionSummary" -> "/etmp/RESTAdapter/excise/subscriptionsummary",
-    "microservice.services.obligation.protocol"                  -> "http",
-    "microservice.services.obligation.host"                      -> "obligationhost",
-    "microservice.services.obligation.port"                      -> 54321,
-    "microservice.services.obligation.token"                     -> "obligation token",
-    "microservice.services.obligation.env"                       -> "obligation env",
-    "microservice.services.obligation.url.obligationData"        -> "/enterprise/obligation-data",
-    "microservice.services.obligation.filterStartDate"           -> "2023-09-01",
-    "microservice.services.financial.protocol"                   -> "http",
-    "microservice.services.financial.host"                       -> "financialhost",
-    "microservice.services.financial.port"                       -> 2468,
-    "microservice.services.financial.token"                      -> "financial token",
-    "microservice.services.financial.env"                        -> "financial env",
-    "microservice.services.financial.url.financialData"          -> "/enterprise/financial-data",
-    "downstream-apis.idType"                                     -> "ZAD",
-    "downstream-apis.regime"                                     -> "AD",
-    "downstream-apis.contractObjectType"                         -> "ZADP",
-    "enrolment.serviceName"                                      -> "HMRC-AD-ORG",
-    "payments.minimumHistoricPaymentsYear"                       -> 2024,
-    "features.bta-service-available"                             -> true
+    "appName"                                                          -> "appName",
+    "microservice.services.subscription.protocol"                      -> "http",
+    "microservice.services.subscription.host"                          -> "subscriptionhost",
+    "microservice.services.subscription.port"                          -> 12345,
+    "microservice.services.subscription.clientId"                      -> "subscription clientId",
+    "microservice.services.subscription.secret"                        -> "subscription secret",
+    "microservice.services.subscription.url.subscriptionSummary"       -> "/etmp/RESTAdapter/excise/subscriptionsummary",
+    "microservice.services.subscription.circuit-breaker.max-failures"  -> 5,
+    "microservice.services.subscription.circuit-breaker.call-timeout"  -> "11 seconds",
+    "microservice.services.subscription.circuit-breaker.reset-timeout" -> "1 minute",
+    "microservice.services.subscription.retry.retry-attempts"          -> 2,
+    "microservice.services.subscription.retry.retry-attempts-delay"    -> "500 milliseconds",
+    "microservice.services.obligation.protocol"                        -> "http",
+    "microservice.services.obligation.host"                            -> "obligationhost",
+    "microservice.services.obligation.port"                            -> 54321,
+    "microservice.services.obligation.token"                           -> "obligation token",
+    "microservice.services.obligation.env"                             -> "obligation env",
+    "microservice.services.obligation.url.obligationData"              -> "/enterprise/obligation-data",
+    "microservice.services.obligation.filterStartDate"                 -> "2023-09-01",
+    "microservice.services.financial.protocol"                         -> "http",
+    "microservice.services.financial.host"                             -> "financialhost",
+    "microservice.services.financial.port"                             -> 2468,
+    "microservice.services.financial.token"                            -> "financial token",
+    "microservice.services.financial.env"                              -> "financial env",
+    "microservice.services.financial.url.financialData"                -> "/enterprise/financial-data",
+    "downstream-apis.idType"                                           -> "ZAD",
+    "downstream-apis.regime"                                           -> "AD",
+    "downstream-apis.contractObjectType"                               -> "ZADP",
+    "enrolment.serviceName"                                            -> "HMRC-AD-ORG",
+    "payments.minimumHistoricPaymentsYear"                             -> 2024,
+    "features.bta-service-available"                                   -> true
   )
 }
 
@@ -141,6 +146,30 @@ class AppConfigSpec extends SpecBaseWithConfigOverrides {
   "for features" - {
     "btaServiceAvailable must return whether the service is available" in {
       appConfig.btaServiceAvailable mustBe true
+    }
+  }
+
+  "for circuit-breaker" - {
+    "max-failures must return the correct value" in {
+      appConfig.maxFailures mustBe 5
+    }
+
+    "call-timeout must return the correct value" in {
+      appConfig.callTimeout.toString() mustBe "11 seconds"
+    }
+
+    "reset-timeout must return the correct value" in {
+      appConfig.resetTimeout.toString() mustBe "1 minute"
+    }
+  }
+
+  "for retry" - {
+    "retry-attempts must return the correct value" in {
+      appConfig.retryAttempts mustBe 2
+    }
+
+    "retry-attempts-delay must return the correct value" in {
+      appConfig.retryAttemptsDelay.toString() mustBe "500 milliseconds"
     }
   }
 

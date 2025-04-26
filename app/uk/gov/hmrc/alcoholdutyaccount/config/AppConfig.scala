@@ -77,4 +77,11 @@ class AppConfig @Inject() (config: Configuration, servicesConfig: ServicesConfig
   lazy val retryAttempts: Int                 = config.get[Int]("microservice.services.subscription.retry.retry-attempts")
   lazy val retryAttemptsDelay: FiniteDuration =
     config.get[FiniteDuration]("microservice.services.subscription.retry.retry-attempts-delay")
+
+  // Circuit breaker
+  lazy val maxFailures: Int             = config.get[Int]("microservice.services.subscription.circuit-breaker.max-failures")
+  lazy val callTimeout: FiniteDuration  =
+    config.get[FiniteDuration]("microservice.services.subscription.circuit-breaker.call-timeout")
+  lazy val resetTimeout: FiniteDuration =
+    config.get[FiniteDuration]("microservice.services.subscription.circuit-breaker.reset-timeout")
 }
