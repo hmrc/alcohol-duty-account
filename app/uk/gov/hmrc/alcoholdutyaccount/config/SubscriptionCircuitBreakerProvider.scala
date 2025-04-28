@@ -22,7 +22,6 @@ import org.apache.pekko.pattern.CircuitBreaker
 import play.api.Configuration
 
 import scala.concurrent.ExecutionContext
-import scala.concurrent.duration.FiniteDuration
 
 @Singleton
 class SubscriptionCircuitBreakerProvider @Inject() (config: Configuration)(implicit
