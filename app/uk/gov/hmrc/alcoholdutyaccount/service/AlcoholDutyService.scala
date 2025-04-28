@@ -55,27 +55,38 @@ class AlcoholDutyService @Inject() (
         }
     }
 
-  def getOpenObligations(
-    alcoholDutyReference: String,
-    periodKey: String
-  )(implicit hc: HeaderCarrier): EitherT[Future, ErrorResponse, AdrObligationData] =
-    obligationDataConnector
-      .getObligationDetails(alcoholDutyReference, Some(Open))
-      .map(findObligationDetailsForPeriod(_, periodKey))
-      .subflatMap {
-        case None                    =>
-          Left(ErrorResponse(NOT_FOUND, s"Obligation details not found for period key $periodKey"))
-        case Some(obligationDetails) =>
-          Right[ErrorResponse, AdrObligationData](AdrObligationData(obligationDetails))
-      }
-
   def getObligations(
     alcoholDutyReference: String,
     obligationStatusFilter: Option[ObligationStatus]
   )(implicit hc: HeaderCarrier): EitherT[Future, ErrorResponse, Seq[AdrObligationData]] =
-    obligationDataConnector
-      .getObligationDetails(alcoholDutyReference, obligationStatusFilter)
-      .map(_.obligations.flatMap(_.obligationDetails.map(AdrObligationData(_))))
+    EitherT {
+      obligationDataConnector
+        .getObligationDetails(alcoholDutyReference, obligationStatusFilter)
+        .map {
+          case Left(error)           => Left(error)
+          case Right(obligationData) =>
+            Right(obligationData.obligations.flatMap(_.obligationDetails.map(AdrObligationData(_))))
+        }
+    }
+
+  def getOpenObligations(
+    alcoholDutyReference: String,
+    periodKey: String
+  )(implicit hc: HeaderCarrier): EitherT[Future, ErrorResponse, AdrObligationData] =
+    EitherT {
+      obligationDataConnector
+        .getObligationDetails(alcoholDutyReference, Some(Open))
+        .map {
+          case Left(error)           => Left(error)
+          case Right(obligationData) =>
+            findObligationDetailsForPeriod(obligationData, periodKey) match {
+              case None                    =>
+                Left(ErrorResponse(NOT_FOUND, s"Obligation details not found for period key $periodKey"))
+              case Some(obligationDetails) =>
+                Right[ErrorResponse, AdrObligationData](AdrObligationData(obligationDetails))
+            }
+        }
+    }
 
   private def findObligationDetailsForPeriod(
     obligationData: ObligationData,
@@ -137,7 +148,10 @@ class AlcoholDutyService @Inject() (
   )(implicit hc: HeaderCarrier): Future[Option[Returns]] =
     obligationDataConnector
       .getObligationDetails(alcoholDutyReference, Some(Open))
-      .fold(_ => None, obligationData => Some(extractReturns(obligationData.obligations.flatMap(_.obligationDetails))))
+      .map {
+        case Left(_)               => None
+        case Right(obligationData) => Some(extractReturns(obligationData.obligations.flatMap(_.obligationDetails)))
+      }
 
   private[service] def extractReturns(obligationDetails: Seq[ObligationDetails]): Returns =
     if (obligationDetails.isEmpty) {

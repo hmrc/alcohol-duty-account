@@ -16,10 +16,12 @@
 
 package uk.gov.hmrc.alcoholdutyaccount.connectors
 
-import cats.data.EitherT
-import play.api.http.Status.{INTERNAL_SERVER_ERROR, NOT_FOUND}
+import org.apache.pekko.actor.{ActorSystem, Scheduler}
+import org.apache.pekko.pattern.retry
+import play.api.http.Status._
 import play.api.{Logger, Logging}
-import uk.gov.hmrc.alcoholdutyaccount.config.AppConfig
+import uk.gov.hmrc.alcoholdutyaccount.config.{AppConfig, SubscriptionCircuitBreakerProvider}
+import uk.gov.hmrc.alcoholdutyaccount.models.HttpErrorResponse
 import uk.gov.hmrc.alcoholdutyaccount.models.hods.{ObligationData, ObligationDetails, ObligationStatus, Open}
 import uk.gov.hmrc.alcoholdutyaccount.utils.DateTimeHelper.instantToLocalDate
 import uk.gov.hmrc.http._
@@ -34,55 +36,75 @@ import scala.util.{Failure, Success, Try}
 class ObligationDataConnector @Inject() (
   config: AppConfig,
   clock: Clock,
+  subscriptionCircuitBreakerProvider: SubscriptionCircuitBreakerProvider,
+  implicit val system: ActorSystem,
   implicit val httpClient: HttpClientV2
 )(implicit ec: ExecutionContext)
     extends HttpReadsInstances
     with Logging {
   override protected val logger: Logger = Logger(this.getClass)
+  implicit val scheduler: Scheduler     = system.scheduler
 
   def getObligationDetails(
     appaId: String,
     obligationStatusFilter: Option[ObligationStatus]
-  )(implicit hc: HeaderCarrier): EitherT[Future, ErrorResponse, ObligationData] =
-    EitherT {
+  )(implicit hc: HeaderCarrier): Future[Either[ErrorResponse, ObligationData]] =
+    retry(
+      () => call(appaId, obligationStatusFilter),
+      attempts = config.retryAttempts,
+      delay = config.retryAttemptsDelay
+    ).recoverWith { _ =>
+      Future.successful(Left(ErrorResponse(INTERNAL_SERVER_ERROR, "An error occurred")))
+    }
 
+  def call(
+    appaId: String,
+    obligationStatusFilter: Option[ObligationStatus]
+  )(implicit hc: HeaderCarrier): Future[Either[ErrorResponse, ObligationData]] =
+    subscriptionCircuitBreakerProvider.get().withCircuitBreaker {
       val headers: Seq[(String, String)] = Seq(
         HeaderNames.authorisation -> s"Bearer ${config.obligationDataToken}",
         "Environment"             -> config.obligationDataEnv
       )
-
       logger.info(s"Fetching all open obligation data for appaId $appaId")
-
-      val queryParams = getQueryParams(obligationStatusFilter)
+      val queryParams                    = getQueryParams(obligationStatusFilter)
 
       httpClient
         .get(url"${config.obligationDataUrl(appaId)}?$queryParams")
         .setHeader(headers: _*)
-        .execute[Either[UpstreamErrorResponse, HttpResponse]]
-        .map {
-          case Right(response) =>
-            Try {
-              response.json.as[ObligationData]
-            } match {
-              case Success(doc)       =>
-                logger.info(s"Retrieved open obligation data for appaId $appaId")
-                Right(filterOutFutureObligations(doc))
-              case Failure(exception) =>
-                logger.warn(s"Unable to parse obligation data for appaId $appaId", exception)
-                Left(ErrorResponse(INTERNAL_SERVER_ERROR, "Unable to parse obligation data"))
-            }
-          case Left(error)
-              if error.statusCode == NOT_FOUND => // This is not necessarily an error, just no obligations were returned
-            logger.info(s"No obligation data found for appaId $appaId")
-            Right(ObligationData.noObligations)
-          case Left(error)     => Left(processError(error, appaId))
-        }
-        .recoverWith { case e: Exception =>
-          logger.warn(
-            s"An exception was returned while trying to fetch obligation data appaId $appaId",
-            e
-          )
-          Future.successful(Left(ErrorResponse(INTERNAL_SERVER_ERROR, e.getMessage)))
+        .execute[HttpResponse]
+        .flatMap { response =>
+          response.status match {
+            case OK                   =>
+              Try {
+                response.json.as[ObligationData]
+              } match {
+                case Success(doc)       =>
+                  logger.info(s"Retrieved open obligation data for appaId $appaId")
+                  Future.successful(Right(filterOutFutureObligations(doc)))
+                case Failure(exception) =>
+                  logger.warn(s"Unable to parse obligation data for appaId $appaId", exception)
+                  Future
+                    .successful(
+                      Left(ErrorResponse(INTERNAL_SERVER_ERROR, "Unable to parse obligation data"))
+                    )
+              }
+            case NOT_FOUND            =>
+              logger.info(s"No obligation data found for appaId $appaId")
+              Future.successful(Right(ObligationData.noObligations))
+            case BAD_REQUEST          =>
+              logger.info(s"Bad request sent to get obligation for appaId $appaId")
+              Future.successful(Left(ErrorResponse(BAD_REQUEST, "Bad request")))
+            case UNPROCESSABLE_ENTITY =>
+              logger.info(s"Obligation data request unprocessable for appaId $appaId")
+              Future.successful(Left(ErrorResponse(UNPROCESSABLE_ENTITY, "Unprocessable entity")))
+            case _                    =>
+              val error: String = response.json.as[HttpErrorResponse].message
+              logger.warn(
+                s"An exception was returned while trying to fetch obligation data for appaId $appaId: $error"
+              )
+              Future.failed(new InternalServerException(response.body))
+          }
         }
     }
 
@@ -95,15 +117,6 @@ class ObligationDataConnector @Inject() (
       case Some(status) => Seq("status" -> status.value) ++ dateFilterHeaders
       case None         => dateFilterHeaders
     }
-  }
-
-  private def processError(error: UpstreamErrorResponse, appaId: String): ErrorResponse = {
-    logger.warn(
-      s"An error was returned while trying to fetch obligation data appaId $appaId",
-      error
-    )
-
-    ErrorResponse(INTERNAL_SERVER_ERROR, "An error occurred")
   }
 
   private def filterOutFutureObligations(obligationData: ObligationData): ObligationData =
