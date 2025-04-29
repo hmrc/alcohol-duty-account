@@ -152,13 +152,32 @@ class ObligationDataConnectorSpec extends SpecBase with ConnectorTestHelpers {
     }
 
     "return an INTERNAL_SERVER_ERROR error" - {
-      "if an http error other than NOT_FOUND or BAD_REQUEST when fetching obligation data" in new SetUp {
-        stubGetWithParameters(url, expectedQueryParamsOpen, INTERNAL_SERVER_ERROR, otherErrorMessage)
+      "if INTERNAL_SERVER_ERROR is returned when fetching obligation data" in new SetUp {
+        stubGetWithParameters(
+          url,
+          expectedQueryParamsOpen,
+          INTERNAL_SERVER_ERROR,
+          Json.toJson(internalServerError).toString
+        )
         whenReady(connector.getObligationDetails(appaId, Some(obligationFilterOpen))) { result =>
           result mustBe Left(ErrorResponse(INTERNAL_SERVER_ERROR, "An error occurred"))
           verifyGetWithParameters(url, expectedQueryParamsOpen)
         }
       }
+
+      "if an error other than BAD_REQUEST or NOT_FOUND is returned the connector will retry" in new SetUp {
+        stubGetWithParameters(
+          url,
+          expectedQueryParamsOpen,
+          INTERNAL_SERVER_ERROR,
+          Json.toJson(internalServerError).toString
+        )
+        whenReady(connectorWithRetry.getObligationDetails(appaId, Some(obligationFilterOpen))) { result =>
+          result mustBe Left(ErrorResponse(INTERNAL_SERVER_ERROR, "An error occurred"))
+          verifyGetWithParametersWithRetry(url, expectedQueryParamsOpen)
+        }
+      }
+
       "if an exception thrown when fetching obligation data" in new SetUp {
         stubGetFaultWithParameters(url, expectedQueryParamsOpen)
         whenReady(connector.getObligationDetails(appaId, Some(obligationFilterOpen))) { result =>
@@ -170,7 +189,9 @@ class ObligationDataConnectorSpec extends SpecBase with ConnectorTestHelpers {
   }
 
   class SetUp extends ConnectorFixture {
-    val connector: ObligationDataConnector = appWithHttpClientV2.injector.instanceOf[ObligationDataConnector]
+    val connector: ObligationDataConnector          = appWithHttpClientV2.injector.instanceOf[ObligationDataConnector]
+    val connectorWithRetry: ObligationDataConnector =
+      appWithHttpClientV2WithRetry.injector.instanceOf[ObligationDataConnector]
 
     private val dateFilterHeadersHeaders = Seq("from" -> "2023-09-01", "to" -> LocalDate.now(clock).toString)
     val expectedQueryParamsOpen          = Seq("status" -> Open.value)

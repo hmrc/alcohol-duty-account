@@ -74,14 +74,14 @@ class AppConfig @Inject() (config: Configuration, servicesConfig: ServicesConfig
     servicesConfig.getConfString(key, throw new RuntimeException(s"Could not find services config key '$key'"))
 
   // API retry attempts
-  lazy val retryAttempts: Int                 = config.get[Int]("microservice.services.subscription.retry.retry-attempts")
+  lazy val retryAttempts: Int                 = config.get[Int]("microservice.services.retry.retry-attempts")
   lazy val retryAttemptsDelay: FiniteDuration =
-    config.get[FiniteDuration]("microservice.services.subscription.retry.retry-attempts-delay")
+    config.get[FiniteDuration]("microservice.services.retry.retry-attempts-delay")
 
   // Circuit breaker
-  lazy val maxFailures: Int             = config.get[Int]("microservice.services.subscription.circuit-breaker.max-failures")
+  lazy val maxFailures: Int             = config.get[Int]("microservice.services.circuit-breaker.max-failures")
   lazy val callTimeout: FiniteDuration  =
-    config.get[FiniteDuration]("microservice.services.subscription.circuit-breaker.call-timeout")
+    config.get[FiniteDuration]("microservice.services.circuit-breaker.call-timeout")
   lazy val resetTimeout: FiniteDuration =
-    config.get[FiniteDuration]("microservice.services.subscription.circuit-breaker.reset-timeout")
+    config.get[FiniteDuration]("microservice.services.circuit-breaker.reset-timeout")
 }
