@@ -20,7 +20,7 @@ import org.apache.pekko.actor.{ActorSystem, Scheduler}
 import org.apache.pekko.pattern.retry
 import play.api.http.Status._
 import play.api.{Logger, Logging}
-import uk.gov.hmrc.alcoholdutyaccount.config.{AppConfig, SubscriptionCircuitBreakerProvider}
+import uk.gov.hmrc.alcoholdutyaccount.config.{AppConfig, CircuitBreakerProvider}
 import uk.gov.hmrc.alcoholdutyaccount.models.HttpErrorResponse
 import uk.gov.hmrc.alcoholdutyaccount.models.hods.{ObligationData, ObligationDetails, ObligationStatus, Open}
 import uk.gov.hmrc.alcoholdutyaccount.utils.DateTimeHelper.instantToLocalDate
@@ -36,7 +36,7 @@ import scala.util.{Failure, Success, Try}
 class ObligationDataConnector @Inject() (
   config: AppConfig,
   clock: Clock,
-  subscriptionCircuitBreakerProvider: SubscriptionCircuitBreakerProvider,
+  circuitBreakerProvider: CircuitBreakerProvider,
   implicit val system: ActorSystem,
   implicit val httpClient: HttpClientV2
 )(implicit ec: ExecutionContext)
@@ -61,7 +61,7 @@ class ObligationDataConnector @Inject() (
     appaId: String,
     obligationStatusFilter: Option[ObligationStatus]
   )(implicit hc: HeaderCarrier): Future[Either[ErrorResponse, ObligationData]] =
-    subscriptionCircuitBreakerProvider.get().withCircuitBreaker {
+    circuitBreakerProvider.get().withCircuitBreaker {
       val headers: Seq[(String, String)] = Seq(
         HeaderNames.authorisation -> s"Bearer ${config.obligationDataToken}",
         "Environment"             -> config.obligationDataEnv

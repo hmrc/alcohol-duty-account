@@ -34,19 +34,19 @@ class SubscriptionSummaryConnectorSpec extends SpecBase with ConnectorTestHelper
       }
     }
 
-    "return BAD_REQUEST if a bad request received" in new SetUp {
+    "return BAD_REQUEST if a bad request received with no retry" in new SetUp {
       stubGet(url, BAD_REQUEST, Json.toJson(badRequest).toString)
       whenReady(connector.getSubscriptionSummary(appaId)) { result =>
         result mustBe Left(ErrorResponse(BAD_REQUEST, "Bad request"))
-        verifyGet(url)
+        verifyGetWithoutRetry(url)
       }
     }
 
-    "return UNPROCESSABLE_ENTITY if a 422 is received" in new SetUp {
+    "return UNPROCESSABLE_ENTITY if a 422 is received with no retry" in new SetUp {
       stubGet(url, UNPROCESSABLE_ENTITY, Json.toJson(unprocessable).toString)
       whenReady(connector.getSubscriptionSummary(appaId)) { result =>
         result mustBe Left(ErrorResponse(UNPROCESSABLE_ENTITY, "Unprocessable entity"))
-        verifyGet(url)
+        verifyGetWithoutRetry(url)
       }
     }
 
@@ -83,7 +83,7 @@ class SubscriptionSummaryConnectorSpec extends SpecBase with ConnectorTestHelper
         }
       }
 
-      "if an error other than BAD_REQUEST or NOT_FOUND is returned the connector will retry" in new SetUp {
+      "if an error other than BAD_REQUEST or NOT_FOUND is returned the connector will invoke a retry" in new SetUp {
         stubGet(url, INTERNAL_SERVER_ERROR, Json.toJson(internalServerError).toString)
         whenReady(connectorWithRetry.getSubscriptionSummary(appaId)) { result =>
           result mustBe Left(ErrorResponse(INTERNAL_SERVER_ERROR, "An error occurred"))

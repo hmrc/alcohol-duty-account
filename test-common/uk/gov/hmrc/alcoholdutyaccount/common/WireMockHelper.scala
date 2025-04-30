@@ -33,9 +33,9 @@ trait WireMockHelper {
     endpointNames
       .flatMap(endpointName =>
         Seq(
-          s"$endpointConfigurationPath.$endpointName.host" -> wireMockHost,
-          s"$endpointConfigurationPath.$endpointName.port" -> wireMockPort,
-          "microservice.services.retry.retry-attempts"     -> 0
+          s"$endpointConfigurationPath.$endpointName.host"   -> wireMockHost,
+          s"$endpointConfigurationPath.$endpointName.port"   -> wireMockPort,
+          s"$endpointConfigurationPath.retry.retry-attempts" -> 0
         )
       )
       .toMap
@@ -105,11 +105,17 @@ trait WireMockHelper {
   def verifyGetRetry(url: String): Unit =
     wireMockServer.verify(2, getRequestedFor(urlEqualTo(stripToPath(url))))
 
+  def verifyGetWithoutRetry(url: String): Unit =
+    wireMockServer.verify(1, getRequestedFor(urlEqualTo(stripToPath(url))))
+
   def verifyGetWithParameters(url: String, parameters: Seq[(String, String)]): Unit =
     wireMockServer.verify(getRequestedFor(urlEqualTo(urlWithParameters(url, parameters))))
 
   def verifyGetWithParametersWithRetry(url: String, parameters: Seq[(String, String)]): Unit =
     wireMockServer.verify(2, getRequestedFor(urlEqualTo(urlWithParameters(url, parameters))))
+
+  def verifyGetWithParametersWithoutRetry(url: String, parameters: Seq[(String, String)]): Unit =
+    wireMockServer.verify(1, getRequestedFor(urlEqualTo(urlWithParameters(url, parameters))))
 
   def verifyGetWithParametersAndHeaders(
     url: String,

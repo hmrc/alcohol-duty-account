@@ -135,19 +135,20 @@ class ObligationDataConnectorSpec extends SpecBase with ConnectorTestHelpers {
       }
     }
 
-    "return BAD_REQUEST if a bad request received" in new SetUp {
+    "return BAD_REQUEST if a bad request received with no retry" in new SetUp {
       stubGetWithParameters(url, expectedQueryParamsOpen, BAD_REQUEST, otherErrorMessage)
       whenReady(connector.getObligationDetails(appaId, Some(obligationFilterOpen))) { result =>
         result mustBe Left(ErrorResponse(BAD_REQUEST, "Bad request"))
-        verifyGetWithParameters(url, expectedQueryParamsOpen)
+        verifyGetWithParametersWithoutRetry(url, expectedQueryParamsOpen)
+        (url, expectedQueryParamsOpen)
       }
     }
 
-    "return UNPROCESSABLE_ENTITY if a bad request received" in new SetUp {
+    "return UNPROCESSABLE_ENTITY if a bad request received with no retry" in new SetUp {
       stubGetWithParameters(url, expectedQueryParamsOpen, UNPROCESSABLE_ENTITY, otherErrorMessage)
       whenReady(connector.getObligationDetails(appaId, Some(obligationFilterOpen))) { result =>
         result mustBe Left(ErrorResponse(UNPROCESSABLE_ENTITY, "Unprocessable entity"))
-        verifyGetWithParameters(url, expectedQueryParamsOpen)
+        verifyGetWithParametersWithoutRetry(url, expectedQueryParamsOpen)
       }
     }
 
@@ -165,7 +166,7 @@ class ObligationDataConnectorSpec extends SpecBase with ConnectorTestHelpers {
         }
       }
 
-      "if an error other than BAD_REQUEST or NOT_FOUND is returned the connector will retry" in new SetUp {
+      "if an error other than BAD_REQUEST or NOT_FOUND is returned the connector will invoke a retry" in new SetUp {
         stubGetWithParameters(
           url,
           expectedQueryParamsOpen,
