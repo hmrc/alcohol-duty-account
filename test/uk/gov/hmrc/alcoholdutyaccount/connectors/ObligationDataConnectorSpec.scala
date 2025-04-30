@@ -140,7 +140,6 @@ class ObligationDataConnectorSpec extends SpecBase with ConnectorTestHelpers {
       whenReady(connector.getObligationDetails(appaId, Some(obligationFilterOpen))) { result =>
         result mustBe Left(ErrorResponse(BAD_REQUEST, "Bad request"))
         verifyGetWithParametersWithoutRetry(url, expectedQueryParamsOpen)
-        (url, expectedQueryParamsOpen)
       }
     }
 
