@@ -16,7 +16,6 @@
 
 package uk.gov.hmrc.alcoholdutyaccount.service
 
-import cats.data.EitherT
 import uk.gov.hmrc.alcoholdutyaccount.base.SpecBase
 import uk.gov.hmrc.alcoholdutyaccount.connectors.FinancialDataConnector
 import uk.gov.hmrc.alcoholdutyaccount.models.hods.FinancialTransactionDocument
@@ -33,7 +32,7 @@ class OpenPaymentsServiceSpec extends SpecBase {
       "a successful and correct response must be returned" - {
         "handle no financial data (nil return or no data)" in new SetUp {
           when(mockFinancialDataConnector.getOnlyOpenFinancialData(appaId))
-            .thenReturn(EitherT.pure[Future, ErrorResponse](emptyFinancialDocument))
+            .thenReturn(Future.successful(Right(emptyFinancialDocument)))
 
           whenReady(paymentsService.getOpenPayments(appaId).value) {
             _ mustBe Right(
@@ -50,7 +49,7 @@ class OpenPaymentsServiceSpec extends SpecBase {
 
         "when processing a single fully outstanding line item for a return" in new SetUp {
           when(mockFinancialDataConnector.getOnlyOpenFinancialData(appaId))
-            .thenReturn(EitherT.pure[Future, ErrorResponse](singleFullyOutstandingReturn))
+            .thenReturn(Future.successful(Right(singleFullyOutstandingReturn)))
 
           whenReady(paymentsService.getOpenPayments(appaId).value) {
             _ mustBe Right(
@@ -76,7 +75,7 @@ class OpenPaymentsServiceSpec extends SpecBase {
           val financialTransactionDocument = singlePartiallyOutstandingReturn(onlyOpenItems = true)
 
           when(mockFinancialDataConnector.getOnlyOpenFinancialData(appaId))
-            .thenReturn(EitherT.pure[Future, ErrorResponse](financialTransactionDocument))
+            .thenReturn(Future.successful(Right(financialTransactionDocument)))
 
           whenReady(paymentsService.getOpenPayments(appaId).value) {
             _ mustBe Right(
@@ -102,7 +101,7 @@ class OpenPaymentsServiceSpec extends SpecBase {
           val financialTransactionDocument = twoLineItemPartiallyOutstandingReturn(onlyOpenItems = true)
 
           when(mockFinancialDataConnector.getOnlyOpenFinancialData(appaId))
-            .thenReturn(EitherT.pure[Future, ErrorResponse](financialTransactionDocument))
+            .thenReturn(Future.successful(Right(financialTransactionDocument)))
 
           whenReady(paymentsService.getOpenPayments(appaId).value) {
             _ mustBe Right(
@@ -128,7 +127,7 @@ class OpenPaymentsServiceSpec extends SpecBase {
           val financialTransactionDocument = twoSeparateOutstandingReturnsOnePartiallyPaid(onlyOpenItems = true)
 
           when(mockFinancialDataConnector.getOnlyOpenFinancialData(appaId))
-            .thenReturn(EitherT.pure[Future, ErrorResponse](financialTransactionDocument))
+            .thenReturn(Future.successful(Right(financialTransactionDocument)))
 
           whenReady(paymentsService.getOpenPayments(appaId).value) {
             case Left(_)             => fail()
@@ -156,7 +155,7 @@ class OpenPaymentsServiceSpec extends SpecBase {
 
         "must ignore overpayments that have no contract object type" in new SetUp {
           when(mockFinancialDataConnector.getOnlyOpenFinancialData(appaId))
-            .thenReturn(EitherT.pure[Future, ErrorResponse](singleOverpaymentNoContractObjectType))
+            .thenReturn(Future.successful(Right(singleOverpaymentNoContractObjectType)))
 
           whenReady(paymentsService.getOpenPayments(appaId).value) {
             _ mustBe Right(
@@ -173,7 +172,7 @@ class OpenPaymentsServiceSpec extends SpecBase {
 
         "must ignore overpayments that are not contract object type ZADP" in new SetUp {
           when(mockFinancialDataConnector.getOnlyOpenFinancialData(appaId))
-            .thenReturn(EitherT.pure[Future, ErrorResponse](singleOverpaymentNotZADP))
+            .thenReturn(Future.successful(Right(singleOverpaymentNotZADP)))
 
           whenReady(paymentsService.getOpenPayments(appaId).value) {
             _ mustBe Right(
@@ -190,7 +189,7 @@ class OpenPaymentsServiceSpec extends SpecBase {
 
         "when processing a single fully unallocated overpayment" in new SetUp {
           when(mockFinancialDataConnector.getOnlyOpenFinancialData(appaId))
-            .thenReturn(EitherT.pure[Future, ErrorResponse](singleOverpayment))
+            .thenReturn(Future.successful(Right(singleOverpayment)))
 
           whenReady(paymentsService.getOpenPayments(appaId).value) {
             _ mustBe Right(
@@ -212,7 +211,7 @@ class OpenPaymentsServiceSpec extends SpecBase {
 
         "must warn when processing a single fully unallocated overpayment where original and outstanding amounts don't match (coverage)" in new SetUp {
           when(mockFinancialDataConnector.getOnlyOpenFinancialData(appaId))
-            .thenReturn(EitherT.pure[Future, ErrorResponse](singleOverpaymentAmountMismatch))
+            .thenReturn(Future.successful(Right(singleOverpaymentAmountMismatch)))
 
           whenReady(paymentsService.getOpenPayments(appaId).value) {
             _ mustBe Right(
@@ -236,7 +235,7 @@ class OpenPaymentsServiceSpec extends SpecBase {
           val twoSeparateOverpaymentsOpen = twoSeparateOverpayments(true)
 
           when(mockFinancialDataConnector.getOnlyOpenFinancialData(appaId))
-            .thenReturn(EitherT.pure[Future, ErrorResponse](twoSeparateOverpaymentsOpen))
+            .thenReturn(Future.successful(Right(twoSeparateOverpaymentsOpen)))
 
           whenReady(paymentsService.getOpenPayments(appaId).value) {
             case Left(_)             => fail()
@@ -261,8 +260,10 @@ class OpenPaymentsServiceSpec extends SpecBase {
         "when processing a single partially outstanding return and a partially allocated overpayment" in new SetUp {
           when(mockFinancialDataConnector.getOnlyOpenFinancialData(appaId))
             .thenReturn(
-              EitherT.pure[Future, ErrorResponse](
-                onePartiallyPaidReturnLineItemAndOnePartiallyAllocatedOverpayment
+              Future.successful(
+                Right(
+                  onePartiallyPaidReturnLineItemAndOnePartiallyAllocatedOverpayment
+                )
               )
             )
 
@@ -300,7 +301,7 @@ class OpenPaymentsServiceSpec extends SpecBase {
 
         "when processing a single fully outstanding LPI" in new SetUp {
           when(mockFinancialDataConnector.getOnlyOpenFinancialData(appaId))
-            .thenReturn(EitherT.pure[Future, ErrorResponse](singleFullyOutstandingLPI))
+            .thenReturn(Future.successful(Right(singleFullyOutstandingLPI)))
 
           whenReady(paymentsService.getOpenPayments(appaId).value) {
             _ mustBe Right(
@@ -324,7 +325,7 @@ class OpenPaymentsServiceSpec extends SpecBase {
 
         "when processing a single fully outstanding RPI" in new SetUp {
           when(mockFinancialDataConnector.getOnlyOpenFinancialData(appaId))
-            .thenReturn(EitherT.pure[Future, ErrorResponse](singleRPI))
+            .thenReturn(Future.successful(Right(singleRPI)))
 
           whenReady(paymentsService.getOpenPayments(appaId).value) {
             _ mustBe Right(
@@ -351,7 +352,7 @@ class OpenPaymentsServiceSpec extends SpecBase {
         "if getting financial data returns an error" in new SetUp {
           val errorResponse = ErrorResponse(INTERNAL_SERVER_ERROR, "error!")
           when(mockFinancialDataConnector.getOnlyOpenFinancialData(appaId))
-            .thenReturn(EitherT.leftT[Future, FinancialTransactionDocument](errorResponse))
+            .thenReturn(Future.successful(Left(errorResponse)))
 
           whenReady(paymentsService.getOpenPayments(appaId).value) {
             _ mustBe Left(errorResponse)
@@ -365,7 +366,7 @@ class OpenPaymentsServiceSpec extends SpecBase {
         )
 
         when(mockFinancialDataConnector.getOnlyOpenFinancialData(appaId))
-          .thenReturn(EitherT.pure[Future, ErrorResponse](noItemsOnFinancialDocument))
+          .thenReturn(Future.successful(Right(noItemsOnFinancialDocument)))
 
         whenReady(paymentsService.getOpenPayments(appaId).value) {
           _ mustBe Left(ErrorCodes.unexpectedResponse)
@@ -382,7 +383,7 @@ class OpenPaymentsServiceSpec extends SpecBase {
         )
 
         when(mockFinancialDataConnector.getOnlyOpenFinancialData(appaId))
-          .thenReturn(EitherT.pure[Future, ErrorResponse](noDueDatePresentOnFirstItem))
+          .thenReturn(Future.successful(Right(noDueDatePresentOnFirstItem)))
 
         whenReady(paymentsService.getOpenPayments(appaId).value) {
           _ mustBe Left(ErrorCodes.unexpectedResponse)
@@ -398,7 +399,7 @@ class OpenPaymentsServiceSpec extends SpecBase {
         )
 
         when(mockFinancialDataConnector.getOnlyOpenFinancialData(appaId))
-          .thenReturn(EitherT.pure[Future, ErrorResponse](noItemsOnSecondLineItem))
+          .thenReturn(Future.successful(Right(noItemsOnSecondLineItem)))
 
         whenReady(paymentsService.getOpenPayments(appaId).value) {
           _ mustBe Left(ErrorCodes.unexpectedResponse)
@@ -417,7 +418,7 @@ class OpenPaymentsServiceSpec extends SpecBase {
           )
 
         when(mockFinancialDataConnector.getOnlyOpenFinancialData(appaId))
-          .thenReturn(EitherT.pure[Future, ErrorResponse](mismatchedTransactionTypesOnLineItems))
+          .thenReturn(Future.successful(Right(mismatchedTransactionTypesOnLineItems)))
 
         whenReady(paymentsService.getOpenPayments(appaId).value) {
           _ mustBe Left(ErrorCodes.unexpectedResponse)
@@ -436,7 +437,7 @@ class OpenPaymentsServiceSpec extends SpecBase {
           )
 
         when(mockFinancialDataConnector.getOnlyOpenFinancialData(appaId))
-          .thenReturn(EitherT.pure[Future, ErrorResponse](mismatchedTransactionTypesOnLineItems))
+          .thenReturn(Future.successful(Right(mismatchedTransactionTypesOnLineItems)))
 
         whenReady(paymentsService.getOpenPayments(appaId).value) {
           _ mustBe Left(ErrorCodes.unexpectedResponse)
@@ -455,7 +456,7 @@ class OpenPaymentsServiceSpec extends SpecBase {
           )
 
         when(mockFinancialDataConnector.getOnlyOpenFinancialData(appaId))
-          .thenReturn(EitherT.pure[Future, ErrorResponse](mismatchedTransactionTypesOnLineItems))
+          .thenReturn(Future.successful(Right(mismatchedTransactionTypesOnLineItems)))
 
         whenReady(paymentsService.getOpenPayments(appaId).value) {
           _ mustBe Left(ErrorCodes.unexpectedResponse)
@@ -472,7 +473,7 @@ class OpenPaymentsServiceSpec extends SpecBase {
           )
 
         when(mockFinancialDataConnector.getOnlyOpenFinancialData(appaId))
-          .thenReturn(EitherT.pure[Future, ErrorResponse](missingChargeReferencesOnSecondLineItem))
+          .thenReturn(Future.successful(Right(missingChargeReferencesOnSecondLineItem)))
 
         whenReady(paymentsService.getOpenPayments(appaId).value) {
           _ mustBe Left(ErrorCodes.unexpectedResponse)
@@ -489,7 +490,7 @@ class OpenPaymentsServiceSpec extends SpecBase {
           )
 
         when(mockFinancialDataConnector.getOnlyOpenFinancialData(appaId))
-          .thenReturn(EitherT.pure[Future, ErrorResponse](missingChargeReferencesOnSecondLineItem))
+          .thenReturn(Future.successful(Right(missingChargeReferencesOnSecondLineItem)))
 
         whenReady(paymentsService.getOpenPayments(appaId).value) {
           _ mustBe Left(ErrorCodes.unexpectedResponse)
@@ -506,7 +507,7 @@ class OpenPaymentsServiceSpec extends SpecBase {
           )
 
         when(mockFinancialDataConnector.getOnlyOpenFinancialData(appaId))
-          .thenReturn(EitherT.pure[Future, ErrorResponse](mismatchedChargeReferencesOnLineItems))
+          .thenReturn(Future.successful(Right(mismatchedChargeReferencesOnLineItems)))
 
         whenReady(paymentsService.getOpenPayments(appaId).value) {
           _ mustBe Left(ErrorCodes.unexpectedResponse)
@@ -526,7 +527,7 @@ class OpenPaymentsServiceSpec extends SpecBase {
         )
 
         when(mockFinancialDataConnector.getOnlyOpenFinancialData(appaId))
-          .thenReturn(EitherT.pure[Future, ErrorResponse](noDueDatePresentOnSecondItemOfDocument))
+          .thenReturn(Future.successful(Right(noDueDatePresentOnSecondItemOfDocument)))
 
         whenReady(paymentsService.getOpenPayments(appaId).value) {
           _ mustBe Left(ErrorCodes.unexpectedResponse)
@@ -548,7 +549,7 @@ class OpenPaymentsServiceSpec extends SpecBase {
           )
 
         when(mockFinancialDataConnector.getOnlyOpenFinancialData(appaId))
-          .thenReturn(EitherT.pure[Future, ErrorResponse](mismatchedDueDatePresentOnSecondItemOfDocument))
+          .thenReturn(Future.successful(Right(mismatchedDueDatePresentOnSecondItemOfDocument)))
 
         whenReady(paymentsService.getOpenPayments(appaId).value) {
           _ mustBe Left(ErrorCodes.unexpectedResponse)
@@ -562,7 +563,7 @@ class OpenPaymentsServiceSpec extends SpecBase {
         )
 
         when(mockFinancialDataConnector.getOnlyOpenFinancialData(appaId))
-          .thenReturn(EitherT.pure[Future, ErrorResponse](unknownTransactionType))
+          .thenReturn(Future.successful(Right(unknownTransactionType)))
 
         whenReady(paymentsService.getOpenPayments(appaId).value) {
           _ mustBe Left(ErrorCodes.unexpectedResponse)
