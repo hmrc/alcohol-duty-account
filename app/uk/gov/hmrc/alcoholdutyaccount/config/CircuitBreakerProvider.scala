@@ -24,7 +24,7 @@ import play.api.Configuration
 import scala.concurrent.ExecutionContext
 
 @Singleton
-class SubscriptionCircuitBreakerProvider @Inject() (config: Configuration)(implicit
+class CircuitBreakerProvider @Inject() (config: Configuration)(implicit
   ec: ExecutionContext,
   sys: ActorSystem,
   appConfig: AppConfig
