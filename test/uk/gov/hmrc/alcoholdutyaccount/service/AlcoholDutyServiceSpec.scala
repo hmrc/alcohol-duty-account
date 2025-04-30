@@ -30,7 +30,7 @@ import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.bootstrap.backend.http.ErrorResponse
 
 import java.time.LocalDate
-import scala.concurrent.ExecutionContext
+import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Success
 
 class AlcoholDutyServiceSpec extends SpecBase {
@@ -38,7 +38,7 @@ class AlcoholDutyServiceSpec extends SpecBase {
     "getSubscriptionSummary must" - {
       "return summary data from the connector when successful" in new SetUp {
         when(subscriptionSummaryConnector.getSubscriptionSummary(appaId))
-          .thenReturn(EitherT.fromEither(Right(approvedSubscriptionSummary)))
+          .thenReturn(Future.successful(Right(approvedSubscriptionSummary)))
         whenReady(service.getSubscriptionSummary(appaId).value) {
           _ mustBe Right(approvedAdrSubscriptionSummary)
         }
@@ -47,7 +47,7 @@ class AlcoholDutyServiceSpec extends SpecBase {
       "return an error if the connector is unable to obtain obligation data or an error occurred" in new SetUp {
         val error = ErrorResponse(INTERNAL_SERVER_ERROR, "An error occurred")
         when(subscriptionSummaryConnector.getSubscriptionSummary(appaId))
-          .thenReturn(EitherT.fromEither(Left(error)))
+          .thenReturn(Future.successful(Left(error)))
         whenReady(service.getSubscriptionSummary(appaId).value) {
           _ mustBe Left(error)
         }
@@ -517,7 +517,7 @@ class AlcoholDutyServiceSpec extends SpecBase {
             approvalStatus = hods.Approved,
             insolvencyFlag = false
           )
-          subscriptionSummaryConnector.getSubscriptionSummary(*)(*) returnsF subscriptionSummary
+          subscriptionSummaryConnector.getSubscriptionSummary(*)(*) returnsF Right(subscriptionSummary)
 
           val obligationDataOneDue = ObligationData(obligations =
             Seq(
@@ -562,7 +562,7 @@ class AlcoholDutyServiceSpec extends SpecBase {
             approvalStatus = hods.Approved,
             insolvencyFlag = true
           )
-          subscriptionSummaryConnector.getSubscriptionSummary(*)(*) returnsF subscriptionSummary
+          subscriptionSummaryConnector.getSubscriptionSummary(*)(*) returnsF Right(subscriptionSummary)
 
           val obligationDataOneDue = ObligationData(obligations =
             Seq(
@@ -606,7 +606,7 @@ class AlcoholDutyServiceSpec extends SpecBase {
         val error = ErrorResponse(INTERNAL_SERVER_ERROR, "An error occurred")
 
         when(subscriptionSummaryConnector.getSubscriptionSummary(appaId))
-          .thenReturn(EitherT.fromEither(Left(error)))
+          .thenReturn(Future.successful(Left(error)))
 
         whenReady(service.getAlcoholDutyCardData(appaId).value) { result =>
           result mustBe Right(
@@ -622,7 +622,7 @@ class AlcoholDutyServiceSpec extends SpecBase {
           approvalStatus = hods.Approved,
           insolvencyFlag = false
         )
-        subscriptionSummaryConnector.getSubscriptionSummary(*)(*) returnsF subscriptionSummary
+        subscriptionSummaryConnector.getSubscriptionSummary(*)(*) returnsF Right(subscriptionSummary)
 
         when(obligationDataConnector.getObligationDetails(*, *)(*))
           .thenReturn(EitherT.fromEither(Left(ErrorResponse(BAD_REQUEST, ""))))
@@ -652,7 +652,7 @@ class AlcoholDutyServiceSpec extends SpecBase {
           approvalStatus = hods.Approved,
           insolvencyFlag = false
         )
-        subscriptionSummaryConnector.getSubscriptionSummary(*)(*) returnsF subscriptionSummary
+        subscriptionSummaryConnector.getSubscriptionSummary(*)(*) returnsF Right(subscriptionSummary)
 
         val obligationDataOneDue = ObligationData(obligations =
           Seq(
@@ -699,7 +699,7 @@ class AlcoholDutyServiceSpec extends SpecBase {
             approvalStatus = hods.Approved,
             insolvencyFlag = false
           )
-          subscriptionSummaryConnector.getSubscriptionSummary(*)(*) returnsF subscriptionSummary
+          subscriptionSummaryConnector.getSubscriptionSummary(*)(*) returnsF Right(subscriptionSummary)
 
           when(obligationDataConnector.getObligationDetails(*, *)(*))
             .thenReturn(EitherT.fromEither(Left(ErrorResponse(BAD_REQUEST, ""))))
@@ -731,7 +731,7 @@ class AlcoholDutyServiceSpec extends SpecBase {
               approvalStatus = hodsApprovalStatus,
               insolvencyFlag = false
             )
-            subscriptionSummaryConnector.getSubscriptionSummary(*)(*) returnsF subscriptionSummary
+            subscriptionSummaryConnector.getSubscriptionSummary(*)(*) returnsF Right(subscriptionSummary)
 
             whenReady(service.getAlcoholDutyCardData(appaId).value) { result =>
               result mustBe Right(
@@ -748,7 +748,7 @@ class AlcoholDutyServiceSpec extends SpecBase {
           approvalStatus = hods.Approved,
           insolvencyFlag = false
         )
-        subscriptionSummaryConnector.getSubscriptionSummary(*)(*) returnsF subscriptionSummary
+        subscriptionSummaryConnector.getSubscriptionSummary(*)(*) returnsF Right(subscriptionSummary)
 
         whenReady(service.getAlcoholDutyCardData(appaId).value) { result =>
           result mustBe Right(

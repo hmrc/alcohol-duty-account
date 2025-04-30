@@ -20,6 +20,8 @@ import javax.inject.{Inject, Singleton}
 import play.api.Configuration
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 
+import scala.concurrent.duration.FiniteDuration
+
 @Singleton
 class AppConfig @Inject() (config: Configuration, servicesConfig: ServicesConfig) {
 
@@ -70,4 +72,16 @@ class AppConfig @Inject() (config: Configuration, servicesConfig: ServicesConfig
 
   private[config] def getConfStringAndThrowIfNotFound(key: String) =
     servicesConfig.getConfString(key, throw new RuntimeException(s"Could not find services config key '$key'"))
+
+  // API retry attempts
+  lazy val retryAttempts: Int                 = config.get[Int]("microservice.services.subscription.retry.retry-attempts")
+  lazy val retryAttemptsDelay: FiniteDuration =
+    config.get[FiniteDuration]("microservice.services.subscription.retry.retry-attempts-delay")
+
+  // Circuit breaker
+  lazy val maxFailures: Int             = config.get[Int]("microservice.services.subscription.circuit-breaker.max-failures")
+  lazy val callTimeout: FiniteDuration  =
+    config.get[FiniteDuration]("microservice.services.subscription.circuit-breaker.call-timeout")
+  lazy val resetTimeout: FiniteDuration =
+    config.get[FiniteDuration]("microservice.services.subscription.circuit-breaker.reset-timeout")
 }

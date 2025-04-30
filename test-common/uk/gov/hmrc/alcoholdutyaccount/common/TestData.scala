@@ -727,5 +727,6 @@ trait TestData extends ModelGenerators {
   }
 
   val badRequest          = DownstreamErrorDetails("400", "You messed up", "id")
+  val unprocessable       = DownstreamErrorDetails("422", "Unprocessable", "id")
   val internalServerError = DownstreamErrorDetails("500", "Computer says No!", "id")
 }
