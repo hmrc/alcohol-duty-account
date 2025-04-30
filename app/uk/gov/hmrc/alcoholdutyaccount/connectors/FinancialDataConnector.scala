@@ -20,7 +20,7 @@ import org.apache.pekko.actor.{ActorSystem, Scheduler}
 import org.apache.pekko.pattern.retry
 import play.api.http.Status.{BAD_REQUEST, NOT_FOUND, OK, UNPROCESSABLE_ENTITY}
 import play.api.{Logger, Logging}
-import uk.gov.hmrc.alcoholdutyaccount.config.{AppConfig, SubscriptionCircuitBreakerProvider}
+import uk.gov.hmrc.alcoholdutyaccount.config.{AppConfig, CircuitBreakerProvider}
 import uk.gov.hmrc.alcoholdutyaccount.models.hods.FinancialTransactionDocument
 import uk.gov.hmrc.alcoholdutyaccount.models.{ErrorCodes, HttpErrorResponse}
 import uk.gov.hmrc.http.client.HttpClientV2
@@ -36,7 +36,7 @@ class FinancialDataConnector @Inject() (
   implicit val system: ActorSystem,
   implicit val httpClient: HttpClientV2
 )(implicit
-  subscriptionCircuitBreakerProvider: SubscriptionCircuitBreakerProvider,
+  circuitBreakerProvider: CircuitBreakerProvider,
   ec: ExecutionContext
 ) extends HttpReadsInstances
     with Logging {
@@ -70,7 +70,7 @@ class FinancialDataConnector @Inject() (
     appaId: String,
     queryParams: Seq[(String, String)]
   )(implicit hc: HeaderCarrier): Future[Either[ErrorResponse, FinancialTransactionDocument]] =
-    subscriptionCircuitBreakerProvider.get().withCircuitBreaker {
+    circuitBreakerProvider.get().withCircuitBreaker {
       val headers: Seq[(String, String)] = Seq(
         HeaderNames.authorisation -> s"Bearer ${config.financialDataToken}",
         "Environment"             -> config.financialDataEnv

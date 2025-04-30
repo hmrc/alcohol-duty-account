@@ -21,6 +21,7 @@ import play.api.libs.json.Json
 import uk.gov.hmrc.alcoholdutyaccount.base.{ConnectorTestHelpers, SpecBase}
 import uk.gov.hmrc.alcoholdutyaccount.common.TestData
 import uk.gov.hmrc.alcoholdutyaccount.models.ErrorCodes
+import uk.gov.hmrc.play.bootstrap.backend.http.ErrorResponse
 
 class FinancialDataConnectorSpec extends SpecBase with ScalaFutures with ConnectorTestHelpers {
   protected val endpointName = "financial"
@@ -70,19 +71,32 @@ class FinancialDataConnectorSpec extends SpecBase with ScalaFutures with Connect
           }
         }
 
-        "if the api call returns BAD_REQUEST" in new SetUp {
+        "if the api call returns BAD_REQUEST with no retry" in new SetUp {
           stubGetWithParameters(url, expectedOpenQueryParams, BAD_REQUEST, "")
           whenReady(connector.getOnlyOpenFinancialData(appaId)) { result =>
             result mustBe Left(ErrorCodes.badRequest)
-            verifyGetWithParameters(url, expectedOpenQueryParams)
+            verifyGetWithParametersWithoutRetry(url, expectedOpenQueryParams)
           }
         }
 
-        "if the api call returns UNPROCESSABLE_ENTITY" in new SetUp {
+        "if the api call returns UNPROCESSABLE_ENTITY with no retry" in new SetUp {
           stubGetWithParameters(url, expectedOpenQueryParams, UNPROCESSABLE_ENTITY, "")
           whenReady(connector.getOnlyOpenFinancialData(appaId)) { result =>
             result mustBe Left(ErrorCodes.unprocessableEntity)
-            verifyGetWithParameters(url, expectedOpenQueryParams)
+            verifyGetWithParametersWithoutRetry(url, expectedOpenQueryParams)
+          }
+        }
+
+        "if an error other than BAD_REQUEST or NOT_FOUND is returned the connector will invoke a retry" in new SetUp {
+          stubGetWithParameters(
+            url,
+            expectedOpenQueryParams,
+            INTERNAL_SERVER_ERROR,
+            Json.toJson(internalServerError).toString
+          )
+          whenReady(connectorWithRetry.getOnlyOpenFinancialData(appaId)) { result =>
+            result mustBe Left(ErrorResponse(INTERNAL_SERVER_ERROR, "Unexpected Response"))
+            verifyGetWithParametersWithRetry(url, expectedOpenQueryParams)
           }
         }
 
@@ -111,9 +125,12 @@ class FinancialDataConnectorSpec extends SpecBase with ScalaFutures with Connect
   }
 
   class SetUp extends ConnectorFixture with TestData {
-    val connector: FinancialDataConnector = appWithHttpClientV2.injector.instanceOf[FinancialDataConnector]
-    val url: String                       = appConfig.financialDataUrl(appaId)
-    val year: Int                         = 2024
+    val connector: FinancialDataConnector          = appWithHttpClientV2.injector.instanceOf[FinancialDataConnector]
+    val connectorWithRetry: FinancialDataConnector =
+      appWithHttpClientV2WithRetry.injector.instanceOf[FinancialDataConnector]
+
+    val url: String = appConfig.financialDataUrl(appaId)
+    val year: Int   = 2024
 
     val expectedOpenQueryParams: Seq[(String, String)] = Seq(
       "onlyOpenItems"              -> "true",
