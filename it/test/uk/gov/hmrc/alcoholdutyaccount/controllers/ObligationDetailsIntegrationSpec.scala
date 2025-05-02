@@ -108,7 +108,7 @@ class ObligationDetailsIntegrationSpec extends ISpecBase {
       verifyGetWithParametersAndHeaders(url, expectedQueryParamsOpen, expectedHeaders)
     }
 
-    "respond with INTERNAL_SERVER_ERROR if error(s) returned from the obligation api call" in new SetUp {
+    "respond with BAD_REQUEST if error(s) returned from the obligation api call" in new SetUp {
       stubAuthorised(appaId)
       stubGetWithParameters(url, expectedQueryParamsOpen, BAD_REQUEST, otherErrorMessage)
 
@@ -117,8 +117,8 @@ class ObligationDetailsIntegrationSpec extends ISpecBase {
           .withHeaders("Authorization" -> "Bearer 12345")
       )
 
-      status(response)        mustBe INTERNAL_SERVER_ERROR
-      contentAsJson(response) mustBe Json.toJson(ErrorResponse(INTERNAL_SERVER_ERROR, "An error occurred"))
+      status(response)        mustBe BAD_REQUEST
+      contentAsJson(response) mustBe Json.toJson(ErrorResponse(BAD_REQUEST, "Bad request"))
 
       verifyGetWithParametersAndHeaders(url, expectedQueryParamsOpen, expectedHeaders)
     }
@@ -195,7 +195,7 @@ class ObligationDetailsIntegrationSpec extends ISpecBase {
 
     "respond with INTERNAL_SERVER_ERROR if error(s) returned from the obligation api call" in new SetUp {
       stubAuthorised(appaId)
-      stubGetWithParameters(url, expectedQueryParamsNoStatus, BAD_REQUEST, otherErrorMessage)
+      stubGetWithParameters(url, expectedQueryParamsNoStatus, BAD_GATEWAY, otherErrorMessage)
 
       val response = callRoute(
         FakeRequest("GET", routes.AlcoholDutyController.obligationDetails(appaId).url)

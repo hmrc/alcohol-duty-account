@@ -20,7 +20,7 @@ import org.apache.pekko.actor.{ActorSystem, Scheduler}
 import org.apache.pekko.pattern.retry
 import play.api.Logging
 import play.api.http.Status._
-import uk.gov.hmrc.alcoholdutyaccount.config.{AppConfig, SubscriptionCircuitBreakerProvider}
+import uk.gov.hmrc.alcoholdutyaccount.config.{AppConfig, CircuitBreakerProvider}
 import uk.gov.hmrc.alcoholdutyaccount.connectors.helpers.HIPHeaders
 import uk.gov.hmrc.alcoholdutyaccount.models.HttpErrorResponse
 import uk.gov.hmrc.alcoholdutyaccount.models.hods.{SubscriptionSummary, SubscriptionSummarySuccess}
@@ -35,7 +35,7 @@ import scala.util.{Failure, Success, Try}
 class SubscriptionSummaryConnector @Inject() (
   config: AppConfig,
   headers: HIPHeaders,
-  subscriptionCircuitBreakerProvider: SubscriptionCircuitBreakerProvider,
+  circuitBreakerProvider: CircuitBreakerProvider,
   implicit val system: ActorSystem,
   implicit val httpClient: HttpClientV2
 )(implicit ec: ExecutionContext)
@@ -58,7 +58,7 @@ class SubscriptionSummaryConnector @Inject() (
   def call(
     appaId: String
   )(implicit hc: HeaderCarrier): Future[Either[ErrorResponse, SubscriptionSummary]] =
-    subscriptionCircuitBreakerProvider.get().withCircuitBreaker {
+    circuitBreakerProvider.get().withCircuitBreaker {
       httpClient
         .get(url"${config.getSubscriptionUrl(appaId)}")
         .setHeader(headers.subscriptionHeaders(): _*)

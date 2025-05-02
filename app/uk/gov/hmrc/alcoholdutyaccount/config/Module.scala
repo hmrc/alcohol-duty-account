@@ -28,6 +28,6 @@ class Module extends AbstractModule {
     bind(classOf[AppConfig]).asEagerSingleton()
     bind(classOf[AuthorisedAction]).to(classOf[BaseAuthorisedAction]).asEagerSingleton()
     bind(classOf[Clock]).toInstance(Clock.systemDefaultZone.withZone(ZoneOffset.UTC))
-    bind(classOf[CircuitBreaker]).toProvider(classOf[SubscriptionCircuitBreakerProvider])
+    bind(classOf[CircuitBreaker]).toProvider(classOf[CircuitBreakerProvider])
   }
 }

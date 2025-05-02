@@ -29,7 +29,7 @@ class ObligationDataConnectorSpec extends SpecBase with ConnectorTestHelpers {
   "ObligationDataConnector" - {
     "successfully get open obligation data" in new SetUp {
       stubGetWithParameters(url, expectedQueryParamsOpen, OK, Json.toJson(obligationDataSingleOpen).toString)
-      whenReady(connector.getObligationDetails(appaId, Some(obligationFilterOpen)).value) { result =>
+      whenReady(connector.getObligationDetails(appaId, Some(obligationFilterOpen))) { result =>
         result mustBe Right(obligationDataSingleOpen)
         verifyGetWithParameters(url, expectedQueryParamsOpen)
       }
@@ -37,7 +37,7 @@ class ObligationDataConnectorSpec extends SpecBase with ConnectorTestHelpers {
 
     "successfully get fulfilled obligation data" in new SetUp {
       stubGetWithParameters(url, expectedQueryParamsFulfilled, OK, Json.toJson(obligationDataSingleFulfilled).toString)
-      whenReady(connector.getObligationDetails(appaId, Some(obligationFilterFulfilled)).value) { result =>
+      whenReady(connector.getObligationDetails(appaId, Some(obligationFilterFulfilled))) { result =>
         result mustBe Right(obligationDataSingleFulfilled)
         verifyGetWithParameters(url, expectedQueryParamsFulfilled)
       }
@@ -45,7 +45,7 @@ class ObligationDataConnectorSpec extends SpecBase with ConnectorTestHelpers {
 
     "successfully filter out future open obligation data" in new SetUp {
       stubGetWithParameters(url, expectedQueryParamsOpen, OK, Json.toJson(openObligationDataFromFuture).toString)
-      whenReady(connector.getObligationDetails(appaId, Some(obligationFilterOpen)).value) { result =>
+      whenReady(connector.getObligationDetails(appaId, Some(obligationFilterOpen))) { result =>
         result mustBe Right(noObligations)
         verifyGetWithParameters(url, expectedQueryParamsOpen)
       }
@@ -58,7 +58,7 @@ class ObligationDataConnectorSpec extends SpecBase with ConnectorTestHelpers {
         OK,
         Json.toJson(fulfilledObligationDataFromFuture).toString
       )
-      whenReady(connector.getObligationDetails(appaId, Some(obligationFilterFulfilled)).value) { result =>
+      whenReady(connector.getObligationDetails(appaId, Some(obligationFilterFulfilled))) { result =>
         result mustBe Right(noObligations)
         verifyGetWithParameters(url, expectedQueryParamsFulfilled)
       }
@@ -66,7 +66,7 @@ class ObligationDataConnectorSpec extends SpecBase with ConnectorTestHelpers {
 
     "successfully filter out open obligation which are not due yet (because the correspondence to date is today)" in new SetUp {
       stubGetWithParameters(url, expectedQueryParamsOpen, OK, Json.toJson(openObligationDataFromTomorrow).toString)
-      whenReady(connector.getObligationDetails(appaId, Some(obligationFilterOpen)).value) { result =>
+      whenReady(connector.getObligationDetails(appaId, Some(obligationFilterOpen))) { result =>
         result mustBe Right(noObligations)
         verifyGetWithParameters(url, expectedQueryParamsOpen)
       }
@@ -79,7 +79,7 @@ class ObligationDataConnectorSpec extends SpecBase with ConnectorTestHelpers {
         OK,
         Json.toJson(fulfilledObligationDataFromTomorrow).toString
       )
-      whenReady(connector.getObligationDetails(appaId, Some(obligationFilterFulfilled)).value) { result =>
+      whenReady(connector.getObligationDetails(appaId, Some(obligationFilterFulfilled))) { result =>
         result mustBe Right(noObligations)
         verifyGetWithParameters(url, expectedQueryParamsFulfilled)
       }
@@ -87,7 +87,7 @@ class ObligationDataConnectorSpec extends SpecBase with ConnectorTestHelpers {
 
     "NOT filter out open obligation due from today (because the correspondence to date was yesterday)" in new SetUp {
       stubGetWithParameters(url, expectedQueryParamsOpen, OK, Json.toJson(openObligationDataFromToday).toString)
-      whenReady(connector.getObligationDetails(appaId, Some(obligationFilterOpen)).value) { result =>
+      whenReady(connector.getObligationDetails(appaId, Some(obligationFilterOpen))) { result =>
         result mustBe Right(openObligationDataFromToday)
         verifyGetWithParameters(url, expectedQueryParamsOpen)
       }
@@ -100,7 +100,7 @@ class ObligationDataConnectorSpec extends SpecBase with ConnectorTestHelpers {
         OK,
         Json.toJson(fulfilledObligationDataFromToday).toString
       )
-      whenReady(connector.getObligationDetails(appaId, Some(obligationFilterFulfilled)).value) { result =>
+      whenReady(connector.getObligationDetails(appaId, Some(obligationFilterFulfilled))) { result =>
         result mustBe Right(fulfilledObligationDataFromToday)
         verifyGetWithParameters(url, expectedQueryParamsFulfilled)
       }
@@ -113,7 +113,7 @@ class ObligationDataConnectorSpec extends SpecBase with ConnectorTestHelpers {
         OK,
         Json.toJson(obligationDataMultipleOpenAndFulfilled).toString
       )
-      whenReady(connector.getObligationDetails(appaId, None).value) { result =>
+      whenReady(connector.getObligationDetails(appaId, None)) { result =>
         result mustBe Right(obligationDataMultipleOpenAndFulfilled)
         verifyGetWithParameters(url, expectedQueryParamsNoStatus)
       }
@@ -121,7 +121,7 @@ class ObligationDataConnectorSpec extends SpecBase with ConnectorTestHelpers {
 
     "return an INTERNAL_SERVER_ERROR if the data retrieved cannot be parsed" in new SetUp {
       stubGetWithParameters(url, expectedQueryParamsOpen, OK, "blah")
-      whenReady(connector.getObligationDetails(appaId, Some(obligationFilterOpen)).value) { result =>
+      whenReady(connector.getObligationDetails(appaId, Some(obligationFilterOpen))) { result =>
         result mustBe Left(ErrorResponse(INTERNAL_SERVER_ERROR, "Unable to parse obligation data"))
         verifyGetWithParameters(url, expectedQueryParamsOpen)
       }
@@ -129,24 +129,59 @@ class ObligationDataConnectorSpec extends SpecBase with ConnectorTestHelpers {
 
     "return no obligations if obligation data object cannot be found" in new SetUp {
       stubGetWithParameters(url, expectedQueryParamsOpen, NOT_FOUND, notFoundErrorMessage)
-      whenReady(connector.getObligationDetails(appaId, Some(obligationFilterOpen)).value) { result =>
+      whenReady(connector.getObligationDetails(appaId, Some(obligationFilterOpen))) { result =>
         result mustBe Right(noObligations)
         verifyGetWithParameters(url, expectedQueryParamsOpen)
       }
     }
 
+    "return BAD_REQUEST if a bad request received with no retry" in new SetUp {
+      stubGetWithParameters(url, expectedQueryParamsOpen, BAD_REQUEST, otherErrorMessage)
+      whenReady(connector.getObligationDetails(appaId, Some(obligationFilterOpen))) { result =>
+        result mustBe Left(ErrorResponse(BAD_REQUEST, "Bad request"))
+        verifyGetWithParametersWithoutRetry(url, expectedQueryParamsOpen)
+      }
+    }
+
+    "return UNPROCESSABLE_ENTITY if a bad request received with no retry" in new SetUp {
+      stubGetWithParameters(url, expectedQueryParamsOpen, UNPROCESSABLE_ENTITY, otherErrorMessage)
+      whenReady(connector.getObligationDetails(appaId, Some(obligationFilterOpen))) { result =>
+        result mustBe Left(ErrorResponse(UNPROCESSABLE_ENTITY, "Unprocessable entity"))
+        verifyGetWithParametersWithoutRetry(url, expectedQueryParamsOpen)
+      }
+    }
+
     "return an INTERNAL_SERVER_ERROR error" - {
-      "if an http error other than NOT_FOUND when fetching obligation data" in new SetUp {
-        stubGetWithParameters(url, expectedQueryParamsOpen, BAD_REQUEST, otherErrorMessage)
-        whenReady(connector.getObligationDetails(appaId, Some(obligationFilterOpen)).value) { result =>
+      "if INTERNAL_SERVER_ERROR is returned when fetching obligation data" in new SetUp {
+        stubGetWithParameters(
+          url,
+          expectedQueryParamsOpen,
+          INTERNAL_SERVER_ERROR,
+          Json.toJson(internalServerError).toString
+        )
+        whenReady(connector.getObligationDetails(appaId, Some(obligationFilterOpen))) { result =>
           result mustBe Left(ErrorResponse(INTERNAL_SERVER_ERROR, "An error occurred"))
           verifyGetWithParameters(url, expectedQueryParamsOpen)
         }
       }
+
+      "if an error other than BAD_REQUEST or NOT_FOUND is returned the connector will invoke a retry" in new SetUp {
+        stubGetWithParameters(
+          url,
+          expectedQueryParamsOpen,
+          INTERNAL_SERVER_ERROR,
+          Json.toJson(internalServerError).toString
+        )
+        whenReady(connectorWithRetry.getObligationDetails(appaId, Some(obligationFilterOpen))) { result =>
+          result mustBe Left(ErrorResponse(INTERNAL_SERVER_ERROR, "An error occurred"))
+          verifyGetWithParametersWithRetry(url, expectedQueryParamsOpen)
+        }
+      }
+
       "if an exception thrown when fetching obligation data" in new SetUp {
         stubGetFaultWithParameters(url, expectedQueryParamsOpen)
-        whenReady(connector.getObligationDetails(appaId, Some(obligationFilterOpen)).value) { result =>
-          result mustBe Left(ErrorResponse(INTERNAL_SERVER_ERROR, "Remotely closed"))
+        whenReady(connector.getObligationDetails(appaId, Some(obligationFilterOpen))) { result =>
+          result mustBe Left(ErrorResponse(INTERNAL_SERVER_ERROR, "An error occurred"))
           verifyGetWithParameters(url, expectedQueryParamsOpen)
         }
       }
@@ -154,7 +189,9 @@ class ObligationDataConnectorSpec extends SpecBase with ConnectorTestHelpers {
   }
 
   class SetUp extends ConnectorFixture {
-    val connector = new ObligationDataConnector(config = config, clock = clock, httpClient = httpClientV2)
+    val connector: ObligationDataConnector          = appWithHttpClientV2.injector.instanceOf[ObligationDataConnector]
+    val connectorWithRetry: ObligationDataConnector =
+      appWithHttpClientV2WithRetry.injector.instanceOf[ObligationDataConnector]
 
     private val dateFilterHeadersHeaders = Seq("from" -> "2023-09-01", "to" -> LocalDate.now(clock).toString)
     val expectedQueryParamsOpen          = Seq("status" -> Open.value)

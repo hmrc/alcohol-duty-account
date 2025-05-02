@@ -18,16 +18,18 @@ package uk.gov.hmrc.alcoholdutyaccount.base
 
 import org.scalatest.Suite
 import play.api.Application
+import play.api.inject.bind
 import play.api.inject.guice.GuiceApplicationBuilder
-import uk.gov.hmrc.alcoholdutyaccount.common.WireMockHelper
+import uk.gov.hmrc.alcoholdutyaccount.common.{TestData, WireMockHelper}
 import uk.gov.hmrc.alcoholdutyaccount.config.AppConfig
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.http.client.HttpClientV2
 import uk.gov.hmrc.http.test.{HttpClientV2Support, WireMockSupport}
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
-import play.api.inject.bind
 
-trait ConnectorTestHelpers extends WireMockSupport with HttpClientV2Support with WireMockHelper {
+import java.time.Clock
+
+trait ConnectorTestHelpers extends WireMockSupport with HttpClientV2Support with WireMockHelper with TestData {
   this: Suite =>
 
   protected val endpointName: String
@@ -43,14 +45,16 @@ trait ConnectorTestHelpers extends WireMockSupport with HttpClientV2Support with
     val appWithHttpClientV2: Application = new GuiceApplicationBuilder()
       .configure(getWireMockAppConfig(Seq(endpointName)))
       .overrides(
-        bind[HttpClientV2].toInstance(httpClientV2)
+        bind[HttpClientV2].toInstance(httpClientV2),
+        bind[Clock].toInstance(clock)
       )
       .build()
 
     val appWithHttpClientV2WithRetry: Application = new GuiceApplicationBuilder()
       .configure(getWireMockAppConfigWithRetry(Seq(endpointName)))
       .overrides(
-        bind[HttpClientV2].toInstance(httpClientV2)
+        bind[HttpClientV2].toInstance(httpClientV2),
+        bind[Clock].toInstance(clock)
       )
       .build()
 
