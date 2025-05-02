@@ -73,7 +73,7 @@ class FinancialDataConnectorSpec extends SpecBase with ScalaFutures with Connect
 
         "if the api call returns BAD_REQUEST with no retry" in new SetUp {
           stubGetWithParameters(url, expectedOpenQueryParams, BAD_REQUEST, "")
-          whenReady(connector.getOnlyOpenFinancialData(appaId)) { result =>
+          whenReady(connectorWithRetry.getOnlyOpenFinancialData(appaId)) { result =>
             result mustBe Left(ErrorCodes.badRequest)
             verifyGetWithParametersWithoutRetry(url, expectedOpenQueryParams)
           }
@@ -81,7 +81,7 @@ class FinancialDataConnectorSpec extends SpecBase with ScalaFutures with Connect
 
         "if the api call returns UNPROCESSABLE_ENTITY with no retry" in new SetUp {
           stubGetWithParameters(url, expectedOpenQueryParams, UNPROCESSABLE_ENTITY, "")
-          whenReady(connector.getOnlyOpenFinancialData(appaId)) { result =>
+          whenReady(connectorWithRetry.getOnlyOpenFinancialData(appaId)) { result =>
             result mustBe Left(ErrorCodes.unprocessableEntity)
             verifyGetWithParametersWithoutRetry(url, expectedOpenQueryParams)
           }

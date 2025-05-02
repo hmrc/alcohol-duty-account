@@ -108,7 +108,7 @@ class FinancialDataConnector @Inject() (
             case _                    =>
               val error: String = response.json.as[HttpErrorResponse].message
               logger.warn(
-                s"An exception was returned while trying to fetch subscription summary appaId $appaId: $error"
+                s"An exception was returned while trying to fetch financial data for appaId $appaId: $error"
               )
               Future.failed(new InternalServerException(response.body))
           }
