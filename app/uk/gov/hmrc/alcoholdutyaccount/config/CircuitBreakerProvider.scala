@@ -19,7 +19,6 @@ package uk.gov.hmrc.alcoholdutyaccount.config
 import com.google.inject.{Inject, Provider, Singleton}
 import org.apache.pekko.actor.ActorSystem
 import org.apache.pekko.pattern.CircuitBreaker
-import play.api.Configuration
 
 import scala.concurrent.ExecutionContext
 
