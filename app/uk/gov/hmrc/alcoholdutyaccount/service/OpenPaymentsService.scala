@@ -42,7 +42,7 @@ class OpenPaymentsService @Inject() (
     appaId: String
   )(implicit hc: HeaderCarrier): EitherT[Future, ErrorResponse, OpenPayments] =
     for {
-      financialTransactionDocument <- financialDataConnector.getOnlyOpenFinancialData(appaId)
+      financialTransactionDocument <- EitherT(financialDataConnector.getOnlyOpenFinancialData(appaId))
       openPayments                 <- extractOpenPayments(financialTransactionDocument)
     } yield buildOpenPaymentsPayload(openPayments)
 

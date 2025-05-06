@@ -21,6 +21,7 @@ import play.api.libs.json.Json
 import uk.gov.hmrc.alcoholdutyaccount.base.{ConnectorTestHelpers, SpecBase}
 import uk.gov.hmrc.alcoholdutyaccount.common.TestData
 import uk.gov.hmrc.alcoholdutyaccount.models.ErrorCodes
+import uk.gov.hmrc.play.bootstrap.backend.http.ErrorResponse
 
 class FinancialDataConnectorSpec extends SpecBase with ScalaFutures with ConnectorTestHelpers {
   protected val endpointName = "financial"
@@ -34,7 +35,7 @@ class FinancialDataConnectorSpec extends SpecBase with ScalaFutures with Connect
           OK,
           Json.toJson(financialDocumentWithSingleSapDocumentNo).toString
         )
-        whenReady(connector.getOnlyOpenFinancialData(appaId).value) { result =>
+        whenReady(connector.getOnlyOpenFinancialData(appaId)) { result =>
           result mustBe Right(financialDocumentWithSingleSapDocumentNo)
           verifyGetWithParameters(url, expectedOpenQueryParams)
         }
@@ -47,7 +48,7 @@ class FinancialDataConnectorSpec extends SpecBase with ScalaFutures with Connect
           OK,
           Json.toJson(financialDocumentWithSingleSapDocumentNo).toString
         )
-        whenReady(connector.getNotOnlyOpenFinancialData(appaId, year).value) { result =>
+        whenReady(connector.getNotOnlyOpenFinancialData(appaId)) { result =>
           result mustBe Right(financialDocumentWithSingleSapDocumentNo)
           verifyGetWithParameters(url, expectedAllQueryParams)
         }
@@ -55,7 +56,7 @@ class FinancialDataConnectorSpec extends SpecBase with ScalaFutures with Connect
 
       "returns an empty document if the financial transaction document cannot be found" in new SetUp {
         stubGetWithParameters(url, expectedOpenQueryParams, NOT_FOUND, "")
-        whenReady(connector.getOnlyOpenFinancialData(appaId).value) { result =>
+        whenReady(connector.getOnlyOpenFinancialData(appaId)) { result =>
           result mustBe Right(emptyFinancialDocument)
           verifyGetWithParameters(url, expectedOpenQueryParams)
         }
@@ -64,23 +65,49 @@ class FinancialDataConnectorSpec extends SpecBase with ScalaFutures with Connect
       "return an error" - {
         "if the data retrieved cannot be parsed" in new SetUp {
           stubGetWithParameters(url, expectedOpenQueryParams, OK, "blah")
-          whenReady(connector.getOnlyOpenFinancialData(appaId).value) { result =>
+          whenReady(connector.getOnlyOpenFinancialData(appaId)) { result =>
             result mustBe Left(ErrorCodes.unexpectedResponse)
             verifyGetWithParameters(url, expectedOpenQueryParams)
           }
         }
 
-        "if the api call returns BAD_REQUEST" in new SetUp {
+        "if the api call returns BAD_REQUEST with no retry" in new SetUp {
           stubGetWithParameters(url, expectedOpenQueryParams, BAD_REQUEST, "")
-          whenReady(connector.getOnlyOpenFinancialData(appaId).value) { result =>
-            result mustBe Left(ErrorCodes.unexpectedResponse)
-            verifyGetWithParameters(url, expectedOpenQueryParams)
+          whenReady(connectorWithRetry.getOnlyOpenFinancialData(appaId)) { result =>
+            result mustBe Left(ErrorCodes.badRequest)
+            verifyGetWithParametersWithoutRetry(url, expectedOpenQueryParams)
+          }
+        }
+
+        "if the api call returns UNPROCESSABLE_ENTITY with no retry" in new SetUp {
+          stubGetWithParameters(url, expectedOpenQueryParams, UNPROCESSABLE_ENTITY, "")
+          whenReady(connectorWithRetry.getOnlyOpenFinancialData(appaId)) { result =>
+            result mustBe Left(ErrorCodes.unprocessableEntity)
+            verifyGetWithParametersWithoutRetry(url, expectedOpenQueryParams)
+          }
+        }
+
+        "if an error other than BAD_REQUEST or NOT_FOUND is returned the connector will invoke a retry" in new SetUp {
+          stubGetWithParameters(
+            url,
+            expectedOpenQueryParams,
+            INTERNAL_SERVER_ERROR,
+            Json.toJson(internalServerError).toString
+          )
+          whenReady(connectorWithRetry.getOnlyOpenFinancialData(appaId)) { result =>
+            result mustBe Left(ErrorResponse(INTERNAL_SERVER_ERROR, "Unexpected Response"))
+            verifyGetWithParametersWithRetry(url, expectedOpenQueryParams)
           }
         }
 
         "if the api call returns INTERNAL_SERVER_ERROR" in new SetUp {
-          stubGetWithParameters(url, expectedOpenQueryParams, INTERNAL_SERVER_ERROR, "")
-          whenReady(connector.getOnlyOpenFinancialData(appaId).value) { result =>
+          stubGetWithParameters(
+            url,
+            expectedOpenQueryParams,
+            INTERNAL_SERVER_ERROR,
+            Json.toJson(internalServerError).toString
+          )
+          whenReady(connector.getOnlyOpenFinancialData(appaId)) { result =>
             result mustBe Left(ErrorCodes.unexpectedResponse)
             verifyGetWithParameters(url, expectedOpenQueryParams)
           }
@@ -88,7 +115,7 @@ class FinancialDataConnectorSpec extends SpecBase with ScalaFutures with Connect
 
         "if an exception is thrown when fetching financial data" in new SetUp {
           stubGetFaultWithParameters(url, expectedOpenQueryParams)
-          whenReady(connector.getOnlyOpenFinancialData(appaId).value) { result =>
+          whenReady(connector.getOnlyOpenFinancialData(appaId)) { result =>
             result mustBe Left(ErrorCodes.unexpectedResponse)
             verifyGetWithParameters(url, expectedOpenQueryParams)
           }
@@ -98,10 +125,12 @@ class FinancialDataConnectorSpec extends SpecBase with ScalaFutures with Connect
   }
 
   class SetUp extends ConnectorFixture with TestData {
-    val connector = new FinancialDataConnector(config = config, httpClient = httpClientV2)
-    val url       = appConfig.financialDataUrl(appaId)
+    val connector: FinancialDataConnector          = appWithHttpClientV2.injector.instanceOf[FinancialDataConnector]
+    val connectorWithRetry: FinancialDataConnector =
+      appWithHttpClientV2WithRetry.injector.instanceOf[FinancialDataConnector]
 
-    val year: Int = 2024
+    val url: String = appConfig.financialDataUrl(appaId)
+    val year: Int   = 2024
 
     val expectedOpenQueryParams: Seq[(String, String)] = Seq(
       "onlyOpenItems"              -> "true",

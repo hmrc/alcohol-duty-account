@@ -16,7 +16,6 @@
 
 package uk.gov.hmrc.alcoholdutyaccount.service
 
-import cats.data.EitherT
 import org.mockito.ArgumentMatchersSugar.*
 import org.mockito.cats.IdiomaticMockitoCats.StubbingOpsCats
 import uk.gov.hmrc.alcoholdutyaccount.base.SpecBase
@@ -462,7 +461,7 @@ class AlcoholDutyServiceSpec extends SpecBase {
     "getPaymentInformation must" - {
       "return None if the financialDataConnector returns an error" in new SetUp {
         when(financialDataConnector.getOnlyOpenFinancialData(*)(*))
-          .thenReturn(EitherT.leftT(ErrorCodes.unexpectedResponse))
+          .thenReturn(Future.successful(Left(ErrorCodes.unexpectedResponse)))
 
         val result = service.getPaymentInformation(appaId)
         result onComplete {
@@ -473,7 +472,7 @@ class AlcoholDutyServiceSpec extends SpecBase {
 
       "return a empty Payments object if the financialDataConnector returns NOT_FOUND" in new SetUp {
         when(financialDataConnector.getOnlyOpenFinancialData(*)(*))
-          .thenReturn(EitherT.leftT(ErrorCodes.entityNotFound))
+          .thenReturn(Future.successful(Left(ErrorCodes.entityNotFound)))
 
         service.getPaymentInformation(appaId).onComplete { result =>
           result mustBe Success(Some(Payments()))
@@ -482,7 +481,7 @@ class AlcoholDutyServiceSpec extends SpecBase {
 
       "return a Payments object if the financialDataConnector returns a Document" in new SetUp {
         when(financialDataConnector.getOnlyOpenFinancialData(*)(*))
-          .thenReturn(EitherT.pure(financialDocumentWithSingleSapDocumentNo))
+          .thenReturn(Future.successful(Right(financialDocumentWithSingleSapDocumentNo)))
 
         service.getPaymentInformation(appaId).onComplete { result =>
           result mustBe Success(Some(Payments(Some(Balance(BigDecimal(100), false, Some("X1234567890"))))))
@@ -491,7 +490,7 @@ class AlcoholDutyServiceSpec extends SpecBase {
 
       "filter any overpayments that are missing contractObjectType" in new SetUp {
         when(financialDataConnector.getOnlyOpenFinancialData(*)(*))
-          .thenReturn(EitherT.pure(singleOverpaymentNoContractObjectType))
+          .thenReturn(Future.successful(Right(singleOverpaymentNoContractObjectType)))
 
         service.getPaymentInformation(appaId).onComplete { result =>
           result mustBe Success(Some(Payments()))
@@ -500,7 +499,7 @@ class AlcoholDutyServiceSpec extends SpecBase {
 
       "filter any overpayments that are not of contractObjectType ZADP" in new SetUp {
         when(financialDataConnector.getOnlyOpenFinancialData(*)(*))
-          .thenReturn(EitherT.pure(singleOverpaymentNotZADP))
+          .thenReturn(Future.successful(Right(singleOverpaymentNotZADP)))
 
         service.getPaymentInformation(appaId).onComplete { result =>
           result mustBe Success(Some(Payments()))
@@ -539,7 +538,7 @@ class AlcoholDutyServiceSpec extends SpecBase {
             .thenReturn(Future.successful(Right(obligationDataOneDue)))
 
           when(financialDataConnector.getOnlyOpenFinancialData(*)(*))
-            .thenReturn(EitherT.pure(financialDocumentWithSingleSapDocumentNo))
+            .thenReturn(Future.successful(Right(financialDocumentWithSingleSapDocumentNo)))
 
           whenReady(service.getAlcoholDutyCardData(appaId).value) { result =>
             result mustBe Right(
@@ -584,7 +583,7 @@ class AlcoholDutyServiceSpec extends SpecBase {
             .thenReturn(Future.successful(Right(obligationDataOneDue)))
 
           when(financialDataConnector.getOnlyOpenFinancialData(*)(*))
-            .thenReturn(EitherT.pure(financialDocumentWithSingleSapDocumentNo))
+            .thenReturn(Future.successful(Right(financialDocumentWithSingleSapDocumentNo)))
 
           whenReady(service.getAlcoholDutyCardData(appaId).value) { result =>
             result mustBe Right(
@@ -628,7 +627,7 @@ class AlcoholDutyServiceSpec extends SpecBase {
           .thenReturn(Future.successful(Left(ErrorResponse(BAD_REQUEST, ""))))
 
         when(financialDataConnector.getOnlyOpenFinancialData(*)(*))
-          .thenReturn(EitherT.pure(financialDocumentWithSingleSapDocumentNo))
+          .thenReturn(Future.successful(Right(financialDocumentWithSingleSapDocumentNo)))
 
         whenReady(service.getAlcoholDutyCardData(appaId).value) { result =>
           result mustBe Right(
@@ -674,7 +673,7 @@ class AlcoholDutyServiceSpec extends SpecBase {
           .thenReturn(Future.successful(Right(obligationDataOneDue)))
 
         when(financialDataConnector.getOnlyOpenFinancialData(*)(*))
-          .thenReturn(EitherT.leftT(ErrorCodes.unexpectedResponse))
+          .thenReturn(Future.successful(Left(ErrorCodes.unexpectedResponse)))
 
         whenReady(service.getAlcoholDutyCardData(appaId).value) { result =>
           result mustBe Right(
@@ -705,7 +704,7 @@ class AlcoholDutyServiceSpec extends SpecBase {
             .thenReturn(Future.successful(Left(ErrorResponse(BAD_REQUEST, ""))))
 
           when(financialDataConnector.getOnlyOpenFinancialData(*)(*))
-            .thenReturn(EitherT.leftT(ErrorCodes.unexpectedResponse))
+            .thenReturn(Future.successful(Left(ErrorCodes.unexpectedResponse)))
 
           whenReady(service.getAlcoholDutyCardData(appaId).value) { result =>
             result mustBe Right(

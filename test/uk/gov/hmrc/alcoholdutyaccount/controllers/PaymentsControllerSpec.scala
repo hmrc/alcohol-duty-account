@@ -76,13 +76,13 @@ class PaymentsControllerSpec extends SpecBase {
 
         val result: Future[Result] = controller.historicPayments(appaId, minimumYear - 1)(fakeRequest)
         status(result)                                  mustBe BAD_REQUEST
-        contentAsJson(result).as[ErrorResponse].message mustBe "Bad request made"
+        contentAsJson(result).as[ErrorResponse].message mustBe "Bad request"
       }
 
       "return an error if the year is after the current" in new SetUp {
         val result: Future[Result] = controller.historicPayments(appaId, LocalDate.now(clock).getYear + 1)(fakeRequest)
         status(result)                                  mustBe BAD_REQUEST
-        contentAsJson(result).as[ErrorResponse].message mustBe "Bad request made"
+        contentAsJson(result).as[ErrorResponse].message mustBe "Bad request"
       }
     }
   }

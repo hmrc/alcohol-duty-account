@@ -16,14 +16,12 @@
 
 package uk.gov.hmrc.alcoholdutyaccount.service
 
-import cats.data.EitherT
 import uk.gov.hmrc.alcoholdutyaccount.base.SpecBase
 import uk.gov.hmrc.alcoholdutyaccount.connectors.FinancialDataConnector
 import uk.gov.hmrc.alcoholdutyaccount.models.ReturnPeriod
 import uk.gov.hmrc.alcoholdutyaccount.models.hods.FinancialTransactionDocument
 import uk.gov.hmrc.alcoholdutyaccount.models.payments._
 import uk.gov.hmrc.alcoholdutyaccount.utils.payments.PaymentsValidator
-import uk.gov.hmrc.play.bootstrap.backend.http.ErrorResponse
 
 import scala.concurrent.Future
 
@@ -32,8 +30,8 @@ class HistoricPaymentsServiceSpec extends SpecBase {
     "when calling getHistoricPayments" - {
       "a successful and correct response must be returned" - {
         "handle no financial data (nil return or no data for the period)" in new SetUp {
-          when(mockFinancialDataConnector.getNotOnlyOpenFinancialData(appaId = appaId, year = year))
-            .thenReturn(EitherT.pure[Future, ErrorResponse](emptyFinancialDocument))
+          when(mockFinancialDataConnector.getNotOnlyOpenFinancialData(appaId = appaId))
+            .thenReturn(Future.successful(Right(emptyFinancialDocument)))
 
           whenReady(paymentsService.getHistoricPayments(appaId, year).value) { historicPayments =>
             historicPayments mustBe Right(
@@ -46,8 +44,8 @@ class HistoricPaymentsServiceSpec extends SpecBase {
         }
 
         "when just overpayment (no historic payments returned)" in new SetUp {
-          when(mockFinancialDataConnector.getNotOnlyOpenFinancialData(appaId = appaId, year = year))
-            .thenReturn(EitherT.pure[Future, ErrorResponse](twoSeparateOverpayments(false)))
+          when(mockFinancialDataConnector.getNotOnlyOpenFinancialData(appaId = appaId))
+            .thenReturn(Future.successful(Right(twoSeparateOverpayments(false))))
 
           whenReady(paymentsService.getHistoricPayments(appaId, year).value) {
             _ mustBe Right(HistoricPayments(year, Seq.empty))
@@ -55,8 +53,8 @@ class HistoricPaymentsServiceSpec extends SpecBase {
         }
 
         "when just RPI which must be filtered as it's a negative amount" in new SetUp {
-          when(mockFinancialDataConnector.getNotOnlyOpenFinancialData(appaId = appaId, year = year))
-            .thenReturn(EitherT.pure[Future, ErrorResponse](singleRPI))
+          when(mockFinancialDataConnector.getNotOnlyOpenFinancialData(appaId = appaId))
+            .thenReturn(Future.successful(Right(singleRPI)))
 
           whenReady(paymentsService.getHistoricPayments(appaId, year).value) {
             _ mustBe Right(
@@ -69,9 +67,9 @@ class HistoricPaymentsServiceSpec extends SpecBase {
         }
 
         "when processing a single positive RPI it appear with a warning" in new SetUp {
-          when(mockFinancialDataConnector.getNotOnlyOpenFinancialData(appaId = appaId, year = year))
+          when(mockFinancialDataConnector.getNotOnlyOpenFinancialData(appaId = appaId))
             .thenReturn(
-              EitherT.pure[Future, ErrorResponse](singlePositiveRPI)
+              Future.successful(Right(singlePositiveRPI))
             )
 
           whenReady(paymentsService.getHistoricPayments(appaId, year).value) {
@@ -85,8 +83,8 @@ class HistoricPaymentsServiceSpec extends SpecBase {
         }
 
         "when fully open returns (nothing returned)" in new SetUp {
-          when(mockFinancialDataConnector.getNotOnlyOpenFinancialData(appaId = appaId, year = year))
-            .thenReturn(EitherT.pure[Future, ErrorResponse](singleFullyOutstandingReturn))
+          when(mockFinancialDataConnector.getNotOnlyOpenFinancialData(appaId = appaId))
+            .thenReturn(Future.successful(Right(singleFullyOutstandingReturn)))
 
           whenReady(paymentsService.getHistoricPayments(appaId, year).value) {
             _ mustBe Right(HistoricPayments(year, Seq.empty))
@@ -94,8 +92,8 @@ class HistoricPaymentsServiceSpec extends SpecBase {
         }
 
         "when refunded (mustn't show)" in new SetUp {
-          when(mockFinancialDataConnector.getNotOnlyOpenFinancialData(appaId = appaId, year = year))
-            .thenReturn(EitherT.pure[Future, ErrorResponse](singleRefundedReturn))
+          when(mockFinancialDataConnector.getNotOnlyOpenFinancialData(appaId = appaId))
+            .thenReturn(Future.successful(Right(singleRefundedReturn)))
 
           whenReady(paymentsService.getHistoricPayments(appaId, year).value) { historicPayments =>
             historicPayments mustBe Right(
@@ -108,8 +106,8 @@ class HistoricPaymentsServiceSpec extends SpecBase {
         }
 
         "when partial open return (the paid part)" in new SetUp {
-          when(mockFinancialDataConnector.getNotOnlyOpenFinancialData(appaId = appaId, year = year))
-            .thenReturn(EitherT.pure[Future, ErrorResponse](singlePartiallyOutstandingReturn(onlyOpenItems = false)))
+          when(mockFinancialDataConnector.getNotOnlyOpenFinancialData(appaId = appaId))
+            .thenReturn(Future.successful(Right(singlePartiallyOutstandingReturn(onlyOpenItems = false))))
 
           whenReady(paymentsService.getHistoricPayments(appaId, year).value) { historicPayments =>
             val chargeReference = historicPayments.toOption.get.payments.headOption.flatMap(_.chargeReference)
@@ -130,8 +128,8 @@ class HistoricPaymentsServiceSpec extends SpecBase {
         }
 
         "when fully paid (the original amount)" in new SetUp {
-          when(mockFinancialDataConnector.getNotOnlyOpenFinancialData(appaId = appaId, year = year))
-            .thenReturn(EitherT.pure[Future, ErrorResponse](singlePaidReturn))
+          when(mockFinancialDataConnector.getNotOnlyOpenFinancialData(appaId = appaId))
+            .thenReturn(Future.successful(Right(singlePaidReturn)))
 
           whenReady(paymentsService.getHistoricPayments(appaId, year).value) { historicPayments =>
             val chargeReference = historicPayments.toOption.get.payments.headOption.flatMap(_.chargeReference)
@@ -152,8 +150,8 @@ class HistoricPaymentsServiceSpec extends SpecBase {
         }
 
         "filter out nil returns where amounts offset to 0" in new SetUp {
-          when(mockFinancialDataConnector.getNotOnlyOpenFinancialData(appaId = appaId, year = year))
-            .thenReturn(EitherT.pure[Future, ErrorResponse](nilReturnLineItemsCancelling))
+          when(mockFinancialDataConnector.getNotOnlyOpenFinancialData(appaId = appaId))
+            .thenReturn(Future.successful(Right(nilReturnLineItemsCancelling)))
 
           whenReady(paymentsService.getHistoricPayments(appaId, year).value) { historicPayments =>
             historicPayments mustBe Right(
@@ -166,8 +164,8 @@ class HistoricPaymentsServiceSpec extends SpecBase {
         }
 
         "filter out fully open returns leaving the remaining ones" in new SetUp {
-          when(mockFinancialDataConnector.getNotOnlyOpenFinancialData(appaId = appaId, year = year))
-            .thenReturn(EitherT.pure[Future, ErrorResponse](twoSeparateReturnsOneFullyPaid))
+          when(mockFinancialDataConnector.getNotOnlyOpenFinancialData(appaId = appaId))
+            .thenReturn(Future.successful(Right(twoSeparateReturnsOneFullyPaid)))
 
           whenReady(paymentsService.getHistoricPayments(appaId, year).value) { historicPayments =>
             val chargeReference = historicPayments.toOption.get.payments.headOption.flatMap(_.chargeReference)
@@ -189,8 +187,8 @@ class HistoricPaymentsServiceSpec extends SpecBase {
         }
 
         "for multiple statuses" in new SetUp {
-          when(mockFinancialDataConnector.getNotOnlyOpenFinancialData(appaId = appaId, year = year))
-            .thenReturn(EitherT.pure[Future, ErrorResponse](multipleStatuses(onlyOpenItems = false)))
+          when(mockFinancialDataConnector.getNotOnlyOpenFinancialData(appaId = appaId))
+            .thenReturn(Future.successful(Right(multipleStatuses(onlyOpenItems = false))))
 
           whenReady(paymentsService.getHistoricPayments(appaId, year).value) {
             case Right(HistoricPayments(`year`, payments)) =>
