@@ -93,10 +93,10 @@ class ObligationDataConnector @Inject() (
               logger.info(s"No obligation data found for appaId $appaId")
               Future.successful(Right(ObligationData.noObligations))
             case BAD_REQUEST          =>
-              logger.info(s"Bad request sent to get obligation for appaId $appaId")
+              logger.warn(s"Bad request sent to get obligation for appaId $appaId")
               Future.successful(Left(ErrorResponse(BAD_REQUEST, "Bad request")))
             case UNPROCESSABLE_ENTITY =>
-              logger.info(s"Obligation data request unprocessable for appaId $appaId")
+              logger.warn(s"Obligation data request unprocessable for appaId $appaId")
               Future.successful(Left(ErrorResponse(UNPROCESSABLE_ENTITY, "Unprocessable entity")))
             case _                    =>
               val error: String = response.json.as[HttpErrorResponse].message

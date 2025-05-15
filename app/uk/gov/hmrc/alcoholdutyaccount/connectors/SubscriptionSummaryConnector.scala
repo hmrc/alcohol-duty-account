@@ -81,13 +81,13 @@ class SubscriptionSummaryConnector @Inject() (
                     )
               }
             case BAD_REQUEST          =>
-              logger.info(s"Bad request sent to get subscription for appaId $appaId")
+              logger.warn(s"Bad request sent to get subscription for appaId $appaId")
               Future.successful(Left(ErrorResponse(BAD_REQUEST, "Bad request")))
             case NOT_FOUND            =>
-              logger.info(s"No subscription summary found for appaId $appaId")
+              logger.warn(s"No subscription summary found for appaId $appaId")
               Future.successful(Left(ErrorResponse(NOT_FOUND, "Subscription summary not found")))
             case UNPROCESSABLE_ENTITY =>
-              logger.info(s"Subscription summary request unprocessable for appaId $appaId")
+              logger.warn(s"Subscription summary request unprocessable for appaId $appaId")
               Future.successful(Left(ErrorResponse(UNPROCESSABLE_ENTITY, "Unprocessable entity")))
             case _                    =>
               val error: String = response.json.as[HttpErrorResponse].message
