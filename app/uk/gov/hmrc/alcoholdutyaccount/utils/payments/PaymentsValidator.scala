@@ -125,10 +125,7 @@ class PaymentsValidator @Inject() () extends Logging {
     financialTransactionsForDocument.toList match {
       case firstFinancialTransactionLineItem :: _ => Right(firstFinancialTransactionLineItem)
       case _                                      =>
-        logger.warn(
-          s"Should have had a least one entry for financial transaction $sapDocumentNumber. This shouldn't happen"
-        )
-
+        logger.warn(s"Should have had a least one entry for financial transaction $sapDocumentNumber.")
         Left(ErrorCodes.unexpectedResponse)
     }
 }
