@@ -97,7 +97,7 @@ class PaymentsValidator @Inject() () extends Logging {
       .filterOrElse(
         _.forall(identity), {
           logger.warn(
-            s"Not all chargeReferences, periodKeys, mainTransactions and/or dueDates matched against the first entry of financial transaction $sapDocumentNumber."
+            s"Not all chargeRefs, periodKeys, mainTransactions and/or dueDates matched against the first entry of financial transaction $sapDocumentNumber."
           )
           ErrorCodes.unexpectedResponse
         }

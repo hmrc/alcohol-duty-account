@@ -210,8 +210,9 @@ class AlcoholDutyService @Inject() (
         val chargeReferences: Seq[Option[String]] = transactions.map(_.chargeReference).distinct
 
         /*
-            If there is one group of transactions by sapDocumentNumber but those group of transactions don't have a charge reference or the same charge references,
-            we still return isMultiplePaymentDue = true because we'd want the user to pay with appaid in that case (as there is no charge ref found for payment)
+            If there is one group of transactions by sapDocumentNumber but those group of transactions don't have a charge reference or
+            the same charge references, we still return isMultiplePaymentDue = true because we'd want the user to pay with appaid
+            in that case (as there is no charge ref found for payment)
          */
         val (chargeReferenceToUse, isMultiplePaymentsDue) = chargeReferences match {
           case Seq(maybeChargeReference @ Some(_)) => (maybeChargeReference, false)
