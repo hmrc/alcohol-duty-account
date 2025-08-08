@@ -21,7 +21,7 @@ import AlcoholRegime.{Beer, Cider, OtherFermentedProduct, Spirits, Wine}
 import play.api.http.Status.INTERNAL_SERVER_ERROR
 import uk.gov.hmrc.alcoholdutyaccount.models.hods.SubscriptionSummary
 import uk.gov.hmrc.alcoholdutyaccount.models.hods
-import uk.gov.hmrc.play.bootstrap.backend.http.ErrorResponse
+import uk.gov.hmrc.play.bootstrap.http.ErrorResponse
 
 case class AdrSubscriptionSummary(
   approvalStatus: ApprovalStatus,

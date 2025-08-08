@@ -25,7 +25,7 @@ import uk.gov.hmrc.alcoholdutyaccount.models.payments.TransactionType.Overpaymen
 import uk.gov.hmrc.alcoholdutyaccount.models.payments._
 import uk.gov.hmrc.alcoholdutyaccount.utils.payments.PaymentsValidator
 import uk.gov.hmrc.http.HeaderCarrier
-import uk.gov.hmrc.play.bootstrap.backend.http.ErrorResponse
+import uk.gov.hmrc.play.bootstrap.http.ErrorResponse
 
 import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}

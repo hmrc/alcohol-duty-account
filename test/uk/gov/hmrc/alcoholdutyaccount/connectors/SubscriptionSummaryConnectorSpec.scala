@@ -20,7 +20,7 @@ import play.api.libs.json.Json
 import uk.gov.hmrc.alcoholdutyaccount.base.{ConnectorTestHelpers, SpecBase}
 import uk.gov.hmrc.alcoholdutyaccount.connectors.helpers.HIPHeaders
 import uk.gov.hmrc.alcoholdutyaccount.models.hods.SubscriptionSummarySuccess
-import uk.gov.hmrc.play.bootstrap.backend.http.ErrorResponse
+import uk.gov.hmrc.play.bootstrap.http.ErrorResponse
 
 class SubscriptionSummaryConnectorSpec extends SpecBase with ConnectorTestHelpers {
   protected val endpointName = "subscription"

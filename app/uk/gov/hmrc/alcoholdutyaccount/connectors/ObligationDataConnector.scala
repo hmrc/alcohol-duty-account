@@ -26,7 +26,7 @@ import uk.gov.hmrc.alcoholdutyaccount.models.hods.{ObligationData, ObligationDet
 import uk.gov.hmrc.alcoholdutyaccount.utils.DateTimeHelper.instantToLocalDate
 import uk.gov.hmrc.http._
 import uk.gov.hmrc.http.client.HttpClientV2
-import uk.gov.hmrc.play.bootstrap.backend.http.ErrorResponse
+import uk.gov.hmrc.play.bootstrap.http.ErrorResponse
 
 import java.time.{Clock, Instant}
 import javax.inject.Inject
