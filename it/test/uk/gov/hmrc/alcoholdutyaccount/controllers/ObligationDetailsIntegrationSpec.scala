@@ -26,7 +26,7 @@ import uk.gov.hmrc.alcoholdutyaccount.common.TestData
 import uk.gov.hmrc.alcoholdutyaccount.models.AdrObligationData
 import uk.gov.hmrc.alcoholdutyaccount.models.hods.{Fulfilled, Open}
 import uk.gov.hmrc.http.HeaderNames
-import uk.gov.hmrc.play.bootstrap.backend.http.ErrorResponse
+import uk.gov.hmrc.play.bootstrap.http.ErrorResponse
 
 import java.time.{Clock, LocalDate}
 

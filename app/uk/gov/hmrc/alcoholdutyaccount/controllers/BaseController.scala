@@ -20,7 +20,7 @@ import org.apache.pekko.util.ByteString
 import play.api.http.HttpEntity
 import play.api.libs.json.Json
 import play.api.mvc.{ResponseHeader, Result}
-import uk.gov.hmrc.play.bootstrap.backend.http.ErrorResponse
+import uk.gov.hmrc.play.bootstrap.http.ErrorResponse
 
 trait BaseController {
 
