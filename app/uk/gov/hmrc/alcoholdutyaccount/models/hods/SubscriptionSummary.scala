@@ -81,7 +81,9 @@ final case class SubscriptionSummary(
   typeOfAlcoholApprovedFor: Set[ApprovalType],
   smallciderFlag: Boolean,
   approvalStatus: ApprovalStatus,
-  insolvencyFlag: Boolean
+  insolvencyFlag: Boolean,
+  paperlessReference: Option[Boolean],
+  bouncedEmailFlag: Option[Boolean]
 )
 
 object SubscriptionSummary {

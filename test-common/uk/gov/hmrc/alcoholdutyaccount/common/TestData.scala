@@ -22,6 +22,7 @@ import uk.gov.hmrc.alcoholdutyaccount.common.generators.ModelGenerators
 import uk.gov.hmrc.alcoholdutyaccount.models.hods._
 import uk.gov.hmrc.alcoholdutyaccount.models.payments.TransactionType.{Return, toMainTransactionType}
 import uk.gov.hmrc.alcoholdutyaccount.models.payments.{HistoricPayments, OpenPayments, TransactionType}
+import uk.gov.hmrc.alcoholdutyaccount.models.subscription.ContactPreferenceForBTA.Digital
 import uk.gov.hmrc.alcoholdutyaccount.models.subscription.{AdrSubscriptionSummary, AlcoholRegime, ApprovalStatus}
 import uk.gov.hmrc.alcoholdutyaccount.models.{AdrObligationData, ObligationStatus, ReturnPeriod}
 
@@ -51,7 +52,9 @@ trait TestData extends ModelGenerators {
     typeOfAlcoholApprovedFor = allApprovals,
     smallciderFlag = false,
     approvalStatus = Approved,
-    insolvencyFlag = false
+    insolvencyFlag = false,
+    paperlessReference = Some(true),
+    bouncedEmailFlag = Some(false)
   )
 
   val insolventSubscriptionSummary = approvedSubscriptionSummary.copy(insolvencyFlag = true)
@@ -674,7 +677,9 @@ trait TestData extends ModelGenerators {
       AlcoholRegime.Cider,
       AlcoholRegime.Spirits,
       AlcoholRegime.OtherFermentedProduct
-    )
+    ),
+    contactPreference = Some(Digital),
+    emailBounced = Some(false)
   )
 
   val adrObligationDetails = new AdrObligationData(

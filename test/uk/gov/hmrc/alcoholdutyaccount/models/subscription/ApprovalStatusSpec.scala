@@ -29,7 +29,9 @@ class ApprovalStatusSpec extends SpecBase {
           typeOfAlcoholApprovedFor = Set(Beer),
           smallciderFlag = false,
           approvalStatus = hods.DeRegistered,
-          insolvencyFlag = false
+          insolvencyFlag = false,
+          paperlessReference = Some(true),
+          bouncedEmailFlag = Some(false)
         )
         ApprovalStatus.fromSubscriptionSummary(subscriptionSummary) mustBe ApprovalStatus.DeRegistered
       }
@@ -39,7 +41,9 @@ class ApprovalStatusSpec extends SpecBase {
           typeOfAlcoholApprovedFor = Set(Beer),
           smallciderFlag = true,
           approvalStatus = hods.DeRegistered,
-          insolvencyFlag = true
+          insolvencyFlag = true,
+          paperlessReference = Some(true),
+          bouncedEmailFlag = Some(false)
         )
         ApprovalStatus.fromSubscriptionSummary(subscriptionSummary) mustBe ApprovalStatus.DeRegistered
       }
@@ -51,7 +55,9 @@ class ApprovalStatusSpec extends SpecBase {
           typeOfAlcoholApprovedFor = Set(Beer),
           smallciderFlag = false,
           approvalStatus = hods.Revoked,
-          insolvencyFlag = false
+          insolvencyFlag = false,
+          paperlessReference = Some(true),
+          bouncedEmailFlag = Some(false)
         )
         ApprovalStatus.fromSubscriptionSummary(subscriptionSummary) mustBe ApprovalStatus.Revoked
       }
@@ -61,7 +67,9 @@ class ApprovalStatusSpec extends SpecBase {
           typeOfAlcoholApprovedFor = Set(Beer),
           smallciderFlag = true,
           approvalStatus = hods.Revoked,
-          insolvencyFlag = true
+          insolvencyFlag = true,
+          paperlessReference = Some(true),
+          bouncedEmailFlag = Some(false)
         )
         ApprovalStatus.fromSubscriptionSummary(subscriptionSummary) mustBe ApprovalStatus.Revoked
       }
@@ -73,7 +81,9 @@ class ApprovalStatusSpec extends SpecBase {
           typeOfAlcoholApprovedFor = Set(Beer),
           smallciderFlag = true,
           approvalStatus = hods.Approved,
-          insolvencyFlag = false
+          insolvencyFlag = false,
+          paperlessReference = Some(true),
+          bouncedEmailFlag = Some(false)
         )
         ApprovalStatus.fromSubscriptionSummary(subscriptionSummary) mustBe ApprovalStatus.SmallCiderProducer
       }
@@ -83,7 +93,9 @@ class ApprovalStatusSpec extends SpecBase {
           typeOfAlcoholApprovedFor = Set(Beer),
           smallciderFlag = true,
           approvalStatus = hods.Approved,
-          insolvencyFlag = true
+          insolvencyFlag = true,
+          paperlessReference = Some(true),
+          bouncedEmailFlag = Some(false)
         )
         ApprovalStatus.fromSubscriptionSummary(subscriptionSummary) mustBe ApprovalStatus.SmallCiderProducer
       }
@@ -94,7 +106,9 @@ class ApprovalStatusSpec extends SpecBase {
         typeOfAlcoholApprovedFor = Set(Beer),
         smallciderFlag = false,
         approvalStatus = hods.Approved,
-        insolvencyFlag = true
+        insolvencyFlag = true,
+        paperlessReference = Some(true),
+        bouncedEmailFlag = Some(false)
       )
       ApprovalStatus.fromSubscriptionSummary(subscriptionSummary) mustBe ApprovalStatus.Insolvent
     }
@@ -104,7 +118,9 @@ class ApprovalStatusSpec extends SpecBase {
         typeOfAlcoholApprovedFor = Set(Beer),
         smallciderFlag = false,
         approvalStatus = hods.Approved,
-        insolvencyFlag = false
+        insolvencyFlag = false,
+        paperlessReference = Some(true),
+        bouncedEmailFlag = Some(false)
       )
       ApprovalStatus.fromSubscriptionSummary(subscriptionSummary) mustBe ApprovalStatus.Approved
     }

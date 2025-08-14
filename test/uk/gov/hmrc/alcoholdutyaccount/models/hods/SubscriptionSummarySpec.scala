@@ -29,7 +29,9 @@ class SubscriptionSummarySpec extends SpecBase {
           typeOfAlcoholApprovedFor = allApprovals,
           smallciderFlag = false,
           approvalStatus = Approved,
-          insolvencyFlag = true
+          insolvencyFlag = true,
+          paperlessReference = Some(true),
+          bouncedEmailFlag = Some(false)
         )
       )
 
@@ -51,7 +53,8 @@ class SubscriptionSummarySpec extends SpecBase {
           |        "paperlessReference":"1",
           |        "emailAddress":"john.doe@example.com",
           |        "approvalStatus": "01",
-          |        "insolvencyFlag": "1"
+          |        "insolvencyFlag": "1",
+          |        "bouncedEmailFlag": "0"
           |    }
           |}
           |""".stripMargin
@@ -71,7 +74,9 @@ class SubscriptionSummarySpec extends SpecBase {
           typeOfAlcoholApprovedFor = Set(Beer),
           smallciderFlag = false,
           approvalStatus = approvalStatus,
-          insolvencyFlag = false
+          insolvencyFlag = false,
+          paperlessReference = Some(false),
+          bouncedEmailFlag = Some(true)
         )
 
         val json =
@@ -80,7 +85,9 @@ class SubscriptionSummarySpec extends SpecBase {
             |    "typeOfAlcoholApprovedFor": ["01"],
             |    "smallciderFlag": "0",
             |    "approvalStatus": "$approvalCode",
-            |    "insolvencyFlag": "0"
+            |    "insolvencyFlag": "0",
+            |    "paperlessReference": "0",
+            |    "bouncedEmailFlag": "1"
             |}
             |""".stripMargin
 
@@ -96,7 +103,9 @@ class SubscriptionSummarySpec extends SpecBase {
           |    "typeOfAlcoholApprovedFor": ["06"],
           |    "smallciderFlag": "0",
           |    "approvalStatus": "01",
-          |    "insolvencyFlag": "0"
+          |    "insolvencyFlag": "0",
+          |    "paperlessReference": "1",
+          |    "bouncedEmailFlag": "0"
           |}
           |""".stripMargin
 
@@ -110,7 +119,9 @@ class SubscriptionSummarySpec extends SpecBase {
           |    "typeOfAlcoholApprovedFor": [2],
           |    "smallciderFlag": "0",
           |    "approvalStatus": "01",
-          |    "insolvencyFlag": "0"
+          |    "insolvencyFlag": "0",
+          |    "paperlessReference": "1",
+          |    "bouncedEmailFlag": "0"
           |}
           |""".stripMargin
 
@@ -124,7 +135,9 @@ class SubscriptionSummarySpec extends SpecBase {
           |    "typeOfAlcoholApprovedFor": ["01"],
           |    "smallciderFlag": "0",
           |    "approvalStatus": "4",
-          |    "insolvencyFlag": "0"
+          |    "insolvencyFlag": "0",
+          |    "paperlessReference": "1",
+          |    "bouncedEmailFlag": "0"
           |}
           |""".stripMargin
 
@@ -138,7 +151,9 @@ class SubscriptionSummarySpec extends SpecBase {
           |    "typeOfAlcoholApprovedFor": ["01"],
           |    "smallciderFlag": "0",
           |    "approvalStatus": 1,
-          |    "insolvencyFlag": "0"
+          |    "insolvencyFlag": "0",
+          |    "paperlessReference": "1",
+          |    "bouncedEmailFlag": "0"
           |}
           |""".stripMargin
 
@@ -152,7 +167,9 @@ class SubscriptionSummarySpec extends SpecBase {
           |    "typeOfAlcoholApprovedFor": ["01"],
           |    "smallciderFlag": "2",
           |    "approvalStatus": "01",
-          |    "insolvencyFlag": "0"
+          |    "insolvencyFlag": "0",
+          |    "paperlessReference": "1",
+          |    "bouncedEmailFlag": "0"
           |}
           |""".stripMargin
 

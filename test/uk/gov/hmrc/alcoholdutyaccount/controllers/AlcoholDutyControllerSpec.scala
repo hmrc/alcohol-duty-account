@@ -27,6 +27,7 @@ import uk.gov.hmrc.alcoholdutyaccount.config.AppConfig
 import uk.gov.hmrc.alcoholdutyaccount.models.AlcoholDutyCardData
 import uk.gov.hmrc.alcoholdutyaccount.models.subscription.ApprovalStatus.Approved
 import uk.gov.hmrc.alcoholdutyaccount.models._
+import uk.gov.hmrc.alcoholdutyaccount.models.subscription.ContactPreferenceForBTA.Digital
 import uk.gov.hmrc.alcoholdutyaccount.service.AlcoholDutyService
 import uk.gov.hmrc.play.bootstrap.http.ErrorResponse
 
@@ -156,7 +157,9 @@ class AlcoholDutyControllerSpec extends SpecBase {
       hasPaymentsError = false,
       returns = Returns(dueReturnExists = Some(true), numberOfOverdueReturns = Some(0)),
       payments =
-        Payments(balance = Some(Balance(isMultiplePaymentDue = true, totalPaymentAmount = 2, chargeReference = None)))
+        Payments(balance = Some(Balance(isMultiplePaymentDue = true, totalPaymentAmount = 2, chargeReference = None))),
+      contactPreference = Some(Digital),
+      emailBounced = Some(false)
     )
   }
 }
