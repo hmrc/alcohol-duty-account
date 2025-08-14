@@ -55,7 +55,9 @@ class BTACardEndpointIntegrationSpec
                 chargeReference = Some("X1234567890")
               )
             )
-          )
+          ),
+          contactPreference = Some("digital"),
+          emailBounced = Some(false)
         )
 
         val response = callRoute(
@@ -80,7 +82,9 @@ class BTACardEndpointIntegrationSpec
           hasReturnsError = false,
           hasPaymentsError = false,
           returns = Returns(),
-          payments = Payments()
+          payments = Payments(),
+          contactPreference = Some("digital"),
+          emailBounced = Some(false)
         )
 
         val response = callRoute(
@@ -117,7 +121,9 @@ class BTACardEndpointIntegrationSpec
                 chargeReference = Some("X1234567890")
               )
             )
-          )
+          ),
+          contactPreference = Some("digital"),
+          emailBounced = Some(false)
         )
 
         val response = callRoute(
@@ -135,7 +141,8 @@ class BTACardEndpointIntegrationSpec
         stubAuthorised(appaId)
         stubGetSubscriptionSummary(appaId, deregisteredSubscriptionSummary)
 
-        val expectedBTACardData = RestrictedCardData(appaId, DeRegistered)
+        val expectedBTACardData =
+          RestrictedCardData(appaId, approvedAdrSubscriptionSummary.copy(approvalStatus = DeRegistered))
 
         val response = callRoute(
           FakeRequest("GET", routes.AlcoholDutyController.btaTileData(appaId).url)
@@ -150,7 +157,8 @@ class BTACardEndpointIntegrationSpec
         stubAuthorised(appaId)
         stubGetSubscriptionSummary(appaId, revokedSubscriptionSummary)
 
-        val expectedBTACardData = RestrictedCardData(appaId, Revoked)
+        val expectedBTACardData =
+          RestrictedCardData(appaId, approvedAdrSubscriptionSummary.copy(approvalStatus = Revoked))
 
         val response = callRoute(
           FakeRequest("GET", routes.AlcoholDutyController.btaTileData(appaId).url)
@@ -165,7 +173,8 @@ class BTACardEndpointIntegrationSpec
         stubAuthorised(appaId)
         stubGetSubscriptionSummary(appaId, smallCiderProducerSubscriptionSummary)
 
-        val expectedBTACardData = RestrictedCardData(appaId, SmallCiderProducer)
+        val expectedBTACardData =
+          RestrictedCardData(appaId, approvedAdrSubscriptionSummary.copy(approvalStatus = SmallCiderProducer))
 
         val response = callRoute(
           FakeRequest("GET", routes.AlcoholDutyController.btaTileData(appaId).url)
@@ -189,7 +198,9 @@ class BTACardEndpointIntegrationSpec
           hasReturnsError = false,
           hasPaymentsError = false,
           returns = Returns(),
-          payments = Payments()
+          payments = Payments(),
+          contactPreference = None,
+          emailBounced = None
         )
 
         val response = callRoute(
@@ -212,7 +223,9 @@ class BTACardEndpointIntegrationSpec
           hasReturnsError = false,
           hasPaymentsError = false,
           returns = Returns(),
-          payments = Payments()
+          payments = Payments(),
+          contactPreference = None,
+          emailBounced = None
         )
 
         val response = callRoute(
@@ -245,7 +258,9 @@ class BTACardEndpointIntegrationSpec
                 chargeReference = Some("X1234567890")
               )
             )
-          )
+          ),
+          contactPreference = Some("digital"),
+          emailBounced = Some(false)
         )
 
         val response = callRoute(
@@ -278,7 +293,9 @@ class BTACardEndpointIntegrationSpec
                 chargeReference = Some("X1234567890")
               )
             )
-          )
+          ),
+          contactPreference = Some("digital"),
+          emailBounced = Some(false)
         )
 
         val response = callRoute(
@@ -311,7 +328,9 @@ class BTACardEndpointIntegrationSpec
                 chargeReference = Some("X1234567890")
               )
             )
-          )
+          ),
+          contactPreference = Some("digital"),
+          emailBounced = Some(false)
         )
 
         val response = callRoute(
@@ -344,7 +363,9 @@ class BTACardEndpointIntegrationSpec
                 chargeReference = Some("X1234567890")
               )
             )
-          )
+          ),
+          contactPreference = Some("digital"),
+          emailBounced = Some(false)
         )
 
         val response = callRoute(
@@ -373,7 +394,9 @@ class BTACardEndpointIntegrationSpec
             numberOfOverdueReturns = Some(1),
             periodKey = Some("24AE")
           ),
-          payments = Payments()
+          payments = Payments(),
+          contactPreference = Some("digital"),
+          emailBounced = Some(false)
         )
 
         val response = callRoute(
@@ -402,7 +425,9 @@ class BTACardEndpointIntegrationSpec
             numberOfOverdueReturns = Some(1),
             periodKey = Some("24AE")
           ),
-          payments = Payments()
+          payments = Payments(),
+          contactPreference = Some("digital"),
+          emailBounced = Some(false)
         )
 
         val response = callRoute(
@@ -431,7 +456,9 @@ class BTACardEndpointIntegrationSpec
             numberOfOverdueReturns = Some(1),
             periodKey = Some("24AE")
           ),
-          payments = Payments()
+          payments = Payments(),
+          contactPreference = Some("digital"),
+          emailBounced = Some(false)
         )
 
         val response = callRoute(
@@ -460,7 +487,9 @@ class BTACardEndpointIntegrationSpec
             numberOfOverdueReturns = Some(1),
             periodKey = Some("24AE")
           ),
-          payments = Payments()
+          payments = Payments(),
+          contactPreference = Some("digital"),
+          emailBounced = Some(false)
         )
 
         val response = callRoute(
@@ -485,7 +514,9 @@ class BTACardEndpointIntegrationSpec
           hasReturnsError = true,
           hasPaymentsError = true,
           returns = Returns(),
-          payments = Payments()
+          payments = Payments(),
+          contactPreference = Some("digital"),
+          emailBounced = Some(false)
         )
 
         val response = callRoute(
@@ -510,7 +541,9 @@ class BTACardEndpointIntegrationSpec
           hasReturnsError = true,
           hasPaymentsError = true,
           returns = Returns(),
-          payments = Payments()
+          payments = Payments(),
+          contactPreference = Some("digital"),
+          emailBounced = Some(false)
         )
 
         val response = callRoute(

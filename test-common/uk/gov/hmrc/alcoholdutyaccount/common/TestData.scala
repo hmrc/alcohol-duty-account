@@ -51,7 +51,9 @@ trait TestData extends ModelGenerators {
     typeOfAlcoholApprovedFor = allApprovals,
     smallciderFlag = false,
     approvalStatus = Approved,
-    insolvencyFlag = false
+    insolvencyFlag = false,
+    paperlessReference = Some(true),
+    bouncedEmailFlag = Some(false)
   )
 
   val insolventSubscriptionSummary = approvedSubscriptionSummary.copy(insolvencyFlag = true)
@@ -674,7 +676,9 @@ trait TestData extends ModelGenerators {
       AlcoholRegime.Cider,
       AlcoholRegime.Spirits,
       AlcoholRegime.OtherFermentedProduct
-    )
+    ),
+    paperlessReference = Some(true),
+    bouncedEmailFlag = Some(false)
   )
 
   val adrObligationDetails = new AdrObligationData(

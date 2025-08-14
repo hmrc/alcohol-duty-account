@@ -18,6 +18,8 @@ package uk.gov.hmrc.alcoholdutyaccount.models
 
 import play.api.libs.json.Json
 import uk.gov.hmrc.alcoholdutyaccount.base.SpecBase
+import uk.gov.hmrc.alcoholdutyaccount.models.subscription.AdrSubscriptionSummary
+import uk.gov.hmrc.alcoholdutyaccount.models.subscription.AlcoholRegime.Beer
 import uk.gov.hmrc.alcoholdutyaccount.models.subscription.ApprovalStatus._
 
 class AlcoholDutyCardDataSpec extends SpecBase {
@@ -43,7 +45,9 @@ class AlcoholDutyCardDataSpec extends SpecBase {
                 chargeReference = Some("CHARGE-REF")
               )
             )
-          )
+          ),
+          contactPreference = Some("digital"),
+          emailBounced = Some(false)
         )
 
         val result = Json.toJson(alcoholDutyCardData)
@@ -66,7 +70,9 @@ class AlcoholDutyCardDataSpec extends SpecBase {
             |        "isMultiplePaymentDue":false,
             |        "chargeReference":"CHARGE-REF"
             |     }
-            |  }
+            |  },
+            |  "contactPreference":"digital",
+            |  "emailBounced":false
             |}""".stripMargin
 
         result mustBe Json.parse(expectedJson)
@@ -81,7 +87,9 @@ class AlcoholDutyCardDataSpec extends SpecBase {
             hasReturnsError = false,
             hasPaymentsError = false,
             returns = Returns(),
-            payments = Payments()
+            payments = Payments(),
+            contactPreference = Some("paper"),
+            emailBounced = Some(true)
           )
 
           val result = Json.toJson(alcoholDutyCardData)
@@ -95,12 +103,15 @@ class AlcoholDutyCardDataSpec extends SpecBase {
                |  "hasReturnsError":false,
                |  "hasPaymentsError":false,
                |  "returns": {},
-               |  "payments": {}
+               |  "payments": {},
+               |  "contactPreference":"paper",
+               |  "emailBounced":true
                |}""".stripMargin
 
           result mustBe Json.parse(expectedJson)
         }
       }
+
       "when only mandatory available due to subscription summary error" in {
         val alcoholDutyCardData = AlcoholDutyCardData(
           alcoholDutyReference = "REF01",
@@ -109,7 +120,9 @@ class AlcoholDutyCardDataSpec extends SpecBase {
           hasReturnsError = false,
           hasPaymentsError = false,
           returns = Returns(),
-          payments = Payments()
+          payments = Payments(),
+          contactPreference = None,
+          emailBounced = None
         )
 
         val result = Json.toJson(alcoholDutyCardData)
@@ -128,6 +141,53 @@ class AlcoholDutyCardDataSpec extends SpecBase {
         result mustBe Json.parse(expectedJson)
       }
 
+    }
+  }
+
+  "RestrictedCardData must" - {
+    val subscriptionSummary = AdrSubscriptionSummary(
+      approvalStatus = Approved,
+      regimes = Set(Beer),
+      paperlessReference = Some(true),
+      bouncedEmailFlag = Some(false)
+    )
+
+    val cardData = AlcoholDutyCardData(
+      alcoholDutyReference = appaId,
+      approvalStatus = Some(Approved),
+      hasSubscriptionSummaryError = false,
+      hasReturnsError = false,
+      hasPaymentsError = false,
+      returns = Returns(),
+      payments = Payments(),
+      contactPreference = Some("digital"),
+      emailBounced = Some(false)
+    )
+
+    "return AlcoholDutyCardData with digital preference" in {
+      RestrictedCardData(appaId, subscriptionSummary) mustBe cardData
+    }
+
+    "return AlcoholDutyCardData with paper preference and bounced email" in {
+      val adrSubscriptionSummary =
+        subscriptionSummary.copy(paperlessReference = Some(false), bouncedEmailFlag = Some(true))
+      val expectedCardData       = cardData.copy(contactPreference = Some("paper"), emailBounced = Some(true))
+
+      RestrictedCardData(appaId, adrSubscriptionSummary) mustBe expectedCardData
+    }
+
+    "return AlcoholDutyCardData with paper preference and no bounced email" in {
+      val adrSubscriptionSummary = subscriptionSummary.copy(paperlessReference = Some(false), bouncedEmailFlag = None)
+      val expectedCardData       = cardData.copy(contactPreference = Some("paper"), emailBounced = Some(false))
+
+      RestrictedCardData(appaId, adrSubscriptionSummary) mustBe expectedCardData
+    }
+
+    "return AlcoholDutyCardData when contact preference fields are not provided" in {
+      val adrSubscriptionSummary = subscriptionSummary.copy(paperlessReference = None, bouncedEmailFlag = None)
+      val expectedCardData       = cardData.copy(contactPreference = None, emailBounced = None)
+
+      RestrictedCardData(appaId, adrSubscriptionSummary) mustBe expectedCardData
     }
   }
 }

@@ -25,7 +25,9 @@ import uk.gov.hmrc.play.bootstrap.http.ErrorResponse
 
 case class AdrSubscriptionSummary(
   approvalStatus: ApprovalStatus,
-  regimes: Set[AlcoholRegime]
+  regimes: Set[AlcoholRegime],
+  paperlessReference: Option[Boolean],
+  bouncedEmailFlag: Option[Boolean]
 )
 
 object AdrSubscriptionSummary {
@@ -41,7 +43,9 @@ object AdrSubscriptionSummary {
       Right(
         AdrSubscriptionSummary(
           ApprovalStatus.fromSubscriptionSummary(subscriptionSummary),
-          regimes
+          regimes,
+          subscriptionSummary.paperlessReference,
+          subscriptionSummary.bouncedEmailFlag
         )
       )
     }

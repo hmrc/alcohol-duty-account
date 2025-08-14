@@ -156,7 +156,9 @@ class AlcoholDutyControllerSpec extends SpecBase {
       hasPaymentsError = false,
       returns = Returns(dueReturnExists = Some(true), numberOfOverdueReturns = Some(0)),
       payments =
-        Payments(balance = Some(Balance(isMultiplePaymentDue = true, totalPaymentAmount = 2, chargeReference = None)))
+        Payments(balance = Some(Balance(isMultiplePaymentDue = true, totalPaymentAmount = 2, chargeReference = None))),
+      contactPreference = Some("digital"),
+      emailBounced = Some(false)
     )
   }
 }
