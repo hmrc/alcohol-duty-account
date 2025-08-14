@@ -20,6 +20,7 @@ import play.api.libs.json.Json
 import play.api.test.FakeRequest
 import uk.gov.hmrc.alcoholdutyaccount.base.{FinancialDataStubs, ISpecBase, ObligationDataStubs, SubscriptionSummaryStubs}
 import uk.gov.hmrc.alcoholdutyaccount.models.subscription.ApprovalStatus.{Approved, DeRegistered, Insolvent, Revoked, SmallCiderProducer}
+import uk.gov.hmrc.alcoholdutyaccount.models.subscription.ContactPreferenceForBTA.Digital
 import uk.gov.hmrc.alcoholdutyaccount.models.{AlcoholDutyCardData, Balance, Payments, RestrictedCardData, Returns}
 
 class BTACardEndpointIntegrationSpec
@@ -56,7 +57,7 @@ class BTACardEndpointIntegrationSpec
               )
             )
           ),
-          contactPreference = Some("digital"),
+          contactPreference = Some(Digital),
           emailBounced = Some(false)
         )
 
@@ -83,7 +84,7 @@ class BTACardEndpointIntegrationSpec
           hasPaymentsError = false,
           returns = Returns(),
           payments = Payments(),
-          contactPreference = Some("digital"),
+          contactPreference = Some(Digital),
           emailBounced = Some(false)
         )
 
@@ -122,7 +123,7 @@ class BTACardEndpointIntegrationSpec
               )
             )
           ),
-          contactPreference = Some("digital"),
+          contactPreference = Some(Digital),
           emailBounced = Some(false)
         )
 
@@ -259,7 +260,7 @@ class BTACardEndpointIntegrationSpec
               )
             )
           ),
-          contactPreference = Some("digital"),
+          contactPreference = Some(Digital),
           emailBounced = Some(false)
         )
 
@@ -294,7 +295,7 @@ class BTACardEndpointIntegrationSpec
               )
             )
           ),
-          contactPreference = Some("digital"),
+          contactPreference = Some(Digital),
           emailBounced = Some(false)
         )
 
@@ -329,7 +330,7 @@ class BTACardEndpointIntegrationSpec
               )
             )
           ),
-          contactPreference = Some("digital"),
+          contactPreference = Some(Digital),
           emailBounced = Some(false)
         )
 
@@ -364,7 +365,7 @@ class BTACardEndpointIntegrationSpec
               )
             )
           ),
-          contactPreference = Some("digital"),
+          contactPreference = Some(Digital),
           emailBounced = Some(false)
         )
 
@@ -395,7 +396,7 @@ class BTACardEndpointIntegrationSpec
             periodKey = Some("24AE")
           ),
           payments = Payments(),
-          contactPreference = Some("digital"),
+          contactPreference = Some(Digital),
           emailBounced = Some(false)
         )
 
@@ -426,7 +427,7 @@ class BTACardEndpointIntegrationSpec
             periodKey = Some("24AE")
           ),
           payments = Payments(),
-          contactPreference = Some("digital"),
+          contactPreference = Some(Digital),
           emailBounced = Some(false)
         )
 
@@ -457,7 +458,7 @@ class BTACardEndpointIntegrationSpec
             periodKey = Some("24AE")
           ),
           payments = Payments(),
-          contactPreference = Some("digital"),
+          contactPreference = Some(Digital),
           emailBounced = Some(false)
         )
 
@@ -488,7 +489,7 @@ class BTACardEndpointIntegrationSpec
             periodKey = Some("24AE")
           ),
           payments = Payments(),
-          contactPreference = Some("digital"),
+          contactPreference = Some(Digital),
           emailBounced = Some(false)
         )
 
@@ -515,7 +516,7 @@ class BTACardEndpointIntegrationSpec
           hasPaymentsError = true,
           returns = Returns(),
           payments = Payments(),
-          contactPreference = Some("digital"),
+          contactPreference = Some(Digital),
           emailBounced = Some(false)
         )
 
@@ -542,7 +543,7 @@ class BTACardEndpointIntegrationSpec
           hasPaymentsError = true,
           returns = Returns(),
           payments = Payments(),
-          contactPreference = Some("digital"),
+          contactPreference = Some(Digital),
           emailBounced = Some(false)
         )
 

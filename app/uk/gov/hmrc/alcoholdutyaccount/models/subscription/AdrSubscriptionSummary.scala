@@ -21,13 +21,14 @@ import AlcoholRegime.{Beer, Cider, OtherFermentedProduct, Spirits, Wine}
 import play.api.http.Status.INTERNAL_SERVER_ERROR
 import uk.gov.hmrc.alcoholdutyaccount.models.hods.SubscriptionSummary
 import uk.gov.hmrc.alcoholdutyaccount.models.hods
+import uk.gov.hmrc.alcoholdutyaccount.models.subscription.ContactPreferenceForBTA.{Digital, Paper}
 import uk.gov.hmrc.play.bootstrap.http.ErrorResponse
 
 case class AdrSubscriptionSummary(
   approvalStatus: ApprovalStatus,
   regimes: Set[AlcoholRegime],
-  paperlessReference: Option[Boolean],
-  bouncedEmailFlag: Option[Boolean]
+  contactPreference: Option[ContactPreferenceForBTA],
+  emailBounced: Option[Boolean]
 )
 
 object AdrSubscriptionSummary {
@@ -37,6 +38,14 @@ object AdrSubscriptionSummary {
   ): Either[ErrorResponse, AdrSubscriptionSummary] = {
     val regimes = mapRegimes(subscriptionSummary.typeOfAlcoholApprovedFor)
 
+    val contactPreferenceForBTA = subscriptionSummary.paperlessReference.map {
+      case true  => Digital
+      case false => Paper
+    }
+    val emailBouncedForBTA      = subscriptionSummary.paperlessReference.map { _ =>
+      subscriptionSummary.bouncedEmailFlag.contains(true)
+    }
+
     if (regimes.isEmpty) {
       Left(ErrorResponse(INTERNAL_SERVER_ERROR, "Expected at least one approved regime to be provided"))
     } else {
@@ -44,8 +53,8 @@ object AdrSubscriptionSummary {
         AdrSubscriptionSummary(
           ApprovalStatus.fromSubscriptionSummary(subscriptionSummary),
           regimes,
-          subscriptionSummary.paperlessReference,
-          subscriptionSummary.bouncedEmailFlag
+          contactPreferenceForBTA,
+          emailBouncedForBTA
         )
       )
     }

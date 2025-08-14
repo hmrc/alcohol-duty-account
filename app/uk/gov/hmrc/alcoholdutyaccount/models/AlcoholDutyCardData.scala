@@ -17,7 +17,7 @@
 package uk.gov.hmrc.alcoholdutyaccount.models
 
 import play.api.libs.json._
-import uk.gov.hmrc.alcoholdutyaccount.models.subscription.{AdrSubscriptionSummary, ApprovalStatus}
+import uk.gov.hmrc.alcoholdutyaccount.models.subscription.{AdrSubscriptionSummary, ApprovalStatus, ContactPreferenceForBTA}
 
 final case class Balance(
   totalPaymentAmount: BigDecimal,
@@ -56,13 +56,8 @@ object RestrictedCardData {
       hasPaymentsError = false,
       returns = Returns(),
       payments = Payments(),
-      contactPreference = subscriptionSummary.paperlessReference.map {
-        case true  => "digital"
-        case false => "paper"
-      },
-      emailBounced = subscriptionSummary.paperlessReference.map { _ =>
-        subscriptionSummary.bouncedEmailFlag.contains(true)
-      }
+      contactPreference = subscriptionSummary.contactPreference,
+      emailBounced = subscriptionSummary.emailBounced
     )
 }
 
@@ -74,7 +69,7 @@ case class AlcoholDutyCardData(
   hasPaymentsError: Boolean,
   returns: Returns,
   payments: Payments,
-  contactPreference: Option[String],
+  contactPreference: Option[ContactPreferenceForBTA],
   emailBounced: Option[Boolean]
 )
 

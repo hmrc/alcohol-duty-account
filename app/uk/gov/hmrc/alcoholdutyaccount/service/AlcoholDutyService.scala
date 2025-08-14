@@ -142,13 +142,8 @@ class AlcoholDutyService @Inject() (
       hasPaymentsError = fData.isEmpty,
       returns = obData.getOrElse(Returns()),
       payments = fData.getOrElse(Payments()),
-      contactPreference = subscriptionSummary.paperlessReference.map {
-        case true  => "digital"
-        case false => "paper"
-      },
-      emailBounced = subscriptionSummary.paperlessReference.map { _ =>
-        subscriptionSummary.bouncedEmailFlag.contains(true)
-      }
+      contactPreference = subscriptionSummary.contactPreference,
+      emailBounced = subscriptionSummary.emailBounced
     ).asRight
   }
 
