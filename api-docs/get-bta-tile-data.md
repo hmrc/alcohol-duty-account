@@ -10,9 +10,9 @@ Calls to this API must be made by an authenticated and authorised user with an A
 
 **URL Parameters**
 
-| Parameter Name       | Type    | Description        | Notes                                       |
-|----------------------|---------|--------------------|---------------------------------------------|
-| alcoholDutyReference | String  | The appa Id        |                                             |
+| Parameter Name       | Type   | Description | Notes |
+|----------------------|--------|-------------|-------|
+| alcoholDutyReference | String | The appa Id |       |
 
 **Required Request Headers**:
 
@@ -48,6 +48,8 @@ Calls to this API must be made by an authenticated and authorised user with an A
 | payments.balance.totalPaymentAmount   | The outstanding total payment amount                                                                    | BigDecimal | Mandatory          |                                                                                    |
 | payments.balance.isMultiplePaymentDue | Indicates if the total payment amount is related to multiple payments(charges)                          | Boolean    | Mandatory          |                                                                                    |
 | payments.balance.chargeReference      | The reference that is needed to start an OPS journey(Only applies if a single payment is due)           | String     | Optional           | Conditional based on the isMultiplePaymentDue                                      |
+| contactPreference                     | The user's current contact preference (digital or paper)                                                | Enum       | Optional           | Conditional based on the hasSubscriptionSummaryError                               |
+| emailBounced                          | Whether the user has a bounced email                                                                    | Boolean    | Optional           | Conditional based on the hasSubscriptionSummaryError                               |
 
 **Response Body Examples**
 
@@ -61,7 +63,9 @@ Calls to this API must be made by an authenticated and authorised user with an A
   "hasReturnsError": false,
   "hasPaymentsError": false,
   "returns": {},
-  "payments": {}
+  "payments": {},
+  "contactPreference": "digital",
+  "emailBounced": false
 }
 ```
 
@@ -78,9 +82,11 @@ Calls to this API must be made by an authenticated and authorised user with an A
   "payments": {
     "balance": {
       "totalPaymentAmount": 0,
-      "isMultiplePaymentDue": false(can be true as well),
+      "isMultiplePaymentDue": false
     }
-  }
+  },
+  "contactPreference": "paper",
+  "emailBounced": true
 }
 ```
 
@@ -104,7 +110,9 @@ Calls to this API must be made by an authenticated and authorised user with an A
       "isMultiplePaymentDue": false,
       "chargeReference": "APCHR123456789"
     }
-  }
+  },
+  "contactPreference": "paper",
+  "emailBounced": false
 }
 ```
 
@@ -126,7 +134,9 @@ Calls to this API must be made by an authenticated and authorised user with an A
       "totalPaymentAmount": 3200.00,
       "isMultiplePaymentDue": true
     }
-  }
+  },
+  "contactPreference": "paper",
+  "emailBounced": false
 }
 ```
 
@@ -138,15 +148,18 @@ Same payloads as approved but the status will be "Insolvent"
 
 ```json
 {
-  "alcoholDutyReference": "AP0000000001", 
+  "alcoholDutyReference": "AP0000000001",
   "approvalStatus": "DeRegistered",
   "hasSubscriptionSummaryError": false,
   "hasReturnsError": false,
   "hasPaymentsError": false,
   "returns": {},
-  "payments": {}
+  "payments": {},
+  "contactPreference": "digital",
+  "emailBounced": false
 }
 ```
+
 Possible status values are "DeRegistered", "Revoked" and "SmallCiderProducer"
 
 ***Subscription Summary Error:***
@@ -178,18 +191,22 @@ Possible status values are "DeRegistered", "Revoked" and "SmallCiderProducer"
       "isMultiplePaymentDue": false,
       "chargeReference": "APCHR123456789"
     }
-  }
+  },
+  "contactPreference": "digital",
+  "emailBounced": false
 }
 ```
+
 **Status prioritisation**
 
 The status prioritisation will be as below:
 
 1. DeRegistered - Revoked
-1. SmallCiderProducer
-1. Approved - Insolvent
+2. SmallCiderProducer
+3. Approved - Insolvent
 
 ### Error response
+
 #### Unauthorized response
 
 **Code**: `401 UNAUTHORIZED`
@@ -200,9 +217,13 @@ This response can occur when a call is made by any consumer without an authorize
 
 **Code**: `503 SERVICE_UNAVAILABLE`
 
-**Response body**: 
+**Response body**:
+
 ```json
-{"statusCode":503,"message":"Service unavailable"}
+{
+  "statusCode": 503,
+  "message": "Service unavailable"
+}
 ```
 
 This response occurs when the service is shuttered. See below.
