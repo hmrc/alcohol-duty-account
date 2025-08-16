@@ -41,11 +41,16 @@ object TransactionType extends Enum[TransactionType] with PlayJsonEnum[Transacti
     val mainTransactionType: String = "6076"
   }
 
+  case object CA extends TransactionType {
+    val mainTransactionType: String = "6077"
+  }
+
   def fromMainTransactionType(mainTransactionType: String): Option[TransactionType] = mainTransactionType match {
     case Return.mainTransactionType      => Some(Return)
     case Overpayment.mainTransactionType => Some(Overpayment)
     case LPI.mainTransactionType         => Some(LPI)
     case RPI.mainTransactionType         => Some(RPI)
+    case CA.mainTransactionType          => Some(CA)
     case _                               => None
   }
 
