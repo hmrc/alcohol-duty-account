@@ -19,6 +19,7 @@ package uk.gov.hmrc.alcoholdutyaccount.models
 import play.api.libs.json.Json
 import uk.gov.hmrc.alcoholdutyaccount.base.SpecBase
 import uk.gov.hmrc.alcoholdutyaccount.models.subscription.ApprovalStatus._
+import uk.gov.hmrc.alcoholdutyaccount.models.subscription.ContactPreferenceForBTA.{Digital, Paper}
 
 class AlcoholDutyCardDataSpec extends SpecBase {
 
@@ -43,7 +44,9 @@ class AlcoholDutyCardDataSpec extends SpecBase {
                 chargeReference = Some("CHARGE-REF")
               )
             )
-          )
+          ),
+          contactPreference = Some(Digital),
+          emailBounced = Some(false)
         )
 
         val result = Json.toJson(alcoholDutyCardData)
@@ -66,7 +69,9 @@ class AlcoholDutyCardDataSpec extends SpecBase {
             |        "isMultiplePaymentDue":false,
             |        "chargeReference":"CHARGE-REF"
             |     }
-            |  }
+            |  },
+            |  "contactPreference":"digital",
+            |  "emailBounced":false
             |}""".stripMargin
 
         result mustBe Json.parse(expectedJson)
@@ -81,7 +86,9 @@ class AlcoholDutyCardDataSpec extends SpecBase {
             hasReturnsError = false,
             hasPaymentsError = false,
             returns = Returns(),
-            payments = Payments()
+            payments = Payments(),
+            contactPreference = Some(Paper),
+            emailBounced = Some(true)
           )
 
           val result = Json.toJson(alcoholDutyCardData)
@@ -95,12 +102,15 @@ class AlcoholDutyCardDataSpec extends SpecBase {
                |  "hasReturnsError":false,
                |  "hasPaymentsError":false,
                |  "returns": {},
-               |  "payments": {}
+               |  "payments": {},
+               |  "contactPreference":"paper",
+               |  "emailBounced":true
                |}""".stripMargin
 
           result mustBe Json.parse(expectedJson)
         }
       }
+
       "when only mandatory available due to subscription summary error" in {
         val alcoholDutyCardData = AlcoholDutyCardData(
           alcoholDutyReference = "REF01",
@@ -109,7 +119,9 @@ class AlcoholDutyCardDataSpec extends SpecBase {
           hasReturnsError = false,
           hasPaymentsError = false,
           returns = Returns(),
-          payments = Payments()
+          payments = Payments(),
+          contactPreference = None,
+          emailBounced = None
         )
 
         val result = Json.toJson(alcoholDutyCardData)

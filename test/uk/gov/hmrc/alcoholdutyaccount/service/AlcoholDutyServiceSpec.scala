@@ -23,8 +23,9 @@ import uk.gov.hmrc.alcoholdutyaccount.common.TestData
 import uk.gov.hmrc.alcoholdutyaccount.connectors.{FinancialDataConnector, ObligationDataConnector, SubscriptionSummaryConnector}
 import uk.gov.hmrc.alcoholdutyaccount.models._
 import uk.gov.hmrc.alcoholdutyaccount.models.hods._
-import uk.gov.hmrc.alcoholdutyaccount.models.subscription.ApprovalStatus
 import uk.gov.hmrc.alcoholdutyaccount.models.subscription.ApprovalStatus.{Approved, DeRegistered, Insolvent, Revoked, SmallCiderProducer}
+import uk.gov.hmrc.alcoholdutyaccount.models.subscription.ContactPreferenceForBTA.Digital
+import uk.gov.hmrc.alcoholdutyaccount.models.subscription.{AdrSubscriptionSummary, AlcoholRegime, ApprovalStatus}
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.bootstrap.http.ErrorResponse
 
@@ -514,7 +515,9 @@ class AlcoholDutyServiceSpec extends SpecBase {
             typeOfAlcoholApprovedFor = Set(Beer),
             smallciderFlag = false,
             approvalStatus = hods.Approved,
-            insolvencyFlag = false
+            insolvencyFlag = false,
+            paperlessReference = Some(true),
+            bouncedEmailFlag = Some(false)
           )
           subscriptionSummaryConnector.getSubscriptionSummary(*)(*) returnsF Right(subscriptionSummary)
 
@@ -549,17 +552,22 @@ class AlcoholDutyServiceSpec extends SpecBase {
                 false,
                 false,
                 Returns(Some(true), Some(0), Some("11AA")),
-                Payments(Some(Balance(BigDecimal(100), false, Some("X1234567890"))))
+                Payments(Some(Balance(BigDecimal(100), false, Some("X1234567890")))),
+                Some(Digital),
+                Some(false)
               )
             )
           }
         }
+
         "if the approval status is Insolvent and all the api calls return data" in new SetUp {
           val subscriptionSummary = SubscriptionSummary(
             typeOfAlcoholApprovedFor = Set(Beer),
             smallciderFlag = false,
             approvalStatus = hods.Approved,
-            insolvencyFlag = true
+            insolvencyFlag = true,
+            paperlessReference = Some(true),
+            bouncedEmailFlag = Some(false)
           )
           subscriptionSummaryConnector.getSubscriptionSummary(*)(*) returnsF Right(subscriptionSummary)
 
@@ -594,14 +602,16 @@ class AlcoholDutyServiceSpec extends SpecBase {
                 false,
                 false,
                 Returns(Some(true), Some(0), Some("11AA")),
-                Payments(Some(Balance(BigDecimal(100), false, Some("X1234567890"))))
+                Payments(Some(Balance(BigDecimal(100), false, Some("X1234567890")))),
+                Some(Digital),
+                Some(false)
               )
             )
           }
         }
       }
 
-      "return an empty card if subscription summary return an error" in new SetUp {
+      "return an empty card if subscription summary returns an error" in new SetUp {
         val error = ErrorResponse(INTERNAL_SERVER_ERROR, "An error occurred")
 
         when(subscriptionSummaryConnector.getSubscriptionSummary(appaId))
@@ -609,7 +619,7 @@ class AlcoholDutyServiceSpec extends SpecBase {
 
         whenReady(service.getAlcoholDutyCardData(appaId).value) { result =>
           result mustBe Right(
-            AlcoholDutyCardData(appaId, None, true, false, false, Returns(), Payments())
+            AlcoholDutyCardData(appaId, None, true, false, false, Returns(), Payments(), None, None)
           )
         }
       }
@@ -619,7 +629,9 @@ class AlcoholDutyServiceSpec extends SpecBase {
           typeOfAlcoholApprovedFor = Set(Beer),
           smallciderFlag = false,
           approvalStatus = hods.Approved,
-          insolvencyFlag = false
+          insolvencyFlag = false,
+          paperlessReference = Some(true),
+          bouncedEmailFlag = Some(false)
         )
         subscriptionSummaryConnector.getSubscriptionSummary(*)(*) returnsF Right(subscriptionSummary)
 
@@ -638,7 +650,9 @@ class AlcoholDutyServiceSpec extends SpecBase {
               true,
               false,
               Returns(),
-              Payments(Some(Balance(BigDecimal(100), false, Some("X1234567890"))))
+              Payments(Some(Balance(BigDecimal(100), false, Some("X1234567890")))),
+              Some(Digital),
+              Some(false)
             )
           )
         }
@@ -649,7 +663,9 @@ class AlcoholDutyServiceSpec extends SpecBase {
           typeOfAlcoholApprovedFor = Set(Beer),
           smallciderFlag = false,
           approvalStatus = hods.Approved,
-          insolvencyFlag = false
+          insolvencyFlag = false,
+          paperlessReference = Some(true),
+          bouncedEmailFlag = Some(false)
         )
         subscriptionSummaryConnector.getSubscriptionSummary(*)(*) returnsF Right(subscriptionSummary)
 
@@ -684,7 +700,9 @@ class AlcoholDutyServiceSpec extends SpecBase {
               false,
               true,
               Returns(Some(true), Some(0), Some("11AA")),
-              Payments()
+              Payments(),
+              Some(Digital),
+              Some(false)
             )
           )
         }
@@ -696,7 +714,9 @@ class AlcoholDutyServiceSpec extends SpecBase {
             typeOfAlcoholApprovedFor = Set(Beer),
             smallciderFlag = false,
             approvalStatus = hods.Approved,
-            insolvencyFlag = false
+            insolvencyFlag = false,
+            paperlessReference = Some(true),
+            bouncedEmailFlag = Some(false)
           )
           subscriptionSummaryConnector.getSubscriptionSummary(*)(*) returnsF Right(subscriptionSummary)
 
@@ -715,7 +735,9 @@ class AlcoholDutyServiceSpec extends SpecBase {
                 hasReturnsError = true,
                 hasPaymentsError = true,
                 Returns(),
-                Payments()
+                Payments(),
+                Some(Digital),
+                Some(false)
               )
             )
           }
@@ -728,13 +750,22 @@ class AlcoholDutyServiceSpec extends SpecBase {
               typeOfAlcoholApprovedFor = Set(Beer),
               smallciderFlag = false,
               approvalStatus = hodsApprovalStatus,
-              insolvencyFlag = false
+              insolvencyFlag = false,
+              paperlessReference = Some(true),
+              bouncedEmailFlag = Some(false)
             )
             subscriptionSummaryConnector.getSubscriptionSummary(*)(*) returnsF Right(subscriptionSummary)
 
+            val adrSubscriptionSummary = AdrSubscriptionSummary(
+              approvalStatus = approvalStatus,
+              regimes = Set(AlcoholRegime.Beer),
+              contactPreference = Some(Digital),
+              emailBounced = Some(false)
+            )
+
             whenReady(service.getAlcoholDutyCardData(appaId).value) { result =>
               result mustBe Right(
-                RestrictedCardData(appaId, approvalStatus)
+                RestrictedCardData(appaId, adrSubscriptionSummary)
               )
             }
           }
@@ -745,13 +776,22 @@ class AlcoholDutyServiceSpec extends SpecBase {
           typeOfAlcoholApprovedFor = Set(Beer),
           smallciderFlag = true,
           approvalStatus = hods.Approved,
-          insolvencyFlag = false
+          insolvencyFlag = false,
+          paperlessReference = Some(true),
+          bouncedEmailFlag = Some(false)
         )
         subscriptionSummaryConnector.getSubscriptionSummary(*)(*) returnsF Right(subscriptionSummary)
 
+        val adrSubscriptionSummary = AdrSubscriptionSummary(
+          approvalStatus = SmallCiderProducer,
+          regimes = Set(AlcoholRegime.Beer),
+          contactPreference = Some(Digital),
+          emailBounced = Some(false)
+        )
+
         whenReady(service.getAlcoholDutyCardData(appaId).value) { result =>
           result mustBe Right(
-            RestrictedCardData(appaId, SmallCiderProducer)
+            RestrictedCardData(appaId, adrSubscriptionSummary)
           )
         }
       }

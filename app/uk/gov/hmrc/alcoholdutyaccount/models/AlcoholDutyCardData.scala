@@ -17,7 +17,7 @@
 package uk.gov.hmrc.alcoholdutyaccount.models
 
 import play.api.libs.json._
-import uk.gov.hmrc.alcoholdutyaccount.models.subscription.ApprovalStatus
+import uk.gov.hmrc.alcoholdutyaccount.models.subscription.{AdrSubscriptionSummary, ApprovalStatus, ContactPreferenceForBTA}
 
 final case class Balance(
   totalPaymentAmount: BigDecimal,
@@ -47,15 +47,18 @@ object Returns {
 }
 
 object RestrictedCardData {
-  def apply(alcoholDutyReference: String, approvalStatus: ApprovalStatus): AlcoholDutyCardData = AlcoholDutyCardData(
-    alcoholDutyReference = alcoholDutyReference,
-    approvalStatus = Some(approvalStatus),
-    hasSubscriptionSummaryError = false,
-    hasReturnsError = false,
-    hasPaymentsError = false,
-    returns = Returns(),
-    payments = Payments()
-  )
+  def apply(alcoholDutyReference: String, subscriptionSummary: AdrSubscriptionSummary): AlcoholDutyCardData =
+    AlcoholDutyCardData(
+      alcoholDutyReference = alcoholDutyReference,
+      approvalStatus = Some(subscriptionSummary.approvalStatus),
+      hasSubscriptionSummaryError = false,
+      hasReturnsError = false,
+      hasPaymentsError = false,
+      returns = Returns(),
+      payments = Payments(),
+      contactPreference = subscriptionSummary.contactPreference,
+      emailBounced = subscriptionSummary.emailBounced
+    )
 }
 
 case class AlcoholDutyCardData(
@@ -65,7 +68,9 @@ case class AlcoholDutyCardData(
   hasReturnsError: Boolean,
   hasPaymentsError: Boolean,
   returns: Returns,
-  payments: Payments
+  payments: Payments,
+  contactPreference: Option[ContactPreferenceForBTA],
+  emailBounced: Option[Boolean]
 )
 
 object AlcoholDutyCardData {

@@ -24,8 +24,8 @@ import uk.gov.hmrc.alcoholdutyaccount.connectors.{FinancialDataConnector, Obliga
 import uk.gov.hmrc.alcoholdutyaccount.models._
 import uk.gov.hmrc.alcoholdutyaccount.models.hods.{ObligationStatus, _}
 import uk.gov.hmrc.alcoholdutyaccount.models.payments.TransactionType
+import uk.gov.hmrc.alcoholdutyaccount.models.subscription.AdrSubscriptionSummary
 import uk.gov.hmrc.alcoholdutyaccount.models.subscription.ApprovalStatus.{DeRegistered, Revoked, SmallCiderProducer}
-import uk.gov.hmrc.alcoholdutyaccount.models.subscription.{AdrSubscriptionSummary, ApprovalStatus}
 import uk.gov.hmrc.alcoholdutyaccount.utils.DateTimeHelper.instantToLocalDate
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.bootstrap.http.ErrorResponse
@@ -104,9 +104,9 @@ class AlcoholDutyService @Inject() (
           subscriptionSummary.approvalStatus == DeRegistered ||
           subscriptionSummary.approvalStatus == Revoked
         ) {
-          Future.successful(Right(RestrictedCardData(alcoholDutyReference, subscriptionSummary.approvalStatus)))
+          Future.successful(Right(RestrictedCardData(alcoholDutyReference, subscriptionSummary)))
         } else {
-          getObligationAndFinancialInfo(alcoholDutyReference, subscriptionSummary.approvalStatus)
+          getObligationAndFinancialInfo(alcoholDutyReference, subscriptionSummary)
         }
       }
       .recover { case errorResponse: ErrorResponse =>
@@ -120,12 +120,14 @@ class AlcoholDutyService @Inject() (
           hasReturnsError = false,
           hasPaymentsError = false,
           returns = Returns(),
-          payments = Payments()
+          payments = Payments(),
+          contactPreference = None,
+          emailBounced = None
         )
       }
 
-  private def getObligationAndFinancialInfo(alcoholDutyReference: String, approvalStatus: ApprovalStatus)(implicit
-    hc: HeaderCarrier
+  private def getObligationAndFinancialInfo(alcoholDutyReference: String, subscriptionSummary: AdrSubscriptionSummary)(
+    implicit hc: HeaderCarrier
   ): Future[Either[ErrorResponse, AlcoholDutyCardData]] = {
     val obDataFuture = getReturnDetails(alcoholDutyReference)
     val fDataFuture  = getPaymentInformation(alcoholDutyReference)
@@ -134,12 +136,14 @@ class AlcoholDutyService @Inject() (
       fData  <- fDataFuture
     } yield AlcoholDutyCardData(
       alcoholDutyReference = alcoholDutyReference,
-      approvalStatus = Some(approvalStatus),
+      approvalStatus = Some(subscriptionSummary.approvalStatus),
       hasSubscriptionSummaryError = false,
       hasReturnsError = obData.isEmpty,
       hasPaymentsError = fData.isEmpty,
       returns = obData.getOrElse(Returns()),
-      payments = fData.getOrElse(Payments())
+      payments = fData.getOrElse(Payments()),
+      contactPreference = subscriptionSummary.contactPreference,
+      emailBounced = subscriptionSummary.emailBounced
     ).asRight
   }
 

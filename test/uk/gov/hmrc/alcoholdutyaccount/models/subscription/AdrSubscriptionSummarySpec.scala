@@ -20,6 +20,7 @@ import cats.implicits._
 import uk.gov.hmrc.alcoholdutyaccount.base.SpecBase
 import uk.gov.hmrc.alcoholdutyaccount.models.hods
 import uk.gov.hmrc.alcoholdutyaccount.models.subscription.ApprovalStatus.{Approved, DeRegistered, Insolvent, Revoked, SmallCiderProducer}
+import uk.gov.hmrc.alcoholdutyaccount.models.subscription.ContactPreferenceForBTA.{Digital, Paper}
 
 class AdrSubscriptionSummarySpec extends SpecBase {
   "AdrSubscriptionSummary" - {
@@ -83,6 +84,58 @@ class AdrSubscriptionSummarySpec extends SpecBase {
         )
 
         adrSubscriptionSummary.map(_.approvalStatus) mustBe Right(DeRegistered)
+      }
+
+      "must return a AdrSubscriptionSummary with digital preference given a SubscriptionSummary with paperlessReference=true" in {
+        val adrSubscriptionSummary = AdrSubscriptionSummary.fromSubscriptionSummary(approvedSubscriptionSummary)
+
+        adrSubscriptionSummary.map(_.contactPreference) mustBe Right(Some(Digital))
+      }
+
+      "must return a AdrSubscriptionSummary with paper preference given a SubscriptionSummary with paperlessReference=false" in {
+        val adrSubscriptionSummary = AdrSubscriptionSummary.fromSubscriptionSummary(
+          approvedSubscriptionSummary.copy(paperlessReference = Some(false), bouncedEmailFlag = Some(true))
+        )
+
+        adrSubscriptionSummary.map(_.contactPreference) mustBe Right(Some(Paper))
+      }
+
+      "must return a AdrSubscriptionSummary with missing contact preference given a SubscriptionSummary without ECP fields" in {
+        val adrSubscriptionSummary = AdrSubscriptionSummary.fromSubscriptionSummary(
+          approvedSubscriptionSummary.copy(paperlessReference = None, bouncedEmailFlag = None)
+        )
+
+        adrSubscriptionSummary.map(_.contactPreference) mustBe Right(None)
+      }
+
+      "must return a AdrSubscriptionSummary with emailBounced=true given a SubscriptionSummary with paperlessReference defined and bouncedEmailFlag=true" in {
+        val adrSubscriptionSummary = AdrSubscriptionSummary.fromSubscriptionSummary(
+          approvedSubscriptionSummary.copy(paperlessReference = Some(false), bouncedEmailFlag = Some(true))
+        )
+
+        adrSubscriptionSummary.map(_.emailBounced) mustBe Right(Some(true))
+      }
+
+      "must return a AdrSubscriptionSummary with emailBounced=false given a SubscriptionSummary with paperlessReference defined and bouncedEmailFlag=false" in {
+        val adrSubscriptionSummary = AdrSubscriptionSummary.fromSubscriptionSummary(approvedSubscriptionSummary)
+
+        adrSubscriptionSummary.map(_.emailBounced) mustBe Right(Some(false))
+      }
+
+      "must return a AdrSubscriptionSummary with emailBounced=false given a SubscriptionSummary with paperlessReference defined and no bouncedEmailFlag" in {
+        val adrSubscriptionSummary = AdrSubscriptionSummary.fromSubscriptionSummary(
+          approvedSubscriptionSummary.copy(paperlessReference = Some(false), bouncedEmailFlag = None)
+        )
+
+        adrSubscriptionSummary.map(_.emailBounced) mustBe Right(Some(false))
+      }
+
+      "must return a AdrSubscriptionSummary with missing emailBounced given a SubscriptionSummary without ECP fields" in {
+        val adrSubscriptionSummary = AdrSubscriptionSummary.fromSubscriptionSummary(
+          approvedSubscriptionSummary.copy(paperlessReference = None, bouncedEmailFlag = None)
+        )
+
+        adrSubscriptionSummary.map(_.emailBounced) mustBe Right(None)
       }
 
       "must return an INTERNAL_SERVER_ERROR if no alcohol types were approved" in {
