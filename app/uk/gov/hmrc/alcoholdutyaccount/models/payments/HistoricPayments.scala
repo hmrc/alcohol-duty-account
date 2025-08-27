@@ -38,3 +38,12 @@ case class HistoricPayments(
 object HistoricPayments {
   implicit val historicPaymentsFormat: OFormat[HistoricPayments] = Json.format[HistoricPayments]
 }
+
+case class UserHistoricPayments(
+  appaId: String,
+  historicPaymentsData: Seq[HistoricPayments]
+)
+
+object UserHistoricPayments {
+  implicit val userHistoricPaymentsFormat: OFormat[UserHistoricPayments] = Json.format[UserHistoricPayments]
+}

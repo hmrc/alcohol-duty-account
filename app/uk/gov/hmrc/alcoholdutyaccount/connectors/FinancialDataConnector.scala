@@ -50,9 +50,10 @@ class FinancialDataConnector @Inject() (
     getFinancialData(appaId, getBaseQueryParams(true))
 
   def getNotOnlyOpenFinancialData(
-    appaId: String
+    appaId: String,
+    year: Int
   )(implicit hc: HeaderCarrier): Future[Either[ErrorResponse, FinancialTransactionDocument]] =
-    getFinancialData(appaId, getOnlyOpenItemsFalseParameters)
+    getFinancialData(appaId, getOnlyOpenItemsFalseParameters(year))
 
   private def getFinancialData(
     appaId: String,
@@ -123,9 +124,9 @@ class FinancialDataConnector @Inject() (
       "customerPaymentInformation" -> false.toString
     )
 
-  private def getOnlyOpenItemsFalseParameters: Seq[(String, String)] =
+  private def getOnlyOpenItemsFalseParameters(year: Int): Seq[(String, String)] =
     getBaseQueryParams(false) ++ Seq(
-      "dateFrom" -> config.historicDataStartDate,
-      "dateTo"   -> config.historicDataEndDate
+      "dateFrom" -> s"$year-01-01",
+      "dateTo"   -> s"$year-12-31"
     )
 }
