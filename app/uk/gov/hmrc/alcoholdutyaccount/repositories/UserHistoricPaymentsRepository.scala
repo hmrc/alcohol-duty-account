@@ -34,12 +34,12 @@ class UserHistoricPaymentsRepository @Inject() (
     extends PlayMongoRepository[UserHistoricPayments](
       collectionName = "user-historic-payments",
       mongoComponent = mongoComponent,
-      domainFormat = UserHistoricPayments.userHistoricPaymentsFormat,
+      domainFormat = UserHistoricPayments.format,
       indexes = Seq(
         IndexModel(
-          Indexes.ascending("appaId"),
+          Indexes.ascending("createdAt"),
           IndexOptions()
-            .name("appaIdIdx")
+            .name("createdAtIdx")
             .expireAfter(appConfig.dbTimeToLiveInSeconds, TimeUnit.SECONDS)
         )
       ),

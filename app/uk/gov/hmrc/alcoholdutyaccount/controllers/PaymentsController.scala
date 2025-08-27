@@ -16,21 +16,17 @@
 
 package uk.gov.hmrc.alcoholdutyaccount.controllers
 
-import cats.data.EitherT
 import play.api.Logging
 import play.api.libs.json.Json
 import play.api.mvc.{Action, AnyContent, ControllerComponents}
 import uk.gov.hmrc.alcoholdutyaccount.config.AppConfig
 import uk.gov.hmrc.alcoholdutyaccount.controllers.actions.{AuthorisedAction, CheckAppaIdAction}
-import uk.gov.hmrc.alcoholdutyaccount.models.ErrorCodes
-import uk.gov.hmrc.alcoholdutyaccount.service.{HistoricPaymentsRepositoryService, HistoricPaymentsService, OpenPaymentsService}
-import uk.gov.hmrc.alcoholdutyaccount.utils.DateTimeHelper.instantToLocalDate
+import uk.gov.hmrc.alcoholdutyaccount.service.{HistoricPaymentsRepositoryService, OpenPaymentsService}
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
-import uk.gov.hmrc.play.bootstrap.http.ErrorResponse
 
-import java.time.{Clock, Instant, Year}
+import java.time.{Clock, Year}
 import javax.inject.Inject
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.ExecutionContext
 
 class PaymentsController @Inject() (
   authorise: AuthorisedAction,

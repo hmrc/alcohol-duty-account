@@ -16,8 +16,12 @@
 
 package uk.gov.hmrc.alcoholdutyaccount.models.payments
 
-import play.api.libs.json.{Json, OFormat}
+import play.api.libs.functional.syntax._
+import play.api.libs.json._
 import uk.gov.hmrc.alcoholdutyaccount.models.ReturnPeriod
+import uk.gov.hmrc.mongo.play.json.formats.MongoJavatimeFormats
+
+import java.time.Instant
 
 case class HistoricPayment(
   period: ReturnPeriod,
@@ -41,9 +45,15 @@ object HistoricPayments {
 
 case class UserHistoricPayments(
   appaId: String,
-  historicPaymentsData: Seq[HistoricPayments]
+  historicPaymentsData: Seq[HistoricPayments],
+  createdAt: Instant
 )
 
 object UserHistoricPayments {
-  implicit val userHistoricPaymentsFormat: OFormat[UserHistoricPayments] = Json.format[UserHistoricPayments]
+  implicit val format: OFormat[UserHistoricPayments] =
+    (
+      (__ \ "_id").format[String] and
+        (__ \ "historicPaymentsData").format[Seq[HistoricPayments]] and
+        (__ \ "createdAt").format(MongoJavatimeFormats.instantFormat)
+    )(UserHistoricPayments.apply, unlift(UserHistoricPayments.unapply))
 }

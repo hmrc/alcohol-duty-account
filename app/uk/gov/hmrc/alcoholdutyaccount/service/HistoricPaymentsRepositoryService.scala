@@ -22,12 +22,14 @@ import uk.gov.hmrc.alcoholdutyaccount.repositories.UserHistoricPaymentsRepositor
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.bootstrap.http.ErrorResponse
 
+import java.time.{Clock, Instant}
 import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
 
 class HistoricPaymentsRepositoryService @Inject() (
   historicPaymentsService: HistoricPaymentsService,
-  userHistoricPaymentsRepository: UserHistoricPaymentsRepository
+  userHistoricPaymentsRepository: UserHistoricPaymentsRepository,
+  clock: Clock
 )(implicit ec: ExecutionContext)
     extends Logging {
 
@@ -54,7 +56,7 @@ class HistoricPaymentsRepositoryService @Inject() (
           case Left(error)                   => Future.successful(Left(error))
           case Right(historicPaymentsByYear) =>
             userHistoricPaymentsRepository
-              .set(UserHistoricPayments(appaId, historicPaymentsByYear))
+              .set(UserHistoricPayments(appaId, historicPaymentsByYear, Instant.now(clock)))
               .map(_ => Right(historicPaymentsByYear))
         }
     }
