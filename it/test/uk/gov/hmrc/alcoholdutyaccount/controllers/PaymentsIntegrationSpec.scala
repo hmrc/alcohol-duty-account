@@ -16,18 +16,54 @@
 
 package uk.gov.hmrc.alcoholdutyaccount.controllers
 
+import org.mockito.ArgumentMatchers.any
+import play.api.{Application, Mode}
+import play.api.inject.bind
+import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.Json
 import play.api.test.FakeRequest
+import play.api.test.Helpers.running
 import uk.gov.hmrc.alcoholdutyaccount.base.{ConnectorTestHelpers, ISpecBase}
+import uk.gov.hmrc.alcoholdutyaccount.models.payments.HistoricPayments
+import uk.gov.hmrc.alcoholdutyaccount.repositories.UserHistoricPaymentsRepository
 import uk.gov.hmrc.play.bootstrap.http.ErrorResponse
+
+import java.time.{Clock, Instant, ZoneId}
+import scala.concurrent.Future
 
 class PaymentsIntegrationSpec extends ISpecBase with ConnectorTestHelpers {
   protected val endpointName = "financial"
 
+//  val url = config.financialDataUrl(appaId)
+//
+//  val year  = 2025
+  //    val clock = Clock.fixed(Instant.ofEpochMilli(1755864000000L), ZoneId.of("UTC")) // 22 August 2025
+//
+//  val openParameters = Seq(
+//    "onlyOpenItems"              -> true.toString,
+//    "includeLocks"               -> false.toString,
+//    "calculateAccruedInterest"   -> false.toString,
+//    "customerPaymentInformation" -> false.toString
+//  )
+//
+//  val mockRepository = mock[UserHistoricPaymentsRepository]
+//
+//  val clock2025 = Clock.fixed(Instant.ofEpochMilli(1755864000000L), ZoneId.of("UTC")) // 22 August 2025
+//
+//  override val application: Application = GuiceApplicationBuilder()
+//    .disable[com.codahale.metrics.MetricRegistry]
+//    .configure(additionalAppConfig)
+//    .overrides(
+//      bind[Clock].toInstance(clock2025),
+//      bind[UserHistoricPaymentsRepository].toInstance(mockRepository)
+//    )
+//    .in(Mode.Test)
+//    .build()
+
   "the open payments endpoint must" - {
     "respond with OK if able to fetch open payments" in new SetUp {
       stubAuthorised(appaId)
-      stubGetWithParameters(url, openParameters, OK, financialDataStubJson)
+      stubGetWithParameters(url, openParameters, OK, financialDataStubJson())
 
       val response = callRoute(
         FakeRequest("GET", routes.PaymentsController.openPayments(appaId).url)
@@ -87,70 +123,175 @@ class PaymentsIntegrationSpec extends ISpecBase with ConnectorTestHelpers {
   }
 
   "the historic payments endpoint must" - {
-    "respond with OK if able to fetch historic payments" in new SetUp {
+//    "test" in new SetUp {
+//      when(mockRepository.get(any())) thenReturn Future.successful(None)
+//      when(mockRepository.set(any())) thenReturn Future.successful(userHistoricPayments)
+//
+//      stubAuthorised(appaId)
+//      stubGetWithParameters(url, historicParameters2024, OK, financialDataStubJson(year - 1))
+//      stubGetWithParameters(url, historicParameters2025, OK, financialDataStubJson(year))
+//
+//      val response = callRoute(
+//        FakeRequest("GET", routes.PaymentsController.historicPayments(appaId).url)
+//          .withHeaders("Authorization" -> "Bearer 12345")
+//      )
+//
+//      status(response)                 mustBe OK
+//      contentAsJson(response).toString mustBe historicPayments
+//
+//      verifyGetWithParameters(url, historicParameters2024)
+//      verifyGetWithParameters(url, historicParameters2025)
+//    }
+
+    "respond with OK if able to fetch historic payments from the cache" in new SetUp {
+      val mockRepository = mock[UserHistoricPaymentsRepository]
+      when(mockRepository.get(any())) thenReturn Future.successful(Some(userHistoricPayments))
+
+      val application = applicationBuilder()
+        .overrides(
+          bind[Clock].toInstance(clock),
+          bind[UserHistoricPaymentsRepository].toInstance(mockRepository)
+        )
+        .build()
+
       stubAuthorised(appaId)
-      stubGetWithParameters(url, historicParameters, OK, financialDataStubJson)
 
-      val response = callRoute(
-        FakeRequest("GET", routes.PaymentsController.historicPayments(appaId, year).url)
+      running(application) {
+        val request = FakeRequest(GET, routes.PaymentsController.historicPayments(appaId).url)
           .withHeaders("Authorization" -> "Bearer 12345")
-      )
-      status(response) mustBe OK
-      contentAsJson(response).toString mustBe historicPayments
+        val result  = route(application, request).value
 
-      verifyGetWithParameters(url, historicParameters)
+        status(result)        mustBe OK
+        contentAsJson(result) mustBe Json.toJson(historicPaymentsData)
+
+        verifyGetWithParametersNeverCalled(url, historicParameters2024)
+        verifyGetWithParametersNeverCalled(url, historicParameters2025)
+      }
     }
 
-    "respond with INTERNAL_SERVER_ERROR if the data retrieved cannot be parsed" in new SetUp {
+    "respond with OK if able to fetch historic payments from the connector" in new SetUp {
+      val mockRepository = mock[UserHistoricPaymentsRepository]
+      when(mockRepository.get(any())) thenReturn Future.successful(None)
+      when(mockRepository.set(any())) thenReturn Future.successful(userHistoricPayments)
+
+      val application = applicationBuilder()
+        .overrides(
+          bind[Clock].toInstance(clock),
+          bind[UserHistoricPaymentsRepository].toInstance(mockRepository)
+        )
+        .build()
+
       stubAuthorised(appaId)
-      stubGetWithParameters(url, historicParameters, OK, "blah")
+      stubGetWithParameters(url, historicParameters2024, OK, financialDataStubJson(year - 1))
+      stubGetWithParameters(url, historicParameters2025, OK, financialDataStubJson(year))
 
-      val response = callRoute(
-        FakeRequest("GET", routes.PaymentsController.historicPayments(appaId, year).url)
+      running(application) {
+        val request = FakeRequest(GET, routes.PaymentsController.historicPayments(appaId).url)
           .withHeaders("Authorization" -> "Bearer 12345")
-      )
+        val result  = route(application, request).value
 
-      status(response)        mustBe INTERNAL_SERVER_ERROR
-      contentAsJson(response) mustBe Json.toJson(ErrorResponse(INTERNAL_SERVER_ERROR, "Unexpected Response"))
+        status(result)                 mustBe OK
+        contentAsJson(result).toString mustBe historicPayments
 
-      verifyGetWithParameters(url, historicParameters)
+        verifyGetWithParameters(url, historicParameters2024)
+        verifyGetWithParameters(url, historicParameters2025)
+      }
+    }
+
+    "respond with INTERNAL_SERVER_ERROR if the data retrieved from the connector cannot be parsed" in new SetUp {
+      val mockRepository = mock[UserHistoricPaymentsRepository]
+      when(mockRepository.get(any())) thenReturn Future.successful(None)
+
+      val application = applicationBuilder()
+        .overrides(
+          bind[Clock].toInstance(clock),
+          bind[UserHistoricPaymentsRepository].toInstance(mockRepository)
+        )
+        .build()
+
+      stubAuthorised(appaId)
+      stubGetWithParameters(url, historicParameters2024, OK, financialDataStubJson(year - 1))
+      stubGetWithParameters(url, historicParameters2025, OK, "blah")
+
+      running(application) {
+        val request = FakeRequest(GET, routes.PaymentsController.historicPayments(appaId).url)
+          .withHeaders("Authorization" -> "Bearer 12345")
+        val result  = route(application, request).value
+
+        status(result)        mustBe INTERNAL_SERVER_ERROR
+        contentAsJson(result) mustBe Json.toJson(ErrorResponse(INTERNAL_SERVER_ERROR, "Unexpected Response"))
+
+        verifyGetWithParameters(url, historicParameters2024)
+        verifyGetWithParameters(url, historicParameters2025)
+      }
     }
 
     "respond with an empty document if financial data not found for appaId" in new SetUp {
-      stubAuthorised(appaId)
-      stubGetWithParameters(url, historicParameters, NOT_FOUND, "")
-
-      val response = callRoute(
-        FakeRequest("GET", routes.PaymentsController.historicPayments(appaId, year).url)
-          .withHeaders("Authorization" -> "Bearer 12345")
+      val mockRepository = mock[UserHistoricPaymentsRepository]
+      when(mockRepository.get(any())) thenReturn Future.successful(None)
+      when(mockRepository.set(any())) thenReturn Future.successful(
+        userHistoricPayments.copy(historicPaymentsData =
+          Seq(HistoricPayments(2024, Seq.empty), HistoricPayments(2025, Seq.empty))
+        )
       )
 
-      status(response)                 mustBe OK
-      contentAsJson(response).toString mustBe noHistoricPayments
+      val application = applicationBuilder()
+        .overrides(
+          bind[Clock].toInstance(clock),
+          bind[UserHistoricPaymentsRepository].toInstance(mockRepository)
+        )
+        .build()
 
-      verifyGetWithParameters(url, historicParameters)
+      stubAuthorised(appaId)
+      stubGetWithParameters(url, historicParameters2024, NOT_FOUND, "")
+      stubGetWithParameters(url, historicParameters2025, NOT_FOUND, "")
+
+      running(application) {
+        val request = FakeRequest(GET, routes.PaymentsController.historicPayments(appaId).url)
+          .withHeaders("Authorization" -> "Bearer 12345")
+        val result  = route(application, request).value
+
+        status(result)                 mustBe OK
+        contentAsJson(result).toString mustBe noHistoricPayments
+
+        verifyGetWithParameters(url, historicParameters2024)
+        verifyGetWithParameters(url, historicParameters2025)
+      }
     }
 
     "respond with INTERNAL_SERVER_ERROR if error(s) returned from the financial data api call" in new SetUp {
+      val mockRepository = mock[UserHistoricPaymentsRepository]
+      when(mockRepository.get(any())) thenReturn Future.successful(None)
+
+      val application = applicationBuilder()
+        .overrides(
+          bind[Clock].toInstance(clock),
+          bind[UserHistoricPaymentsRepository].toInstance(mockRepository)
+        )
+        .build()
+
       stubAuthorised(appaId)
-      stubGetWithParameters(url, historicParameters, INTERNAL_SERVER_ERROR, "")
+      stubGetWithParameters(url, historicParameters2024, INTERNAL_SERVER_ERROR, "")
 
-      val response = callRoute(
-        FakeRequest("GET", routes.PaymentsController.historicPayments(appaId, year).url)
+      running(application) {
+        val request = FakeRequest(GET, routes.PaymentsController.historicPayments(appaId).url)
           .withHeaders("Authorization" -> "Bearer 12345")
-      )
+        val result  = route(application, request).value
 
-      status(response)        mustBe INTERNAL_SERVER_ERROR
-      contentAsJson(response) mustBe Json.toJson(ErrorResponse(INTERNAL_SERVER_ERROR, "Unexpected Response"))
+        status(result)        mustBe INTERNAL_SERVER_ERROR
+        contentAsJson(result) mustBe Json.toJson(ErrorResponse(INTERNAL_SERVER_ERROR, "Unexpected Response"))
 
-      verifyGetWithParameters(url, historicParameters)
+        verifyGetWithParameters(url, historicParameters2024)
+        verifyGetWithParametersNeverCalled(url, historicParameters2025)
+      }
     }
   }
 
   class SetUp {
     val url = config.financialDataUrl(appaId)
 
-    val year = 2024
+    val year  = 2025
+    val clock = Clock.fixed(Instant.ofEpochMilli(1755864000000L), ZoneId.of("UTC")) // 22 August 2025
 
     val openParameters = Seq(
       "onlyOpenItems"              -> true.toString,
@@ -159,38 +300,39 @@ class PaymentsIntegrationSpec extends ISpecBase with ConnectorTestHelpers {
       "customerPaymentInformation" -> false.toString
     )
 
-    val allParameters = Seq(
+    val historicParameters2025 = Seq(
       "onlyOpenItems"              -> false.toString,
       "includeLocks"               -> false.toString,
       "calculateAccruedInterest"   -> false.toString,
       "customerPaymentInformation" -> false.toString,
-      "dateFrom"                   -> s"$year-01-01",
-      "dateTo"                     -> s"$year-12-31"
+      "dateFrom"                   -> "2025-01-01",
+      "dateTo"                     -> "2025-12-31"
     )
 
-    val historicParameters = Seq(
+    val historicParameters2024 = Seq(
       "onlyOpenItems"              -> false.toString,
       "includeLocks"               -> false.toString,
       "calculateAccruedInterest"   -> false.toString,
       "customerPaymentInformation" -> false.toString,
-      "dateFrom"                   -> "2024-10-31",
-      "dateTo"                     -> "2025-10-30"
+      "dateFrom"                   -> "2024-01-01",
+      "dateTo"                     -> "2024-12-31"
     )
 
-    val financialDataStubJson =
+    def financialDataStubJson(year: Int = year) = {
+      val yr = year.toString.takeRight(2)
       s"""{
         |  "idType": "ZAD",
         |  "idNumber": "$appaId",
         |  "regimeType": "AD",
-        |  "processingDate": "2024-08-21T13:44:32Z",
+        |  "processingDate": "$year-08-21T13:44:32Z",
         |  "financialTransactions": [
         |    {
         |      "chargeType": "SP Beer 1.3-3.4 es",
         |      "mainType": "Alcohol Duty Return",
-        |      "periodKey": "24AH",
-        |      "periodKeyDescription": "August 2024",
-        |      "taxPeriodFrom": "2024-08-01",
-        |      "taxPeriodTo": "2024-08-31",
+        |      "periodKey": "${yr}AH",
+        |      "periodKeyDescription": "August $year",
+        |      "taxPeriodFrom": "$year-08-01",
+        |      "taxPeriodTo": "$year-08-31",
         |      "businessPartner": "$businessPartner",
         |      "contractAccountCategory": "51",
         |      "contractAccount": "$contractAccount",
@@ -206,7 +348,7 @@ class PaymentsIntegrationSpec extends ISpecBase with ConnectorTestHelpers {
         |      "items": [
         |        {
         |          "subItem": "000",
-        |          "dueDate": "2024-09-25",
+        |          "dueDate": "$year-09-25",
         |          "amount": 237.44
         |        }
         |      ]
@@ -214,10 +356,10 @@ class PaymentsIntegrationSpec extends ISpecBase with ConnectorTestHelpers {
         |    {
         |      "chargeType": "SP Beer 1.3-3.4 es",
         |      "mainType": "Alcohol Duty Return",
-        |      "periodKey": "24AE",
-        |      "periodKeyDescription": "May 2024",
-        |      "taxPeriodFrom": "2024-05-01",
-        |      "taxPeriodTo": "2024-05-31",
+        |      "periodKey": "${yr}AE",
+        |      "periodKeyDescription": "May $year",
+        |      "taxPeriodFrom": "$year-05-01",
+        |      "taxPeriodTo": "$year-05-31",
         |      "businessPartner": "$businessPartner",
         |      "contractAccountCategory": "51",
         |      "contractAccount": "$contractAccount",
@@ -233,7 +375,7 @@ class PaymentsIntegrationSpec extends ISpecBase with ConnectorTestHelpers {
         |      "items": [
         |        {
         |          "subItem": "000",
-        |          "dueDate": "2024-06-25",
+        |          "dueDate": "$year-06-25",
         |          "amount": 4577.44
         |        }
         |      ]
@@ -241,10 +383,10 @@ class PaymentsIntegrationSpec extends ISpecBase with ConnectorTestHelpers {
         |    {
         |      "chargeType": "SP Beer 1.3-3.4 es",
         |      "mainType": "Alcohol Duty Return",
-        |      "periodKey": "24AD",
-        |      "periodKeyDescription": "April 2024",
-        |      "taxPeriodFrom": "2024-04-01",
-        |      "taxPeriodTo": "2024-04-30",
+        |      "periodKey": "${yr}AD",
+        |      "periodKeyDescription": "April $year",
+        |      "taxPeriodFrom": "$year-04-01",
+        |      "taxPeriodTo": "$year-04-30",
         |      "businessPartner": "$businessPartner",
         |      "contractAccountCategory": "51",
         |      "contractAccount": "$contractAccount",
@@ -261,14 +403,14 @@ class PaymentsIntegrationSpec extends ISpecBase with ConnectorTestHelpers {
         |      "items": [
         |        {
         |          "subItem": "000",
-        |          "dueDate": "2024-05-25",
+        |          "dueDate": "$year-05-25",
         |          "amount": 2577.44
         |        },
         |        {
         |          "subItem": "001",
-        |          "dueDate": "2024-05-25",
+        |          "dueDate": "$year-05-25",
         |          "amount": 2000.00,
-        |          "clearingDate": "2024-05-25",
+        |          "clearingDate": "$year-05-25",
         |          "clearingReason": "Incoming Payment",
         |          "clearingSAPDocument": "930266216883"
         |        }
@@ -277,10 +419,10 @@ class PaymentsIntegrationSpec extends ISpecBase with ConnectorTestHelpers {
         |    {
         |      "chargeType": "SP Beer 1.3-3.4 es",
         |      "mainType": "Alcohol Duty Return",
-        |      "periodKey": "24AC",
-        |      "periodKeyDescription": "March 2024",
-        |      "taxPeriodFrom": "2024-03-01",
-        |      "taxPeriodTo": "2024-03-31",
+        |      "periodKey": "${yr}AC",
+        |      "periodKeyDescription": "March $year",
+        |      "taxPeriodFrom": "$year-03-01",
+        |      "taxPeriodTo": "$year-03-31",
         |      "businessPartner": "$businessPartner",
         |      "contractAccountCategory": "51",
         |      "contractAccount": "$contractAccount",
@@ -297,14 +439,14 @@ class PaymentsIntegrationSpec extends ISpecBase with ConnectorTestHelpers {
         |      "items": [
         |        {
         |          "subItem": "000",
-        |          "dueDate": "2024-04-25",
+        |          "dueDate": "$year-04-25",
         |          "amount": -2577.44
         |        },
         |        {
         |          "subItem": "001",
-        |          "dueDate": "2024-04-25",
+        |          "dueDate": "$year-04-25",
         |          "amount": -2000.00,
-        |          "clearingDate": "2024-04-25",
+        |          "clearingDate": "$year-04-25",
         |          "clearingReason": "Incoming Payment",
         |          "clearingSAPDocument": "280900265898"
         |        }
@@ -313,8 +455,8 @@ class PaymentsIntegrationSpec extends ISpecBase with ConnectorTestHelpers {
         |    {
         |      "chargeType": "SP Beer 1.3-3.4 es int",
         |      "mainType": "Alcohol Duty Interest",
-        |      "taxPeriodFrom": "2024-02-01",
-        |      "taxPeriodTo": "2024-02-29",
+        |      "taxPeriodFrom": "$year-02-01",
+        |      "taxPeriodTo": "$year-02-29",
         |      "businessPartner": "$businessPartner",
         |      "contractAccountCategory": "51",
         |      "contractAccount": "$contractAccount",
@@ -330,7 +472,7 @@ class PaymentsIntegrationSpec extends ISpecBase with ConnectorTestHelpers {
         |      "items": [
         |        {
         |          "subItem": "000",
-        |          "dueDate": "2024-02-01",
+        |          "dueDate": "$year-02-01",
         |          "amount": 20.56
         |        }
         |      ]
@@ -338,8 +480,8 @@ class PaymentsIntegrationSpec extends ISpecBase with ConnectorTestHelpers {
         |    {
         |      "chargeType": "SP Beer 1.3-3.4 es int",
         |      "mainType": "Alcohol Duty Interest",
-        |      "taxPeriodFrom": "2024-02-01",
-        |      "taxPeriodTo": "2024-02-29",
+        |      "taxPeriodFrom": "$year-02-01",
+        |      "taxPeriodTo": "$year-02-29",
         |      "businessPartner": "$businessPartner",
         |      "contractAccountCategory": "51",
         |      "contractAccount": "$contractAccount",
@@ -356,14 +498,14 @@ class PaymentsIntegrationSpec extends ISpecBase with ConnectorTestHelpers {
         |      "items": [
         |        {
         |          "subItem": "000",
-        |          "dueDate": "2024-02-01",
+        |          "dueDate": "$year-02-01",
         |          "amount": 10.56
         |        },
         |        {
         |          "subItem": "001",
-        |          "dueDate": "2024-02-01",
+        |          "dueDate": "$year-02-01",
         |          "amount": 10.00,
-        |          "clearingDate": "2024-02-01",
+        |          "clearingDate": "$year-02-01",
         |          "clearingReason": "Incoming Payment",
         |          "clearingSAPDocument": "744695668171"
         |        }
@@ -386,7 +528,7 @@ class PaymentsIntegrationSpec extends ISpecBase with ConnectorTestHelpers {
         |      "items": [
         |        {
         |          "subItem": "000",
-        |          "dueDate": "2024-08-01",
+        |          "dueDate": "$year-08-01",
         |          "amount": -1000
         |        }
         |      ]
@@ -408,7 +550,7 @@ class PaymentsIntegrationSpec extends ISpecBase with ConnectorTestHelpers {
         |      "items": [
         |        {
         |          "subItem": "000",
-        |          "dueDate": "2024-08-01",
+        |          "dueDate": "$year-08-01",
         |          "amount": -500
         |        }
         |      ]
@@ -431,7 +573,7 @@ class PaymentsIntegrationSpec extends ISpecBase with ConnectorTestHelpers {
         |      "items": [
         |        {
         |          "subItem": "000",
-        |          "dueDate": "2024-03-01",
+        |          "dueDate": "$year-03-01",
         |          "amount": -50
         |        }
         |      ]
@@ -439,13 +581,14 @@ class PaymentsIntegrationSpec extends ISpecBase with ConnectorTestHelpers {
         |  ]
         |}
         |""".stripMargin
+    }
 
     val openPayments       =
-      """{"outstandingPayments":[{"transactionType":"LPI","dueDate":"2024-02-01","chargeReference":"XA85353805192234","remainingAmount":20.56},{"transactionType":"Return","dueDate":"2024-09-25","chargeReference":"XA91104208683855","remainingAmount":237.44},{"transactionType":"Return","dueDate":"2024-06-25","chargeReference":"XA95767883826728","remainingAmount":4577.44},{"transactionType":"Return","dueDate":"2024-05-25","chargeReference":"XA07406454540955","remainingAmount":2577.44},{"transactionType":"RPI","dueDate":"2024-03-01","chargeReference":"XA69201353871649","remainingAmount":-50},{"transactionType":"Return","dueDate":"2024-04-25","chargeReference":"XA15775952652650","remainingAmount":-2577.44},{"transactionType":"LPI","dueDate":"2024-02-01","chargeReference":"XA63139412020838","remainingAmount":10.56}],"totalOutstandingPayments":4796,"unallocatedPayments":[{"paymentDate":"2024-08-01","unallocatedAmount":-1000},{"paymentDate":"2024-08-01","unallocatedAmount":-500}],"totalUnallocatedPayments":-1500,"totalOpenPaymentsAmount":3296}"""
+      s"""{"outstandingPayments":[{"transactionType":"LPI","dueDate":"$year-02-01","chargeReference":"XA85353805192234","remainingAmount":20.56},{"transactionType":"Return","dueDate":"$year-09-25","chargeReference":"XA91104208683855","remainingAmount":237.44},{"transactionType":"Return","dueDate":"$year-06-25","chargeReference":"XA95767883826728","remainingAmount":4577.44},{"transactionType":"Return","dueDate":"$year-05-25","chargeReference":"XA07406454540955","remainingAmount":2577.44},{"transactionType":"RPI","dueDate":"$year-03-01","chargeReference":"XA69201353871649","remainingAmount":-50},{"transactionType":"Return","dueDate":"$year-04-25","chargeReference":"XA15775952652650","remainingAmount":-2577.44},{"transactionType":"LPI","dueDate":"$year-02-01","chargeReference":"XA63139412020838","remainingAmount":10.56}],"totalOutstandingPayments":4796,"unallocatedPayments":[{"paymentDate":"$year-08-01","unallocatedAmount":-1000},{"paymentDate":"$year-08-01","unallocatedAmount":-500}],"totalUnallocatedPayments":-1500,"totalOpenPaymentsAmount":3296}"""
     val historicPayments   =
-      s"""{"year":$year,"payments":[{"period":"24AB","transactionType":"LPI","chargeReference":"XA63139412020838","amountPaid":10},{"period":"24AD","transactionType":"Return","chargeReference":"XA07406454540955","amountPaid":2000}]}"""
+      s"""[{"year":${year - 1},"payments":[{"period":"24AB","transactionType":"LPI","chargeReference":"XA63139412020838","amountPaid":10},{"period":"24AD","transactionType":"Return","chargeReference":"XA07406454540955","amountPaid":2000}]},{"year":$year,"payments":[{"period":"25AB","transactionType":"LPI","chargeReference":"XA63139412020838","amountPaid":10},{"period":"25AD","transactionType":"Return","chargeReference":"XA07406454540955","amountPaid":2000}]}]"""
     val noOpenPayments     =
       """{"outstandingPayments":[],"totalOutstandingPayments":0,"unallocatedPayments":[],"totalUnallocatedPayments":0,"totalOpenPaymentsAmount":0}"""
-    val noHistoricPayments = s"""{"year":$year,"payments":[]}"""
+    val noHistoricPayments = s"""[{"year":${year - 1},"payments":[]},{"year":$year,"payments":[]}]"""
   }
 }

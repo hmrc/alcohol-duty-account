@@ -18,6 +18,7 @@ package uk.gov.hmrc.alcoholdutyaccount.base
 
 import org.apache.pekko.actor.ActorSystem
 import org.apache.pekko.stream.Materializer
+import org.mockito.MockitoSugar
 import org.scalacheck.{Arbitrary, Gen}
 import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
 import org.scalatest.freespec.AnyFreeSpec
@@ -60,7 +61,8 @@ abstract class ISpecBase
     with WireMockSupport
     with AuthStubs
     with IntegrationPatience
-    with TestData {
+    with TestData
+    with MockitoSugar {
 
   implicit lazy val arbString: Arbitrary[String] = Arbitrary(Gen.alphaNumStr.retryUntil(_.nonEmpty))
 
@@ -72,6 +74,12 @@ abstract class ISpecBase
     "metrics.enabled"  -> false,
     "auditing.enabled" -> false
   ) ++ getWireMockAppConfig(Seq("auth", "subscription", "obligation", "financial"))
+
+  protected def applicationBuilder(): GuiceApplicationBuilder =
+    new GuiceApplicationBuilder()
+      .disable[com.codahale.metrics.MetricRegistry]
+      .configure(additionalAppConfig)
+      .in(Mode.Test)
 
   override def fakeApplication(): Application =
     GuiceApplicationBuilder()

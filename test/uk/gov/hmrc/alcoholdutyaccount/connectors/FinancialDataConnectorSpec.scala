@@ -48,7 +48,7 @@ class FinancialDataConnectorSpec extends SpecBase with ScalaFutures with Connect
           OK,
           Json.toJson(financialDocumentWithSingleSapDocumentNo).toString
         )
-        whenReady(connector.getNotOnlyOpenFinancialData(appaId)) { result =>
+        whenReady(connector.getNotOnlyOpenFinancialData(appaId, year)) { result =>
           result mustBe Right(financialDocumentWithSingleSapDocumentNo)
           verifyGetWithParameters(url, expectedAllQueryParams)
         }
@@ -144,8 +144,8 @@ class FinancialDataConnectorSpec extends SpecBase with ScalaFutures with Connect
       "includeLocks"               -> "false",
       "calculateAccruedInterest"   -> "false",
       "customerPaymentInformation" -> "false",
-      "dateFrom"                   -> "2024-10-31",
-      "dateTo"                     -> "2025-10-30"
+      "dateFrom"                   -> "2024-01-01",
+      "dateTo"                     -> "2024-12-31"
     )
   }
 }

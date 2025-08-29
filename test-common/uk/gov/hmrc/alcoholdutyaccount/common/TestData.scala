@@ -20,13 +20,13 @@ import org.scalacheck.Gen
 import play.api.libs.json.{Json, OFormat}
 import uk.gov.hmrc.alcoholdutyaccount.common.generators.ModelGenerators
 import uk.gov.hmrc.alcoholdutyaccount.models.hods._
-import uk.gov.hmrc.alcoholdutyaccount.models.payments.TransactionType.{Return, toMainTransactionType}
-import uk.gov.hmrc.alcoholdutyaccount.models.payments.{HistoricPayments, OpenPayments, TransactionType}
+import uk.gov.hmrc.alcoholdutyaccount.models.payments.TransactionType._
+import uk.gov.hmrc.alcoholdutyaccount.models.payments.{HistoricPayment, HistoricPayments, OpenPayments, TransactionType, UserHistoricPayments}
 import uk.gov.hmrc.alcoholdutyaccount.models.subscription.ContactPreferenceForBTA.Digital
 import uk.gov.hmrc.alcoholdutyaccount.models.subscription.{AdrSubscriptionSummary, AlcoholRegime, ApprovalStatus}
 import uk.gov.hmrc.alcoholdutyaccount.models.{AdrObligationData, ObligationStatus, ReturnPeriod}
 
-import java.time.{Clock, Instant, LocalDate, ZoneId}
+import java.time.{Clock, Instant, LocalDate, Month, YearMonth, ZoneId}
 
 trait TestData extends ModelGenerators {
   val clock = Clock.fixed(Instant.ofEpochMilli(1718118467838L), ZoneId.of("UTC"))
@@ -720,10 +720,35 @@ trait TestData extends ModelGenerators {
     totalOpenPaymentsAmount = BigDecimal(0)
   )
 
-  val noHistoricPayments: HistoricPayments = HistoricPayments(
-    year = 2024,
-    payments = Seq.empty
+  val chargeReference = chargeReferenceGen.sample.get
+
+  val historicReturnPayment =
+    HistoricPayment(ReturnPeriod(YearMonth.of(2025, Month.APRIL)), Return, Some(chargeReference), BigDecimal(123.45))
+  val historicLPIPayment    =
+    HistoricPayment(ReturnPeriod(YearMonth.of(2025, Month.JUNE)), LPI, Some(chargeReference), BigDecimal(12.45))
+  val historicRPIPayment    =
+    HistoricPayment(ReturnPeriod(YearMonth.of(2025, Month.MAY)), RPI, Some(chargeReference), BigDecimal(-123.45))
+  val historicRefundPayment =
+    HistoricPayment(ReturnPeriod(YearMonth.of(2025, Month.JULY)), Return, Some(chargeReference), BigDecimal(-1236.45))
+
+  val historicPayments2025 =
+    HistoricPayments(2025, Seq(historicReturnPayment, historicLPIPayment, historicRPIPayment, historicRefundPayment))
+  val historicPayments2024 = HistoricPayments(
+    2024,
+    Seq(
+      historicReturnPayment.copy(period = ReturnPeriod(YearMonth.of(2024, Month.DECEMBER))),
+      historicLPIPayment.copy(period = ReturnPeriod(YearMonth.of(2024, Month.NOVEMBER)))
+    )
   )
+  val historicPayments2023 = HistoricPayments(2023, Seq.empty)
+  val historicPayments2022 = HistoricPayments(
+    2022,
+    Seq(historicReturnPayment.copy(period = ReturnPeriod(YearMonth.of(2022, Month.DECEMBER))))
+  )
+
+  val historicPaymentsData = Seq(historicPayments2022, historicPayments2023, historicPayments2024, historicPayments2025)
+
+  val userHistoricPayments = UserHistoricPayments(appaId, historicPaymentsData, Instant.now(clock))
 
   case class DownstreamErrorDetails(code: String, message: String, logID: String)
 

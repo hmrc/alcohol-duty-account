@@ -17,6 +17,7 @@
 package uk.gov.hmrc.alcoholdutyaccount.controllers
 
 import cats.data.EitherT
+import org.mockito.ArgumentMatchers.any
 import org.mockito.ArgumentMatchersSugar.{*, eqTo}
 import org.mockito.cats.IdiomaticMockitoCats.StubbingOpsCats
 import play.api.libs.json.Json
@@ -25,10 +26,9 @@ import play.api.test.Helpers
 import uk.gov.hmrc.alcoholdutyaccount.base.SpecBase
 import uk.gov.hmrc.alcoholdutyaccount.models.ErrorCodes
 import uk.gov.hmrc.alcoholdutyaccount.models.payments.OpenPayments
-import uk.gov.hmrc.alcoholdutyaccount.service.{HistoricPaymentsService, OpenPaymentsService}
+import uk.gov.hmrc.alcoholdutyaccount.service.{HistoricPaymentsRepositoryService, OpenPaymentsService}
 import uk.gov.hmrc.play.bootstrap.http.ErrorResponse
 
-import java.time.LocalDate
 import scala.concurrent.Future
 
 class PaymentsControllerSpec extends SpecBase {
@@ -55,53 +55,42 @@ class PaymentsControllerSpec extends SpecBase {
 
     "when calling historicPayments" - {
       "return OK when the service returns success" in new SetUp {
-        mockHistoricPaymentsService.getHistoricPayments(eqTo(appaId), eqTo(year))(*) returnsF noHistoricPayments
+        when(
+          mockHistoricPaymentsRepositoryService.getAllYearsHistoricPayments(eqTo(appaId), eqTo(minYear), any())(*)
+        ) thenReturn Future.successful(Right(historicPaymentsData))
 
-        val result: Future[Result] = controller.historicPayments(appaId, year)(fakeRequest)
+        val result: Future[Result] = controller.historicPayments(appaId)(fakeRequest)
         status(result)        mustBe OK
-        contentAsJson(result) mustBe Json.toJson(noHistoricPayments)
+        contentAsJson(result) mustBe Json.toJson(historicPaymentsData)
       }
 
       "return any error returned from the service" in new SetUp {
-        when(mockHistoricPaymentsService.getHistoricPayments(eqTo(appaId), eqTo(year))(*))
-          .thenReturn(EitherT.fromEither(Left(ErrorCodes.unexpectedResponse)))
+        when(
+          mockHistoricPaymentsRepositoryService.getAllYearsHistoricPayments(eqTo(appaId), eqTo(minYear), any())(*)
+        ).thenReturn(Future.successful(Left(ErrorCodes.unexpectedResponse)))
 
-        val result: Future[Result] = controller.historicPayments(appaId, year)(fakeRequest)
+        val result: Future[Result] = controller.historicPayments(appaId)(fakeRequest)
         status(result)                          mustBe INTERNAL_SERVER_ERROR
         contentAsJson(result).as[ErrorResponse] mustBe ErrorCodes.unexpectedResponse
-      }
-
-      "return an error if the year is before the minimum" in new SetUp {
-        val minimumYear = appConfig.minimumHistoricPaymentsYear
-
-        val result: Future[Result] = controller.historicPayments(appaId, minimumYear - 1)(fakeRequest)
-        status(result)                                  mustBe BAD_REQUEST
-        contentAsJson(result).as[ErrorResponse].message mustBe "Bad request"
-      }
-
-      "return an error if the year is after the current" in new SetUp {
-        val result: Future[Result] = controller.historicPayments(appaId, LocalDate.now(clock).getYear + 1)(fakeRequest)
-        status(result)                                  mustBe BAD_REQUEST
-        contentAsJson(result).as[ErrorResponse].message mustBe "Bad request"
       }
     }
   }
 
   class SetUp {
-    val mockOpenPaymentsService: OpenPaymentsService         = mock[OpenPaymentsService]
-    val mockHistoricPaymentsService: HistoricPaymentsService = mock[HistoricPaymentsService]
-    val cc                                                   = Helpers.stubControllerComponents()
+    val mockOpenPaymentsService               = mock[OpenPaymentsService]
+    val mockHistoricPaymentsRepositoryService = mock[HistoricPaymentsRepositoryService]
+    val cc                                    = Helpers.stubControllerComponents()
 
     val controller = new PaymentsController(
       fakeAuthorisedAction,
       fakeCheckAppaIdAction,
       mockOpenPaymentsService,
-      mockHistoricPaymentsService,
+      mockHistoricPaymentsRepositoryService,
       appConfig,
       cc,
       clock
     )
 
-    val year: Int = 2024
+    val minYear: Int = appConfig.minimumHistoricPaymentsYear
   }
 }
