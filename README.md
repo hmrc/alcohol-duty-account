@@ -19,7 +19,18 @@ BTA doesn't shutter the tiles individually. Instead, the shuttering is done by s
 ## Running the service
 
 > `sbt run`
+> 
 The service runs on port `16002` by default.
+
+## Test only endpoints
+
+To run the service with test only routes enabled:
+> `sbt "run -Dapplication.router=testOnlyDoNotUseInAppConf.Routes"`
+
+### Clear historic payments data
+
+This endpoint clears all data in the user historic payments repository.
+> `DELETE /alcohol-duty-account/test-only/clear-user-historic-payments`
 
 ## Running tests
 
