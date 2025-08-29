@@ -63,4 +63,7 @@ class UserHistoricPaymentsRepository @Inject() (
       )
       .toFuture()
       .map(_ => userHistoricPayments)
+
+  def deleteAll(): Future[Unit] =
+    collection.deleteMany(Filters.empty()).toFuture().map(_ => ())
 }

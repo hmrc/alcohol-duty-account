@@ -75,12 +75,6 @@ abstract class ISpecBase
     "auditing.enabled" -> false
   ) ++ getWireMockAppConfig(Seq("auth", "subscription", "obligation", "financial"))
 
-  protected def applicationBuilder(): GuiceApplicationBuilder =
-    new GuiceApplicationBuilder()
-      .disable[com.codahale.metrics.MetricRegistry]
-      .configure(additionalAppConfig)
-      .in(Mode.Test)
-
   override def fakeApplication(): Application =
     GuiceApplicationBuilder()
       .disable[com.codahale.metrics.MetricRegistry]

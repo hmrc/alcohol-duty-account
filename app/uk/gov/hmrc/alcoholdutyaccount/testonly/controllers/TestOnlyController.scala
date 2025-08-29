@@ -31,7 +31,7 @@ class TestOnlyController @Inject() (
 
   def clearUserHistoricPayments: Action[AnyContent] = Action.async { _ =>
     for {
-      _ <- userHistoricPaymentsRepository.collection.drop().toFuture()
+      _ <- userHistoricPaymentsRepository.deleteAll()
     } yield Ok("All historic payments data cleared")
   }
 }

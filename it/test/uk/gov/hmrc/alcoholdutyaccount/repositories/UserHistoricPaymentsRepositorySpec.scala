@@ -72,6 +72,20 @@ class UserHistoricPaymentsRepositorySpec
     }
   }
 
+  "deleteAll must" - {
+    "delete all records from the collection" in {
+      insert(userHistoricPayments).futureValue
+      insert(userHistoricPayments.copy(appaId = "test")).futureValue
+      val initialRecords = findAll().futureValue
+
+      repository.deleteAll().futureValue
+      val finalRecords = findAll().futureValue
+
+      initialRecords.length mustEqual 2
+      finalRecords.length   mustEqual 0
+    }
+  }
+
   def verifyResult(actual: UserHistoricPayments, expected: UserHistoricPayments): Assertion = {
     actual.appaId                                   mustEqual expected.appaId
     actual.historicPaymentsData                     mustEqual expected.historicPaymentsData

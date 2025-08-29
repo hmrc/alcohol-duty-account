@@ -29,7 +29,8 @@ import uk.gov.hmrc.alcoholdutyaccount.models.{AdrObligationData, ObligationStatu
 import java.time.{Clock, Instant, LocalDate, Month, YearMonth, ZoneId}
 
 trait TestData extends ModelGenerators {
-  val clock = Clock.fixed(Instant.ofEpochMilli(1718118467838L), ZoneId.of("UTC"))
+  val clock     = Clock.fixed(Instant.ofEpochMilli(1718118467838L), ZoneId.of("UTC"))
+  val clock2025 = Clock.fixed(Instant.ofEpochMilli(1755864000000L), ZoneId.of("UTC")) // 22 August 2025
 
   val dummyUUID = "01234567-89ab-cdef-0123-456789abcdef"
 

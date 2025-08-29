@@ -16,49 +16,38 @@
 
 package uk.gov.hmrc.alcoholdutyaccount.controllers
 
-import org.mockito.ArgumentMatchers.any
-import play.api.{Application, Mode}
+import play.api.Application
 import play.api.inject.bind
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.Json
 import play.api.test.FakeRequest
-import play.api.test.Helpers.running
+import play.api.test.Helpers.await
 import uk.gov.hmrc.alcoholdutyaccount.base.{ConnectorTestHelpers, ISpecBase}
-import uk.gov.hmrc.alcoholdutyaccount.models.payments.HistoricPayments
 import uk.gov.hmrc.alcoholdutyaccount.repositories.UserHistoricPaymentsRepository
 import uk.gov.hmrc.play.bootstrap.http.ErrorResponse
 
-import java.time.{Clock, Instant, ZoneId}
-import scala.concurrent.Future
+import java.time.Clock
 
 class PaymentsIntegrationSpec extends ISpecBase with ConnectorTestHelpers {
   protected val endpointName = "financial"
 
-//  val url = config.financialDataUrl(appaId)
-//
-//  val year  = 2025
-  //    val clock = Clock.fixed(Instant.ofEpochMilli(1755864000000L), ZoneId.of("UTC")) // 22 August 2025
-//
-//  val openParameters = Seq(
-//    "onlyOpenItems"              -> true.toString,
-//    "includeLocks"               -> false.toString,
-//    "calculateAccruedInterest"   -> false.toString,
-//    "customerPaymentInformation" -> false.toString
-//  )
-//
-//  val mockRepository = mock[UserHistoricPaymentsRepository]
-//
-//  val clock2025 = Clock.fixed(Instant.ofEpochMilli(1755864000000L), ZoneId.of("UTC")) // 22 August 2025
-//
-//  override val application: Application = GuiceApplicationBuilder()
-//    .disable[com.codahale.metrics.MetricRegistry]
-//    .configure(additionalAppConfig)
-//    .overrides(
-//      bind[Clock].toInstance(clock2025),
-//      bind[UserHistoricPaymentsRepository].toInstance(mockRepository)
-//    )
-//    .in(Mode.Test)
-//    .build()
+  override def fakeApplication(): Application =
+    GuiceApplicationBuilder()
+      .configure(additionalAppConfig)
+      .configure(Map("mongodb.uri" -> "mongodb://localhost:27017/test-alcohol-duty-account"))
+      .overrides(bind(classOf[Clock]).toInstance(clock2025))
+      .build()
+
+  lazy val repository = app.injector.instanceOf[UserHistoricPaymentsRepository]
+
+  override def beforeEach(): Unit = {
+    await(repository.deleteAll())
+    super.beforeEach()
+  }
+  override def afterEach(): Unit = {
+    await(repository.deleteAll())
+    super.afterEach()
+  }
 
   "the open payments endpoint must" - {
     "respond with OK if able to fetch open payments" in new SetUp {
@@ -123,175 +112,95 @@ class PaymentsIntegrationSpec extends ISpecBase with ConnectorTestHelpers {
   }
 
   "the historic payments endpoint must" - {
-//    "test" in new SetUp {
-//      when(mockRepository.get(any())) thenReturn Future.successful(None)
-//      when(mockRepository.set(any())) thenReturn Future.successful(userHistoricPayments)
-//
-//      stubAuthorised(appaId)
-//      stubGetWithParameters(url, historicParameters2024, OK, financialDataStubJson(year - 1))
-//      stubGetWithParameters(url, historicParameters2025, OK, financialDataStubJson(year))
-//
-//      val response = callRoute(
-//        FakeRequest("GET", routes.PaymentsController.historicPayments(appaId).url)
-//          .withHeaders("Authorization" -> "Bearer 12345")
-//      )
-//
-//      status(response)                 mustBe OK
-//      contentAsJson(response).toString mustBe historicPayments
-//
-//      verifyGetWithParameters(url, historicParameters2024)
-//      verifyGetWithParameters(url, historicParameters2025)
-//    }
-
     "respond with OK if able to fetch historic payments from the cache" in new SetUp {
-      val mockRepository = mock[UserHistoricPaymentsRepository]
-      when(mockRepository.get(any())) thenReturn Future.successful(Some(userHistoricPayments))
-
-      val application = applicationBuilder()
-        .overrides(
-          bind[Clock].toInstance(clock),
-          bind[UserHistoricPaymentsRepository].toInstance(mockRepository)
-        )
-        .build()
+      await(repository.set(userHistoricPayments))
 
       stubAuthorised(appaId)
 
-      running(application) {
-        val request = FakeRequest(GET, routes.PaymentsController.historicPayments(appaId).url)
+      val response = callRoute(
+        FakeRequest("GET", routes.PaymentsController.historicPayments(appaId).url)
           .withHeaders("Authorization" -> "Bearer 12345")
-        val result  = route(application, request).value
+      )
 
-        status(result)        mustBe OK
-        contentAsJson(result) mustBe Json.toJson(historicPaymentsData)
+      status(response)        mustBe OK
+      contentAsJson(response) mustBe Json.toJson(historicPaymentsData)
 
-        verifyGetWithParametersNeverCalled(url, historicParameters2024)
-        verifyGetWithParametersNeverCalled(url, historicParameters2025)
-      }
+      verifyGetWithParametersNeverCalled(url, historicParameters2024)
+      verifyGetWithParametersNeverCalled(url, historicParameters2025)
     }
 
     "respond with OK if able to fetch historic payments from the connector" in new SetUp {
-      val mockRepository = mock[UserHistoricPaymentsRepository]
-      when(mockRepository.get(any())) thenReturn Future.successful(None)
-      when(mockRepository.set(any())) thenReturn Future.successful(userHistoricPayments)
-
-      val application = applicationBuilder()
-        .overrides(
-          bind[Clock].toInstance(clock),
-          bind[UserHistoricPaymentsRepository].toInstance(mockRepository)
-        )
-        .build()
-
       stubAuthorised(appaId)
       stubGetWithParameters(url, historicParameters2024, OK, financialDataStubJson(year - 1))
       stubGetWithParameters(url, historicParameters2025, OK, financialDataStubJson(year))
 
-      running(application) {
-        val request = FakeRequest(GET, routes.PaymentsController.historicPayments(appaId).url)
+      val response = callRoute(
+        FakeRequest("GET", routes.PaymentsController.historicPayments(appaId).url)
           .withHeaders("Authorization" -> "Bearer 12345")
-        val result  = route(application, request).value
+      )
 
-        status(result)                 mustBe OK
-        contentAsJson(result).toString mustBe historicPayments
+      status(response)                 mustBe OK
+      contentAsJson(response).toString mustBe historicPayments
 
-        verifyGetWithParameters(url, historicParameters2024)
-        verifyGetWithParameters(url, historicParameters2025)
-      }
+      verifyGetWithParameters(url, historicParameters2024)
+      verifyGetWithParameters(url, historicParameters2025)
     }
 
     "respond with INTERNAL_SERVER_ERROR if the data retrieved from the connector cannot be parsed" in new SetUp {
-      val mockRepository = mock[UserHistoricPaymentsRepository]
-      when(mockRepository.get(any())) thenReturn Future.successful(None)
-
-      val application = applicationBuilder()
-        .overrides(
-          bind[Clock].toInstance(clock),
-          bind[UserHistoricPaymentsRepository].toInstance(mockRepository)
-        )
-        .build()
-
       stubAuthorised(appaId)
       stubGetWithParameters(url, historicParameters2024, OK, financialDataStubJson(year - 1))
       stubGetWithParameters(url, historicParameters2025, OK, "blah")
 
-      running(application) {
-        val request = FakeRequest(GET, routes.PaymentsController.historicPayments(appaId).url)
+      val response = callRoute(
+        FakeRequest("GET", routes.PaymentsController.historicPayments(appaId).url)
           .withHeaders("Authorization" -> "Bearer 12345")
-        val result  = route(application, request).value
+      )
 
-        status(result)        mustBe INTERNAL_SERVER_ERROR
-        contentAsJson(result) mustBe Json.toJson(ErrorResponse(INTERNAL_SERVER_ERROR, "Unexpected Response"))
+      status(response)        mustBe INTERNAL_SERVER_ERROR
+      contentAsJson(response) mustBe Json.toJson(ErrorResponse(INTERNAL_SERVER_ERROR, "Unexpected Response"))
 
-        verifyGetWithParameters(url, historicParameters2024)
-        verifyGetWithParameters(url, historicParameters2025)
-      }
+      verifyGetWithParameters(url, historicParameters2024)
+      verifyGetWithParameters(url, historicParameters2025)
     }
 
     "respond with an empty document if financial data not found for appaId" in new SetUp {
-      val mockRepository = mock[UserHistoricPaymentsRepository]
-      when(mockRepository.get(any())) thenReturn Future.successful(None)
-      when(mockRepository.set(any())) thenReturn Future.successful(
-        userHistoricPayments.copy(historicPaymentsData =
-          Seq(HistoricPayments(2024, Seq.empty), HistoricPayments(2025, Seq.empty))
-        )
-      )
-
-      val application = applicationBuilder()
-        .overrides(
-          bind[Clock].toInstance(clock),
-          bind[UserHistoricPaymentsRepository].toInstance(mockRepository)
-        )
-        .build()
-
       stubAuthorised(appaId)
       stubGetWithParameters(url, historicParameters2024, NOT_FOUND, "")
       stubGetWithParameters(url, historicParameters2025, NOT_FOUND, "")
 
-      running(application) {
-        val request = FakeRequest(GET, routes.PaymentsController.historicPayments(appaId).url)
+      val response = callRoute(
+        FakeRequest("GET", routes.PaymentsController.historicPayments(appaId).url)
           .withHeaders("Authorization" -> "Bearer 12345")
-        val result  = route(application, request).value
+      )
 
-        status(result)                 mustBe OK
-        contentAsJson(result).toString mustBe noHistoricPayments
+      status(response)                 mustBe OK
+      contentAsJson(response).toString mustBe noHistoricPayments
 
-        verifyGetWithParameters(url, historicParameters2024)
-        verifyGetWithParameters(url, historicParameters2025)
-      }
+      verifyGetWithParameters(url, historicParameters2024)
+      verifyGetWithParameters(url, historicParameters2025)
     }
 
     "respond with INTERNAL_SERVER_ERROR if error(s) returned from the financial data api call" in new SetUp {
-      val mockRepository = mock[UserHistoricPaymentsRepository]
-      when(mockRepository.get(any())) thenReturn Future.successful(None)
-
-      val application = applicationBuilder()
-        .overrides(
-          bind[Clock].toInstance(clock),
-          bind[UserHistoricPaymentsRepository].toInstance(mockRepository)
-        )
-        .build()
-
       stubAuthorised(appaId)
       stubGetWithParameters(url, historicParameters2024, INTERNAL_SERVER_ERROR, "")
 
-      running(application) {
-        val request = FakeRequest(GET, routes.PaymentsController.historicPayments(appaId).url)
+      val response = callRoute(
+        FakeRequest("GET", routes.PaymentsController.historicPayments(appaId).url)
           .withHeaders("Authorization" -> "Bearer 12345")
-        val result  = route(application, request).value
+      )
 
-        status(result)        mustBe INTERNAL_SERVER_ERROR
-        contentAsJson(result) mustBe Json.toJson(ErrorResponse(INTERNAL_SERVER_ERROR, "Unexpected Response"))
+      status(response)        mustBe INTERNAL_SERVER_ERROR
+      contentAsJson(response) mustBe Json.toJson(ErrorResponse(INTERNAL_SERVER_ERROR, "Unexpected Response"))
 
-        verifyGetWithParameters(url, historicParameters2024)
-        verifyGetWithParametersNeverCalled(url, historicParameters2025)
-      }
+      verifyGetWithParameters(url, historicParameters2024)
+      verifyGetWithParametersNeverCalled(url, historicParameters2025)
     }
   }
 
   class SetUp {
     val url = config.financialDataUrl(appaId)
 
-    val year  = 2025
-    val clock = Clock.fixed(Instant.ofEpochMilli(1755864000000L), ZoneId.of("UTC")) // 22 August 2025
+    val year = 2025
 
     val openParameters = Seq(
       "onlyOpenItems"              -> true.toString,
