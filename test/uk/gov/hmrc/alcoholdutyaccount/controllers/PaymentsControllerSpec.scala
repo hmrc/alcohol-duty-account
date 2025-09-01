@@ -24,6 +24,7 @@ import play.api.libs.json.Json
 import play.api.mvc.Result
 import play.api.test.Helpers
 import uk.gov.hmrc.alcoholdutyaccount.base.SpecBase
+import uk.gov.hmrc.alcoholdutyaccount.config.AppConfig
 import uk.gov.hmrc.alcoholdutyaccount.models.ErrorCodes
 import uk.gov.hmrc.alcoholdutyaccount.models.payments.OpenPayments
 import uk.gov.hmrc.alcoholdutyaccount.service.{HistoricPaymentsRepositoryService, OpenPaymentsService}
@@ -54,24 +55,46 @@ class PaymentsControllerSpec extends SpecBase {
     }
 
     "when calling historicPayments" - {
-      "return OK when the service returns success" in new SetUp {
+      "return OK when the service returns success (minimum year is within the last 7 years)" in new SetUp {
+        when(mockAppConfig.minimumHistoricPaymentsYear) thenReturn 2024
         when(
-          mockHistoricPaymentsRepositoryService.getAllYearsHistoricPayments(eqTo(appaId), eqTo(minYear), any())(*)
+          mockHistoricPaymentsRepositoryService.getAllYearsHistoricPayments(eqTo(appaId), any(), any())(*)
         ) thenReturn Future.successful(Right(historicPaymentsData))
 
         val result: Future[Result] = controller.historicPayments(appaId)(fakeRequest)
         status(result)        mustBe OK
         contentAsJson(result) mustBe Json.toJson(historicPaymentsData)
+
+        verify(mockHistoricPaymentsRepositoryService, times(1))
+          .getAllYearsHistoricPayments(eqTo(appaId), eqTo(2024), eqTo(2025))(any())
+      }
+
+      "return OK when the service returns success (minimum year is not within the last 7 years)" in new SetUp {
+        when(mockAppConfig.minimumHistoricPaymentsYear) thenReturn 2015
+        when(
+          mockHistoricPaymentsRepositoryService.getAllYearsHistoricPayments(eqTo(appaId), any(), any())(*)
+        ) thenReturn Future.successful(Right(historicPaymentsData))
+
+        val result: Future[Result] = controller.historicPayments(appaId)(fakeRequest)
+        status(result)        mustBe OK
+        contentAsJson(result) mustBe Json.toJson(historicPaymentsData)
+
+        verify(mockHistoricPaymentsRepositoryService, times(1))
+          .getAllYearsHistoricPayments(eqTo(appaId), eqTo(2019), eqTo(2025))(any())
       }
 
       "return any error returned from the service" in new SetUp {
+        when(mockAppConfig.minimumHistoricPaymentsYear) thenReturn 2024
         when(
-          mockHistoricPaymentsRepositoryService.getAllYearsHistoricPayments(eqTo(appaId), eqTo(minYear), any())(*)
+          mockHistoricPaymentsRepositoryService.getAllYearsHistoricPayments(eqTo(appaId), any(), any())(*)
         ).thenReturn(Future.successful(Left(ErrorCodes.unexpectedResponse)))
 
         val result: Future[Result] = controller.historicPayments(appaId)(fakeRequest)
         status(result)                          mustBe INTERNAL_SERVER_ERROR
         contentAsJson(result).as[ErrorResponse] mustBe ErrorCodes.unexpectedResponse
+
+        verify(mockHistoricPaymentsRepositoryService, times(1))
+          .getAllYearsHistoricPayments(eqTo(appaId), eqTo(2024), eqTo(2025))(any())
       }
     }
   }
@@ -79,6 +102,7 @@ class PaymentsControllerSpec extends SpecBase {
   class SetUp {
     val mockOpenPaymentsService               = mock[OpenPaymentsService]
     val mockHistoricPaymentsRepositoryService = mock[HistoricPaymentsRepositoryService]
+    val mockAppConfig                         = mock[AppConfig]
     val cc                                    = Helpers.stubControllerComponents()
 
     val controller = new PaymentsController(
@@ -86,11 +110,9 @@ class PaymentsControllerSpec extends SpecBase {
       fakeCheckAppaIdAction,
       mockOpenPaymentsService,
       mockHistoricPaymentsRepositoryService,
-      appConfig,
+      mockAppConfig,
       cc,
-      clock
+      clock2025
     )
-
-    val minYear: Int = appConfig.minimumHistoricPaymentsYear
   }
 }
