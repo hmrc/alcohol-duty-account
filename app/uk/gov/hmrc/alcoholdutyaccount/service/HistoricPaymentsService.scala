@@ -43,7 +43,7 @@ class HistoricPaymentsService @Inject() (
     year: Int
   )(implicit hc: HeaderCarrier): EitherT[Future, ErrorResponse, HistoricPayments] =
     for {
-      financialTransactionDocument <- EitherT(financialDataConnector.getNotOnlyOpenFinancialData(appaId = appaId))
+      financialTransactionDocument <- EitherT(financialDataConnector.getNotOnlyOpenFinancialData(appaId, year))
       historicPayments             <- extractHistoricPayments(financialTransactionDocument)
     } yield HistoricPayments(year, historicPayments)
 

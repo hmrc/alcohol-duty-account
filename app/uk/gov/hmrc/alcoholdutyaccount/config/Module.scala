@@ -20,14 +20,14 @@ import com.google.inject.AbstractModule
 import org.apache.pekko.pattern.CircuitBreaker
 import uk.gov.hmrc.alcoholdutyaccount.controllers.actions.{AuthorisedAction, BaseAuthorisedAction}
 
-import java.time.{Clock, ZoneOffset}
+import java.time.{Clock, ZoneId}
 
 class Module extends AbstractModule {
 
   override def configure(): Unit = {
     bind(classOf[AppConfig]).asEagerSingleton()
     bind(classOf[AuthorisedAction]).to(classOf[BaseAuthorisedAction]).asEagerSingleton()
-    bind(classOf[Clock]).toInstance(Clock.systemDefaultZone.withZone(ZoneOffset.UTC))
+    bind(classOf[Clock]).toInstance(Clock.system(ZoneId.of(Constants.ukTimeZoneStringId)))
     bind(classOf[CircuitBreaker]).toProvider(classOf[CircuitBreakerProvider])
   }
 }

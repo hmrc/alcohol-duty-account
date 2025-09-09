@@ -16,27 +16,23 @@
 
 package uk.gov.hmrc.alcoholdutyaccount.controllers
 
-import cats.data.EitherT
 import play.api.Logging
 import play.api.libs.json.Json
 import play.api.mvc.{Action, AnyContent, ControllerComponents}
 import uk.gov.hmrc.alcoholdutyaccount.config.AppConfig
 import uk.gov.hmrc.alcoholdutyaccount.controllers.actions.{AuthorisedAction, CheckAppaIdAction}
-import uk.gov.hmrc.alcoholdutyaccount.models.ErrorCodes
-import uk.gov.hmrc.alcoholdutyaccount.service.{HistoricPaymentsService, OpenPaymentsService}
-import uk.gov.hmrc.alcoholdutyaccount.utils.DateTimeHelper.instantToLocalDate
+import uk.gov.hmrc.alcoholdutyaccount.service.{HistoricPaymentsRepositoryService, OpenPaymentsService}
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
-import uk.gov.hmrc.play.bootstrap.http.ErrorResponse
 
-import java.time.{Clock, Instant}
+import java.time.{Clock, Year}
 import javax.inject.Inject
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.ExecutionContext
 
 class PaymentsController @Inject() (
   authorise: AuthorisedAction,
   checkAppaId: CheckAppaIdAction,
   openPaymentsService: OpenPaymentsService,
-  historicPaymentsService: HistoricPaymentsService,
+  historicPaymentsRepositoryService: HistoricPaymentsRepositoryService,
   appConfig: AppConfig,
   cc: ControllerComponents,
   clock: Clock
@@ -60,30 +56,16 @@ class PaymentsController @Inject() (
         )
     }
 
-  private def validateYear(year: Int): EitherT[Future, ErrorResponse, Unit] =
-    if (year < minimumHistoricPaymentsYear) {
-      logger.info(s"Year requested is before $minimumHistoricPaymentsYear")
-      EitherT.leftT(ErrorCodes.badRequest)
-    } else if (year > instantToLocalDate(Instant.now(clock)).getYear) {
-      logger.info(s"Year requested is after the current year")
-      EitherT.leftT(ErrorCodes.badRequest)
-    } else {
-      EitherT.pure(())
-    }
-
-  def historicPayments(appaId: String, year: Int): Action[AnyContent] =
+  def historicPayments(appaId: String): Action[AnyContent] =
     (authorise andThen checkAppaId(appaId)).async { implicit request =>
-      val historicPayments = for {
-        _                <- validateYear(year)
-        historicPayments <- historicPaymentsService.getHistoricPayments(appaId, year)
-      } yield historicPayments
+      val currentYear = Year.now(clock).getValue
+      val minYear     = Math.max(currentYear - 6, minimumHistoricPaymentsYear)
 
-      historicPayments.fold(
-        errorResponse => {
+      historicPaymentsRepositoryService.getAllYearsHistoricPayments(appaId, minYear, currentYear).map {
+        case Left(errorResponse)           =>
           logger.warn(s"Unable to get historic payments for $appaId: $errorResponse")
           error(errorResponse)
-        },
-        historicPayments => Ok(Json.toJson(historicPayments))
-      )
+        case Right(historicPaymentsByYear) => Ok(Json.toJson(historicPaymentsByYear))
+      }
     }
 }

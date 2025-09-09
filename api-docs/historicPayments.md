@@ -1,19 +1,20 @@
 # Get Historic Payments
 
-Returns items which have been paid or part-paid where the amount is above 0 (i.e. not Nil or owing to the customer) for a specific year.
+Returns items which have been paid or part-paid where the amount is above 0 (i.e. not Nil or owing to the customer)
+for the last 7 calendar years including the current year, with a minimum year of 2024.
 
-Calls to this API must be made by an authenticated and authorised user with an ADR enrolment in order for the data to be returned.
+Calls to this API must be made by an authenticated and authorised user with an ADR enrolment in order for the data to be
+returned.
 
-**URL**: `/alcohol-duty-account/producers/:appaId/payments/historic/:year`
+**URL**: `/alcohol-duty-account/producers/:appaId/payments/historic`
 
 **Method**: `GET`
 
 **URL Params**
 
-| Parameter Name | Type    | Description        | Notes                                       |
-|----------------|---------|--------------------|---------------------------------------------|
-| appaId         | String  | The appa Id        |                                             |
-| year           | Integer | The year to query  | Only a single year can be queried at a time |
+| Parameter Name | Type   | Description | Notes |
+|----------------|--------|-------------|-------|
+| appaId         | String | The appa Id |       |
 
 **Required Request Headers**:
 
@@ -23,7 +24,7 @@ Calls to this API must be made by an authenticated and authorised user with an A
 
 ***Example request:***
 
-/alcohol-duty-account/producers/AP0000000001/payments/historic/2024
+/alcohol-duty-account/producers/AP0000000001/payments/historic
 
 ## Responses
 
@@ -33,14 +34,17 @@ Calls to this API must be made by an authenticated and authorised user with an A
 
 **Response Body**
 
-The response body returns items which have been paid or part-paid payments relating to the year where the amount is above 0 (i.e. not Nil or owing to the user).
-There is nothing to distinguish whether a payment is part or fully paid. Part paid items will also be returned in open payments.
+The response body returns an array in which each item corresponds to the historic payments for a calendar year.
+Within the object for a specific year, the payments array contains items which have been paid or part-paid payments
+where the amount is above 0 (i.e. not Nil or owing to the user). There is nothing to distinguish whether a payment is
+part or fully paid. Part-paid items will also be returned in open payments.
 
-If NOT_FOUND is returned by the downstream API, an empty array of payments is returned.
+If NOT_FOUND is returned by the downstream API for a specific year, an empty array of payments is returned for that
+year.
 
 | Field Name               | Description                                  | Data Type    | Mandatory/Optional | Notes                                         |
 |--------------------------|----------------------------------------------|--------------|--------------------|-----------------------------------------------|
-| year                     | The year queried                             | Integer      | Mandatory          |                                               |
+| year                     | The year of the return period                | Integer      | Mandatory          |                                               |
 | payments                 | An array of payments                         | Array(Items) | Mandatory          | Only those paid or part paid (amountPaid > 0) |
 | payments.period          | The period this relates to (as a period key) | String       | Mandatory          | YYAM (year, 'A,' month A-L)                   |
 | payments.transactionType | The type of transaction this refers to       | Enum         | Mandatory          | Return, LPI, RPI                              |
@@ -52,37 +56,60 @@ If NOT_FOUND is returned by the downstream API, an empty array of payments is re
 ***A (part) paid return and (part) paid LPI:***
 
 ```json
-{
-  "year": 2024,
-  "payments": [
-    {
-      "period": "24AE",
-      "transactionType": "Return",
-      "chargeReference": "XA57978503902370",
-      "amountPaid": 2000
-    },
-    {
-      "period": "24AC",
-      "transactionType": "LPI",
-      "chargeReference": "XA02088676456437",
-      "amountPaid": 10
-    }
-  ]
-}
+[
+  {
+    "year": 2024,
+    "payments": [
+      {
+        "period": "24AE",
+        "transactionType": "Return",
+        "chargeReference": "XA57978503902370",
+        "amountPaid": 2000
+      },
+      {
+        "period": "24AC",
+        "transactionType": "LPI",
+        "chargeReference": "XA02088676456437",
+        "amountPaid": 10
+      }
+    ]
+  },
+  {
+    "year": 2025,
+    "payments": [
+      {
+        "period": "25AB",
+        "transactionType": "Return",
+        "chargeReference": "XA46070058554819",
+        "amountPaid": 3000
+      },
+      {
+        "period": "25AA",
+        "transactionType": "LPI",
+        "chargeReference": "XA20860833337527",
+        "amountPaid": 15
+      }
+    ]
+  }
+]
 ```
 
-***No outstanding payments found for that year:***
+***No historic payments found:***
 
 ```json
-{
-"year": 2024,
-"payments": []
-}
+[
+  {
+    "year": 2024,
+    "payments": []
+  },
+  {
+    "year": 2025,
+    "payments": []
+  }
+]
 ```
 
 ### Responses
-**Code**: `400 BAD_REQUEST`
-This response can occur when year is before 2024 or after the current year
 
 **Code**: `401 UNAUTHORIZED`
 This response can occur when a call is made by any consumer without an authorized session that has an ADR enrolment.

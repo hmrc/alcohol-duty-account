@@ -117,6 +117,9 @@ trait WireMockHelper {
   def verifyGetWithParametersWithoutRetry(url: String, parameters: Seq[(String, String)]): Unit =
     wireMockServer.verify(1, getRequestedFor(urlEqualTo(urlWithParameters(url, parameters))))
 
+  def verifyGetWithParametersNeverCalled(url: String, parameters: Seq[(String, String)]): Unit =
+    wireMockServer.verify(0, getRequestedFor(urlEqualTo(urlWithParameters(url, parameters))))
+
   def verifyGetWithParametersAndHeaders(
     url: String,
     parameters: Seq[(String, String)] = Seq.empty,

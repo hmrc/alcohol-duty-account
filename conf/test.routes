@@ -1,0 +1,1 @@
+DELETE        /clear-user-historic-payments              uk.gov.hmrc.alcoholdutyaccount.testonly.controllers.TestOnlyController.clearUserHistoricPayments()

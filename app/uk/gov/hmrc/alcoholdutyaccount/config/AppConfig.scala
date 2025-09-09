@@ -40,9 +40,6 @@ class AppConfig @Inject() (config: Configuration, servicesConfig: ServicesConfig
 
   private lazy val financialDataUrlPrefix = getConfStringAndThrowIfNotFound("financial.url.financialData")
 
-  val historicDataStartDate: String = getConfStringAndThrowIfNotFound("financial.historicData.dateFrom")
-  val historicDataEndDate: String   = getConfStringAndThrowIfNotFound("financial.historicData.dateTo")
-
   private val subscriptionHost: String                  = servicesConfig.baseUrl("subscription")
   lazy val subscriptionClientId: String                 = getConfStringAndThrowIfNotFound("subscription.clientId")
   lazy val subscriptionSecret: String                   = getConfStringAndThrowIfNotFound("subscription.secret")
@@ -55,6 +52,8 @@ class AppConfig @Inject() (config: Configuration, servicesConfig: ServicesConfig
 
   val enrolmentServiceName: String = config.get[String]("enrolment.serviceName")
   val enrolmentIdentifierKey       = config.get[String]("enrolment.identifierKey")
+
+  val dbTimeToLiveInSeconds: Int = 900
 
   def getSubscriptionUrl(appaId: String): String =
     s"$subscriptionHost$subscriptionGetSubscriptionUrlPrefix/$regime/$idType/$appaId"
