@@ -21,10 +21,12 @@ import play.api.libs.json._
 import uk.gov.hmrc.alcoholdutyaccount.models.ReturnPeriod
 import uk.gov.hmrc.mongo.play.json.formats.MongoJavatimeFormats
 
-import java.time.Instant
+import java.time.{Instant, LocalDate}
 
 case class HistoricPayment(
   period: ReturnPeriod,
+  taxPeriodFrom: LocalDate,
+  taxPeriodTo: LocalDate,
   transactionType: TransactionType,
   chargeReference: Option[String],
   amountPaid: BigDecimal

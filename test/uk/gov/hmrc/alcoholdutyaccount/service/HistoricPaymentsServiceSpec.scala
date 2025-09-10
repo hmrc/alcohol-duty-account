@@ -117,6 +117,8 @@ class HistoricPaymentsServiceSpec extends SpecBase {
                 Seq(
                   HistoricPayment(
                     ReturnPeriod.fromPeriodKeyOrThrow(periodKey),
+                    ReturnPeriod.fromPeriodKeyOrThrow(periodKey).periodFromDate(),
+                    ReturnPeriod.fromPeriodKeyOrThrow(periodKey).periodToDate(),
                     TransactionType.Return,
                     chargeReference,
                     BigDecimal("4000")
@@ -139,6 +141,8 @@ class HistoricPaymentsServiceSpec extends SpecBase {
                 Seq(
                   HistoricPayment(
                     ReturnPeriod.fromPeriodKeyOrThrow(periodKey),
+                    ReturnPeriod.fromPeriodKeyOrThrow(periodKey).periodFromDate(),
+                    ReturnPeriod.fromPeriodKeyOrThrow(periodKey).periodToDate(),
                     TransactionType.Return,
                     chargeReference,
                     BigDecimal("9000")
@@ -176,6 +180,8 @@ class HistoricPaymentsServiceSpec extends SpecBase {
                 Seq(
                   HistoricPayment(
                     ReturnPeriod.fromPeriodKeyOrThrow("24AE"),
+                    ReturnPeriod.fromPeriodKeyOrThrow("24AE").periodFromDate(),
+                    ReturnPeriod.fromPeriodKeyOrThrow("24AE").periodToDate(),
                     TransactionType.Return,
                     chargeReference,
                     BigDecimal("9000")
@@ -197,18 +203,52 @@ class HistoricPaymentsServiceSpec extends SpecBase {
               ) must contain theSameElementsAs Seq(
                 HistoricPayment(
                   ReturnPeriod.fromPeriodKeyOrThrow("24AD"),
+                  ReturnPeriod.fromPeriodKeyOrThrow("24AD").periodFromDate(),
+                  ReturnPeriod.fromPeriodKeyOrThrow("24AD").periodToDate(),
                   TransactionType.Return,
                   Some("ChargeRef"),
                   BigDecimal("2000")
                 ),
                 HistoricPayment(
                   ReturnPeriod.fromPeriodKeyOrThrow("24AB"),
+                  ReturnPeriod.fromPeriodKeyOrThrow("24AB").periodFromDate(),
+                  ReturnPeriod.fromPeriodKeyOrThrow("24AB").periodToDate(),
                   TransactionType.LPI,
                   Some("ChargeRef"),
                   BigDecimal("10")
                 )
               )
             case _                                         => fail()
+          }
+        }
+      }
+
+      "an exception must be thrown" - {
+        "when taxPeriodFrom is absent for a historic payment to be cached" in new SetUp {
+          val financialTransactionDocument = FinancialTransactionDocument(
+            Seq(singlePaidReturn.financialTransactions.head.copy(taxPeriodFrom = None))
+          )
+
+          when(mockFinancialDataConnector.getNotOnlyOpenFinancialData(appaId, year))
+            .thenReturn(Future.successful(Right(financialTransactionDocument)))
+
+          whenReady(paymentsService.getHistoricPayments(appaId, year).value.failed) { ex =>
+            ex            mustBe an[IllegalStateException]
+            ex.getMessage mustBe "taxPeriodFrom is required for historic payments (Return/LPI/CA)"
+          }
+        }
+
+        "when taxPeriodTo is absent for a historic payment to be cached" in new SetUp {
+          val financialTransactionDocument = FinancialTransactionDocument(
+            Seq(singlePaidReturn.financialTransactions.head.copy(taxPeriodTo = None))
+          )
+
+          when(mockFinancialDataConnector.getNotOnlyOpenFinancialData(appaId, year))
+            .thenReturn(Future.successful(Right(financialTransactionDocument)))
+
+          whenReady(paymentsService.getHistoricPayments(appaId, year).value.failed) { ex =>
+            ex            mustBe an[IllegalStateException]
+            ex.getMessage mustBe "taxPeriodTo is required for historic payments (Return/LPI/CA)"
           }
         }
       }
@@ -242,7 +282,6 @@ class HistoricPaymentsServiceSpec extends SpecBase {
         maybeOutstandingAmount = Some(BigDecimal("50")),
         dueDate = ReturnPeriod.fromPeriodKeyOrThrow(periodKey).dueDate(),
         transactionType = TransactionType.RPI,
-        maybePeriodKey = Some(periodKey),
         maybeChargeReference = Some(chargeReference)
       )
     }

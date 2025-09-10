@@ -59,8 +59,8 @@ class PaymentsIntegrationSpec extends ISpecBase with ConnectorTestHelpers {
           .withHeaders("Authorization" -> "Bearer 12345")
       )
 
-      status(response)                 mustBe OK
-      contentAsJson(response).toString mustBe openPayments
+      status(response)        mustBe OK
+      contentAsJson(response) mustBe Json.parse(openPayments)
 
       verifyGetWithParameters(url, openParameters)
     }
@@ -89,8 +89,8 @@ class PaymentsIntegrationSpec extends ISpecBase with ConnectorTestHelpers {
           .withHeaders("Authorization" -> "Bearer 12345")
       )
 
-      status(response)                 mustBe OK
-      contentAsJson(response).toString mustBe noOpenPayments
+      status(response)        mustBe OK
+      contentAsJson(response) mustBe Json.parse(noOpenPayments)
 
       verifyGetWithParameters(url, openParameters)
     }
@@ -139,8 +139,8 @@ class PaymentsIntegrationSpec extends ISpecBase with ConnectorTestHelpers {
           .withHeaders("Authorization" -> "Bearer 12345")
       )
 
-      status(response)                 mustBe OK
-      contentAsJson(response).toString mustBe historicPayments
+      status(response)        mustBe OK
+      contentAsJson(response) mustBe Json.parse(historicPayments)
 
       verifyGetWithParameters(url, historicParameters2024)
       verifyGetWithParameters(url, historicParameters2025)
@@ -173,8 +173,8 @@ class PaymentsIntegrationSpec extends ISpecBase with ConnectorTestHelpers {
           .withHeaders("Authorization" -> "Bearer 12345")
       )
 
-      status(response)                 mustBe OK
-      contentAsJson(response).toString mustBe noHistoricPayments
+      status(response)        mustBe OK
+      contentAsJson(response) mustBe Json.parse(noHistoricPayments)
 
       verifyGetWithParameters(url, historicParameters2024)
       verifyGetWithParameters(url, historicParameters2025)
@@ -362,10 +362,62 @@ class PaymentsIntegrationSpec extends ISpecBase with ConnectorTestHelpers {
         |      ]
         |    },
         |    {
+        |      "chargeType": "SP Beer 1.3-3.4 es",
+        |      "mainType": "Central Assessment",
+        |      "periodKey": "${yr}AJ",
+        |      "periodKeyDescription": "October $year",
+        |      "taxPeriodFrom": "$year-10-01",
+        |      "taxPeriodTo": "$year-10-31",
+        |      "businessPartner": "$businessPartner",
+        |      "contractAccountCategory": "51",
+        |      "contractAccount": "$contractAccount",
+        |      "contractObjectType": "ZADP",
+        |      "contractObject": "$contractObject",
+        |      "sapDocumentNumber": "658867377546",
+        |      "sapDocumentNumberItem": "0001",
+        |      "chargeReference": "XA95767883826729",
+        |      "mainTransaction": "6084",
+        |      "subTransaction": "6132",
+        |      "originalAmount": 2345.67,
+        |      "outstandingAmount": 2345.67,
+        |      "items": [
+        |        {
+        |          "subItem": "000",
+        |          "dueDate": "$year-11-25",
+        |          "amount": 2345.67
+        |        }
+        |      ]
+        |    },
+        |    {
+        |      "chargeType": "SP Beer 1.3-3.4 es",
+        |      "mainType": "Central Assessment Interest",
+        |      "taxPeriodFrom": "$year-09-01",
+        |      "taxPeriodTo": "$year-09-30",
+        |      "businessPartner": "$businessPartner",
+        |      "contractAccountCategory": "51",
+        |      "contractAccount": "$contractAccount",
+        |      "contractObjectType": "ZADP",
+        |      "contractObject": "$contractObject",
+        |      "sapDocumentNumber": "658867377547",
+        |      "sapDocumentNumberItem": "0001",
+        |      "chargeReference": "XA95767883826729",
+        |      "mainTransaction": "6085",
+        |      "subTransaction": "6132",
+        |      "originalAmount": 12.34,
+        |      "outstandingAmount": 12.34,
+        |      "items": [
+        |        {
+        |          "subItem": "000",
+        |          "dueDate": "$year-11-01",
+        |          "amount": 12.34
+        |        }
+        |      ]
+        |    },
+        |    {
         |      "chargeType": "SP Beer 1.3-3.4 es int",
         |      "mainType": "Alcohol Duty Interest",
         |      "taxPeriodFrom": "$year-02-01",
-        |      "taxPeriodTo": "$year-02-29",
+        |      "taxPeriodTo": "$year-02-28",
         |      "businessPartner": "$businessPartner",
         |      "contractAccountCategory": "51",
         |      "contractAccount": "$contractAccount",
@@ -390,7 +442,7 @@ class PaymentsIntegrationSpec extends ISpecBase with ConnectorTestHelpers {
         |      "chargeType": "SP Beer 1.3-3.4 es int",
         |      "mainType": "Alcohol Duty Interest",
         |      "taxPeriodFrom": "$year-02-01",
-        |      "taxPeriodTo": "$year-02-29",
+        |      "taxPeriodTo": "$year-02-28",
         |      "businessPartner": "$businessPartner",
         |      "contractAccountCategory": "51",
         |      "contractAccount": "$contractAccount",
@@ -493,9 +545,28 @@ class PaymentsIntegrationSpec extends ISpecBase with ConnectorTestHelpers {
     }
 
     val openPayments       =
-      s"""{"outstandingPayments":[{"transactionType":"LPI","dueDate":"$year-02-01","chargeReference":"XA85353805192234","remainingAmount":20.56},{"transactionType":"Return","dueDate":"$year-09-25","chargeReference":"XA91104208683855","remainingAmount":237.44},{"transactionType":"Return","dueDate":"$year-06-25","chargeReference":"XA95767883826728","remainingAmount":4577.44},{"transactionType":"Return","dueDate":"$year-05-25","chargeReference":"XA07406454540955","remainingAmount":2577.44},{"transactionType":"RPI","dueDate":"$year-03-01","chargeReference":"XA69201353871649","remainingAmount":-50},{"transactionType":"Return","dueDate":"$year-04-25","chargeReference":"XA15775952652650","remainingAmount":-2577.44},{"transactionType":"LPI","dueDate":"$year-02-01","chargeReference":"XA63139412020838","remainingAmount":10.56}],"totalOutstandingPayments":4796,"unallocatedPayments":[{"paymentDate":"$year-08-01","unallocatedAmount":-1000},{"paymentDate":"$year-08-01","unallocatedAmount":-500}],"totalUnallocatedPayments":-1500,"totalOpenPaymentsAmount":3296}"""
+      s"""{"outstandingPayments":[
+         |  {"taxPeriodFrom":"$year-02-01","taxPeriodTo":"$year-02-28","transactionType":"LPI","dueDate":"$year-02-01","chargeReference":"XA85353805192234","remainingAmount":20.56},
+         |  {"taxPeriodFrom":"$year-08-01","taxPeriodTo":"$year-08-31","transactionType":"Return","dueDate":"$year-09-25","chargeReference":"XA91104208683855","remainingAmount":237.44},
+         |  {"taxPeriodFrom":"$year-05-01","taxPeriodTo":"$year-05-31","transactionType":"Return","dueDate":"$year-06-25","chargeReference":"XA95767883826728","remainingAmount":4577.44},
+         |  {"taxPeriodFrom":"$year-04-01","taxPeriodTo":"$year-04-30","transactionType":"Return","dueDate":"$year-05-25","chargeReference":"XA07406454540955","remainingAmount":2577.44},
+         |  {"transactionType":"RPI","dueDate":"$year-03-01","chargeReference":"XA69201353871649","remainingAmount":-50},
+         |  {"taxPeriodFrom":"$year-03-01","taxPeriodTo":"$year-03-31","transactionType":"Return","dueDate":"$year-04-25","chargeReference":"XA15775952652650","remainingAmount":-2577.44},
+         |  {"taxPeriodFrom":"$year-02-01","taxPeriodTo":"$year-02-28","transactionType":"LPI","dueDate":"$year-02-01","chargeReference":"XA63139412020838","remainingAmount":10.56},
+         |  {"taxPeriodFrom":"$year-09-01","taxPeriodTo":"$year-09-30","transactionType":"CAI","dueDate":"$year-11-01","chargeReference":"XA95767883826729","remainingAmount":12.34},
+         |  {"taxPeriodFrom":"$year-10-01","taxPeriodTo":"$year-10-31","transactionType":"CA","dueDate":"$year-11-25","chargeReference":"XA95767883826729","remainingAmount":2345.67}
+         |],"totalOutstandingPayments":7154.01,
+         |"unallocatedPayments":[{"paymentDate":"$year-08-01","unallocatedAmount":-1000},{"paymentDate":"$year-08-01","unallocatedAmount":-500}],
+         |"totalUnallocatedPayments":-1500,"totalOpenPaymentsAmount":5654.01}""".stripMargin
     val historicPayments   =
-      s"""[{"year":${year - 1},"payments":[{"period":"24AB","transactionType":"LPI","chargeReference":"XA63139412020838","amountPaid":10},{"period":"24AD","transactionType":"Return","chargeReference":"XA07406454540955","amountPaid":2000}]},{"year":$year,"payments":[{"period":"25AB","transactionType":"LPI","chargeReference":"XA63139412020838","amountPaid":10},{"period":"25AD","transactionType":"Return","chargeReference":"XA07406454540955","amountPaid":2000}]}]"""
+      s"""[{"year":${year - 1},"payments":[
+         |  {"period":"24AB","taxPeriodFrom":"${year - 1}-02-01","taxPeriodTo":"${year - 1}-02-28","transactionType":"LPI","chargeReference":"XA63139412020838","amountPaid":10},
+         |  {"period":"24AD","taxPeriodFrom":"${year - 1}-04-01","taxPeriodTo":"${year - 1}-04-30","transactionType":"Return","chargeReference":"XA07406454540955","amountPaid":2000}
+         |]},
+         |{"year":$year,"payments":[
+         |  {"period":"25AB","taxPeriodFrom":"$year-02-01","taxPeriodTo":"$year-02-28","transactionType":"LPI","chargeReference":"XA63139412020838","amountPaid":10},
+         |  {"period":"25AD","taxPeriodFrom":"$year-04-01","taxPeriodTo":"$year-04-30","transactionType":"Return","chargeReference":"XA07406454540955","amountPaid":2000}
+         |]}]""".stripMargin
     val noOpenPayments     =
       """{"outstandingPayments":[],"totalOutstandingPayments":0,"unallocatedPayments":[],"totalUnallocatedPayments":0,"totalOpenPaymentsAmount":0}"""
     val noHistoricPayments = s"""[{"year":${year - 1},"payments":[]},{"year":$year,"payments":[]}]"""

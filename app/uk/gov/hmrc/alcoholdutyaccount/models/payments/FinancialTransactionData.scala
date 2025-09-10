@@ -21,6 +21,8 @@ import java.time.LocalDate
 case class FinancialTransactionData(
   transactionType: TransactionType,
   maybePeriodKey: Option[String],
+  taxPeriodFrom: Option[LocalDate],
+  taxPeriodTo: Option[LocalDate],
   dueDate: LocalDate,
   maybeChargeReference: Option[String]
 )

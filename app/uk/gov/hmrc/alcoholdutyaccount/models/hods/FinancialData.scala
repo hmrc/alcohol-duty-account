@@ -33,6 +33,8 @@ object FinancialTransactionItem {
 case class FinancialTransaction(
   sapDocumentNumber: String,
   periodKey: Option[String],
+  taxPeriodFrom: Option[LocalDate],
+  taxPeriodTo: Option[LocalDate],
   chargeReference: Option[String],
   contractObjectType: Option[String],
   mainTransaction: String,
