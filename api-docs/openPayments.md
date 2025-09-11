@@ -79,11 +79,28 @@ If NOT_FOUND is returned by the downstream API, empty arrays of outstandingPayme
 }
 ```
 
-***An outstanding return, RPI (not expecting these to appear but will be returned if so), an LPI, and a couple of unallocated payments:***
+***An outstanding return, LPI, RPI (not expecting these to appear but will be returned if so), CA, CAI
+and a couple of unallocated payments:***
 
 ```json
 {
   "outstandingPayments": [
+    {
+      "taxPeriodFrom": "2024-07-01",
+      "taxPeriodTo": "2024-07-31",
+      "transactionType": "CAI",
+      "dueDate": "2024-09-01",
+      "chargeReference": "XA10517522797619",
+      "remainingAmount": 15
+    },
+    {
+      "taxPeriodFrom": "2024-07-01",
+      "taxPeriodTo": "2024-07-31",
+      "transactionType": "CA",
+      "dueDate": "2024-08-25",
+      "chargeReference": "XA68011510878983",
+      "remainingAmount": 2000
+    },
     {
       "taxPeriodFrom": "2024-06-01",
       "taxPeriodTo": "2024-06-30",
@@ -107,7 +124,7 @@ If NOT_FOUND is returned by the downstream API, empty arrays of outstandingPayme
       "remainingAmount": 10.56
     }
   ],
-  "totalOutstandingPayments": 4567.44,
+  "totalOutstandingPayments": 6582.44,
   "unallocatedPayments": [
     {
       "paymentDate": "2024-09-01",
@@ -119,7 +136,7 @@ If NOT_FOUND is returned by the downstream API, empty arrays of outstandingPayme
     }
   ],
   "totalUnallocatedPayments": -1500,
-  "totalOpenPaymentsAmount": 3067.44
+  "totalOpenPaymentsAmount": 5082.44
 }
 ```
 

@@ -55,7 +55,7 @@ year.
 
 **Response Body Examples**
 
-***A (part) paid return, LPI and central assessment:***
+***A (part) paid return, LPI, CA and CAI:***
 
 ```json
 [
@@ -88,8 +88,16 @@ year.
         "taxPeriodFrom": "2025-03-01",
         "taxPeriodTo": "2025-03-31",
         "transactionType": "CA",
-        "chargeReference": "XA46070058554819",
+        "chargeReference": "XA10517522797619",
         "amountPaid": 1500
+      },
+      {
+        "period": "25AC",
+        "taxPeriodFrom": "2025-03-01",
+        "taxPeriodTo": "2025-03-31",
+        "transactionType": "CAI",
+        "chargeReference": "XA68011510878983",
+        "amountPaid": 14.45
       },
       {
         "period": "25AB",
