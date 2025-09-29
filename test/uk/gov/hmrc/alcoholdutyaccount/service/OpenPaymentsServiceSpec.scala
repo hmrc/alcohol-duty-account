@@ -56,6 +56,8 @@ class OpenPaymentsServiceSpec extends SpecBase {
               OpenPayments(
                 outstandingPayments = Seq(
                   OutstandingPayment(
+                    taxPeriodFrom = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).periodFromDate()),
+                    taxPeriodTo = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).periodToDate()),
                     transactionType = TransactionType.Return,
                     dueDate = singleFullyOutstandingReturn.financialTransactions.head.items.head.dueDate.get,
                     chargeReference = singleFullyOutstandingReturn.financialTransactions.head.chargeReference,
@@ -82,6 +84,8 @@ class OpenPaymentsServiceSpec extends SpecBase {
               OpenPayments(
                 outstandingPayments = Seq(
                   OutstandingPayment(
+                    taxPeriodFrom = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).periodFromDate()),
+                    taxPeriodTo = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).periodToDate()),
                     transactionType = TransactionType.Return,
                     dueDate = financialTransactionDocument.financialTransactions.head.items.head.dueDate.get,
                     chargeReference = financialTransactionDocument.financialTransactions.head.chargeReference,
@@ -108,6 +112,8 @@ class OpenPaymentsServiceSpec extends SpecBase {
               OpenPayments(
                 outstandingPayments = Seq(
                   OutstandingPayment(
+                    taxPeriodFrom = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).periodFromDate()),
+                    taxPeriodTo = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).periodToDate()),
                     transactionType = TransactionType.Return,
                     dueDate = financialTransactionDocument.financialTransactions.head.items.head.dueDate.get,
                     chargeReference = financialTransactionDocument.financialTransactions.head.chargeReference,
@@ -134,12 +140,16 @@ class OpenPaymentsServiceSpec extends SpecBase {
             case Right(openPayments) =>
               openPayments.outstandingPayments        must contain theSameElementsAs Seq(
                 OutstandingPayment(
+                  taxPeriodFrom = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).periodFromDate()),
+                  taxPeriodTo = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).periodToDate()),
                   transactionType = TransactionType.Return,
                   dueDate = financialTransactionDocument.financialTransactions(0).items.head.dueDate.get,
                   chargeReference = financialTransactionDocument.financialTransactions(0).chargeReference,
                   remainingAmount = BigDecimal("5000")
                 ),
                 OutstandingPayment(
+                  taxPeriodFrom = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey2).periodFromDate()),
+                  taxPeriodTo = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey2).periodToDate()),
                   transactionType = TransactionType.Return,
                   dueDate = financialTransactionDocument.financialTransactions(1).items.head.dueDate.get,
                   chargeReference = financialTransactionDocument.financialTransactions(1).chargeReference,
@@ -272,6 +282,8 @@ class OpenPaymentsServiceSpec extends SpecBase {
               OpenPayments(
                 outstandingPayments = Seq(
                   OutstandingPayment(
+                    taxPeriodFrom = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).periodFromDate()),
+                    taxPeriodTo = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).periodToDate()),
                     transactionType = TransactionType.Return,
                     dueDate =
                       onePartiallyPaidReturnLineItemAndOnePartiallyAllocatedOverpayment.financialTransactions.head.items.head.dueDate.get,
@@ -308,6 +320,8 @@ class OpenPaymentsServiceSpec extends SpecBase {
               OpenPayments(
                 outstandingPayments = Seq(
                   OutstandingPayment(
+                    taxPeriodFrom = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).periodFromDate()),
+                    taxPeriodTo = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).periodToDate()),
                     transactionType = TransactionType.LPI,
                     dueDate = singleFullyOutstandingLPI.financialTransactions.head.items.head.dueDate.get,
                     chargeReference = singleFullyOutstandingLPI.financialTransactions.head.chargeReference,
@@ -332,6 +346,8 @@ class OpenPaymentsServiceSpec extends SpecBase {
               OpenPayments(
                 outstandingPayments = Seq(
                   OutstandingPayment(
+                    taxPeriodFrom = None,
+                    taxPeriodTo = None,
                     transactionType = TransactionType.RPI,
                     dueDate = singleRPI.financialTransactions.head.items.head.dueDate.get,
                     chargeReference = singleRPI.financialTransactions.head.chargeReference,
@@ -342,6 +358,58 @@ class OpenPaymentsServiceSpec extends SpecBase {
                 unallocatedPayments = Seq.empty,
                 totalUnallocatedPayments = BigDecimal("0"),
                 totalOpenPaymentsAmount = BigDecimal("-50")
+              )
+            )
+          }
+        }
+
+        "when processing a single fully outstanding Central Assessment charge" in new SetUp {
+          when(mockFinancialDataConnector.getOnlyOpenFinancialData(appaId))
+            .thenReturn(Future.successful(Right(singleCA)))
+
+          whenReady(paymentsService.getOpenPayments(appaId).value) {
+            _ mustBe Right(
+              OpenPayments(
+                outstandingPayments = Seq(
+                  OutstandingPayment(
+                    taxPeriodFrom = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).periodFromDate()),
+                    taxPeriodTo = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).periodToDate()),
+                    transactionType = TransactionType.CA,
+                    dueDate = singleCA.financialTransactions.head.items.head.dueDate.get,
+                    chargeReference = singleCA.financialTransactions.head.chargeReference,
+                    remainingAmount = BigDecimal("2000")
+                  )
+                ),
+                totalOutstandingPayments = BigDecimal("2000"),
+                unallocatedPayments = Seq.empty,
+                totalUnallocatedPayments = BigDecimal("0"),
+                totalOpenPaymentsAmount = BigDecimal("2000")
+              )
+            )
+          }
+        }
+
+        "when processing a single fully outstanding Central Assessment Interest charge" in new SetUp {
+          when(mockFinancialDataConnector.getOnlyOpenFinancialData(appaId))
+            .thenReturn(Future.successful(Right(singleCAI)))
+
+          whenReady(paymentsService.getOpenPayments(appaId).value) {
+            _ mustBe Right(
+              OpenPayments(
+                outstandingPayments = Seq(
+                  OutstandingPayment(
+                    taxPeriodFrom = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).periodFromDate()),
+                    taxPeriodTo = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).periodToDate()),
+                    transactionType = TransactionType.CAI,
+                    dueDate = singleCAI.financialTransactions.head.items.head.dueDate.get,
+                    chargeReference = singleCAI.financialTransactions.head.chargeReference,
+                    remainingAmount = BigDecimal("20")
+                  )
+                ),
+                totalOutstandingPayments = BigDecimal("20"),
+                unallocatedPayments = Seq.empty,
+                totalUnallocatedPayments = BigDecimal("0"),
+                totalOpenPaymentsAmount = BigDecimal("20")
               )
             )
           }
@@ -616,6 +684,8 @@ class OpenPaymentsServiceSpec extends SpecBase {
             dueDate = ReturnPeriod.fromPeriodKeyOrThrow(periodKey).dueDate(),
             transactionType = TransactionType.Return,
             maybePeriodKey = Some(periodKey),
+            maybeTaxPeriodFrom = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).periodFromDate()),
+            maybeTaxPeriodTo = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).periodToDate()),
             maybeChargeReference = Some(chargeReferenceGen.sample.get)
           ),
           createFinancialDocument(
@@ -625,7 +695,6 @@ class OpenPaymentsServiceSpec extends SpecBase {
             maybeOutstandingAmount = Some(BigDecimal("-2000")),
             dueDate = ReturnPeriod.fromPeriodKeyOrThrow(periodKey).dueDate(),
             transactionType = TransactionType.Overpayment,
-            maybePeriodKey = Some(periodKey),
             maybeChargeReference = None
           )
         )

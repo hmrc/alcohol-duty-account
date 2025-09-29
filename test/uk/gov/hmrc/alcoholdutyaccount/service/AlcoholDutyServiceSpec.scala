@@ -294,6 +294,8 @@ class AlcoholDutyServiceSpec extends SpecBase {
               FinancialTransaction(
                 sapDocumentNumber = "123456",
                 periodKey = Some("18AA"),
+                taxPeriodFrom = Some(LocalDate.of(2018, 1, 1)),
+                taxPeriodTo = Some(LocalDate.of(2018, 1, 31)),
                 chargeReference = Some("XM002610011594"),
                 contractObjectType = Some("ZADP"),
                 originalAmount = BigDecimal(1000),
@@ -312,6 +314,8 @@ class AlcoholDutyServiceSpec extends SpecBase {
               FinancialTransaction(
                 sapDocumentNumber = "123457",
                 periodKey = Some("18AB"),
+                taxPeriodFrom = Some(LocalDate.of(2018, 2, 1)),
+                taxPeriodTo = Some(LocalDate.of(2018, 2, 28)),
                 chargeReference = Some("XM002610011595"),
                 contractObjectType = Some("ZADP"),
                 originalAmount = BigDecimal(2000),
@@ -330,6 +334,8 @@ class AlcoholDutyServiceSpec extends SpecBase {
               FinancialTransaction(
                 sapDocumentNumber = "123456",
                 periodKey = Some("18AA"),
+                taxPeriodFrom = Some(LocalDate.of(2018, 1, 1)),
+                taxPeriodTo = Some(LocalDate.of(2018, 1, 31)),
                 chargeReference = Some("XM002610011594"),
                 contractObjectType = Some("ZADP"),
                 originalAmount = BigDecimal(3000),
@@ -367,6 +373,8 @@ class AlcoholDutyServiceSpec extends SpecBase {
                 FinancialTransaction(
                   sapDocumentNumber = "123456",
                   periodKey = Some("18AA"),
+                  taxPeriodFrom = Some(LocalDate.of(2018, 1, 1)),
+                  taxPeriodTo = Some(LocalDate.of(2018, 1, 31)),
                   chargeReference = Some("XM002610011594"),
                   contractObjectType = Some("ZADP"),
                   originalAmount = BigDecimal(1000),
@@ -385,6 +393,8 @@ class AlcoholDutyServiceSpec extends SpecBase {
                 FinancialTransaction(
                   sapDocumentNumber = "123457",
                   periodKey = Some("18AB"),
+                  taxPeriodFrom = Some(LocalDate.of(2018, 2, 1)),
+                  taxPeriodTo = Some(LocalDate.of(2018, 2, 28)),
                   chargeReference = None,
                   contractObjectType = Some("ZADP"),
                   originalAmount = BigDecimal(2000),
@@ -403,6 +413,8 @@ class AlcoholDutyServiceSpec extends SpecBase {
                 FinancialTransaction(
                   sapDocumentNumber = "123456",
                   periodKey = Some("18AA"),
+                  taxPeriodFrom = Some(LocalDate.of(2018, 1, 1)),
+                  taxPeriodTo = Some(LocalDate.of(2018, 1, 31)),
                   chargeReference = Some("XM002610011594"),
                   contractObjectType = Some("ZADP"),
                   originalAmount = BigDecimal(3000),
@@ -818,6 +830,8 @@ class AlcoholDutyServiceSpec extends SpecBase {
     val financialTransaction = FinancialTransaction(
       sapDocumentNumber = "123456",
       periodKey = Some("18AA"),
+      taxPeriodFrom = Some(LocalDate.of(2018, 1, 1)),
+      taxPeriodTo = Some(LocalDate.of(2018, 1, 31)),
       chargeReference = Some("X1234567890"),
       contractObjectType = Some("ZADP"),
       originalAmount = BigDecimal(1000),

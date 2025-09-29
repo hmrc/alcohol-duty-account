@@ -47,13 +47,15 @@ year.
 | year                     | The year of the return period                | Integer      | Mandatory          |                                               |
 | payments                 | An array of payments                         | Array(Items) | Mandatory          | Only those paid or part paid (amountPaid > 0) |
 | payments.period          | The period this relates to (as a period key) | String       | Mandatory          | YYAM (year, 'A,' month A-L)                   |
-| payments.transactionType | The type of transaction this refers to       | Enum         | Mandatory          | Return, LPI, RPI                              |
+| payments.taxPeriodFrom   | The start date of the period this relates to | Date         | Mandatory          | YYYY-MM-DD                                    |
+| payments.taxPeriodTo     | The end date of the period this relates to   | Date         | Mandatory          | YYYY-MM-DD                                    |
+| payments.transactionType | The type of transaction this refers to       | Enum         | Mandatory          | Return, LPI, CA, CAI                          |
 | payments.chargeReference | The charge reference if applicable           | String       | Optional           |                                               |
 | payments.amountPaid      | The amount paid                              | Numeric      | Mandatory          |                                               |
 
 **Response Body Examples**
 
-***A (part) paid return and (part) paid LPI:***
+***A (part) paid return, LPI, CA and CAI:***
 
 ```json
 [
@@ -62,12 +64,16 @@ year.
     "payments": [
       {
         "period": "24AE",
+        "taxPeriodFrom": "2024-05-01",
+        "taxPeriodTo": "2024-05-31",
         "transactionType": "Return",
         "chargeReference": "XA57978503902370",
         "amountPaid": 2000
       },
       {
         "period": "24AC",
+        "taxPeriodFrom": "2024-03-01",
+        "taxPeriodTo": "2024-03-31",
         "transactionType": "LPI",
         "chargeReference": "XA02088676456437",
         "amountPaid": 10
@@ -78,13 +84,33 @@ year.
     "year": 2025,
     "payments": [
       {
+        "period": "25AC",
+        "taxPeriodFrom": "2025-03-01",
+        "taxPeriodTo": "2025-03-31",
+        "transactionType": "CA",
+        "chargeReference": "XA10517522797619",
+        "amountPaid": 1500
+      },
+      {
+        "period": "25AC",
+        "taxPeriodFrom": "2025-03-01",
+        "taxPeriodTo": "2025-03-31",
+        "transactionType": "CAI",
+        "chargeReference": "XA68011510878983",
+        "amountPaid": 14.45
+      },
+      {
         "period": "25AB",
+        "taxPeriodFrom": "2025-02-01",
+        "taxPeriodTo": "2025-02-28",
         "transactionType": "Return",
         "chargeReference": "XA46070058554819",
         "amountPaid": 3000
       },
       {
         "period": "25AA",
+        "taxPeriodFrom": "2025-01-01",
+        "taxPeriodTo": "2025-01-31",
         "transactionType": "LPI",
         "chargeReference": "XA20860833337527",
         "amountPaid": 15

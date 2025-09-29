@@ -37,6 +37,8 @@ class PaymentsValidator @Inject() () extends Logging {
         getFirstFinancialTransactionLineItem(sapDocumentNumber, financialTransactionsForDocument)
       mainTransactionType                = firstFinancialTransactionLineItem.mainTransaction
       maybePeriodKey                     = firstFinancialTransactionLineItem.periodKey
+      maybeTaxPeriodFrom                 = firstFinancialTransactionLineItem.taxPeriodFrom
+      maybeTaxPeriodTo                   = firstFinancialTransactionLineItem.taxPeriodTo
       maybeChargeReference               = firstFinancialTransactionLineItem.chargeReference
       dueDate                           <- getFirstItemDueDate(sapDocumentNumber, firstFinancialTransactionLineItem)
       _                                 <- validateFinancialLineItems(
@@ -44,6 +46,8 @@ class PaymentsValidator @Inject() () extends Logging {
                                              financialTransactionsForDocument,
                                              mainTransactionType,
                                              maybePeriodKey,
+                                             maybeTaxPeriodFrom,
+                                             maybeTaxPeriodTo,
                                              maybeChargeReference,
                                              dueDate
                                            )
@@ -51,6 +55,8 @@ class PaymentsValidator @Inject() () extends Logging {
     } yield FinancialTransactionData(
       transactionType,
       maybePeriodKey,
+      maybeTaxPeriodFrom,
+      maybeTaxPeriodTo,
       dueDate,
       maybeChargeReference
     )
@@ -75,6 +81,8 @@ class PaymentsValidator @Inject() () extends Logging {
     financialTransactionsForDocument: Seq[FinancialTransaction],
     mainTransactionType: String,
     maybePeriodKey: Option[String],
+    maybeTaxPeriodFrom: Option[LocalDate],
+    maybeTaxPeriodTo: Option[LocalDate],
     maybeChargeReference: Option[String],
     dueDate: LocalDate
   ): Either[ErrorResponse, Unit] =
@@ -87,6 +95,8 @@ class PaymentsValidator @Inject() () extends Logging {
           Right(
             mainTransactionType == financialTransaction.mainTransaction &&
               maybePeriodKey == financialTransaction.periodKey &&
+              maybeTaxPeriodFrom == financialTransaction.taxPeriodFrom &&
+              maybeTaxPeriodTo == financialTransaction.taxPeriodTo &&
               maybeChargeReference == financialTransaction.chargeReference &&
               financialTransaction.items.forall(_.dueDate.fold(false)(_.isEqual(dueDate)))
           )

@@ -67,11 +67,19 @@ class HistoricPaymentsService @Inject() (
               val totalAmountPaid = calculateTotalAmountPaid(financialTransactionsForDocument)
 
               if (totalAmountPaid > 0 && financialTransactionData.transactionType != RPI) {
+                val taxPeriodFrom = financialTransactionData.taxPeriodFrom.getOrElse(
+                  throw new IllegalStateException("taxPeriodFrom is required for historic payments (Return/LPI/CA)")
+                )
+                val taxPeriodTo   = financialTransactionData.taxPeriodTo.getOrElse(
+                  throw new IllegalStateException("taxPeriodTo is required for historic payments (Return/LPI/CA)")
+                )
                 Some(
                   HistoricPayment(
+                    taxPeriodFrom = taxPeriodFrom,
+                    taxPeriodTo = taxPeriodTo,
                     period = financialTransactionData.maybePeriodKey
                       .flatMap(ReturnPeriod.fromPeriodKey)
-                      .getOrElse(ReturnPeriod(YearMonth.from(financialTransactionData.dueDate))),
+                      .getOrElse(ReturnPeriod(YearMonth.from(taxPeriodTo))),
                     transactionType = financialTransactionData.transactionType,
                     chargeReference = financialTransactionData.maybeChargeReference,
                     amountPaid = totalAmountPaid

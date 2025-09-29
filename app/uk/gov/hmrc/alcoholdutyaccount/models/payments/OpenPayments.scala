@@ -23,6 +23,8 @@ import java.time.LocalDate
 sealed trait OpenPayment
 
 case class OutstandingPayment(
+  taxPeriodFrom: Option[LocalDate],
+  taxPeriodTo: Option[LocalDate],
   transactionType: TransactionType,
   dueDate: LocalDate,
   chargeReference: Option[String],
