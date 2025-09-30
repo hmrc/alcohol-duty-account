@@ -109,9 +109,9 @@ class AlcoholDutyService @Inject() (
           getObligationAndFinancialInfo(alcoholDutyReference, subscriptionSummary)
         }
       }
-      .recover { case errorResponse: ErrorResponse =>
+      .recover { case _: ErrorResponse =>
         logger.warn(
-          s"Failed to retrieve subscription summary, returning an error card with hasSubscriptionSummaryError flag set. Error: $errorResponse"
+          "Failed to retrieve subscription summary, returning an error card with hasSubscriptionSummaryError flag set."
         )
         AlcoholDutyCardData(
           alcoholDutyReference = alcoholDutyReference,
