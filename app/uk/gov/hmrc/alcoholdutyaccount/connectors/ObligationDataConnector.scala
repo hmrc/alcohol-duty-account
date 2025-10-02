@@ -22,7 +22,7 @@ import play.api.http.Status._
 import play.api.{Logger, Logging}
 import uk.gov.hmrc.alcoholdutyaccount.config.{AppConfig, CircuitBreakerProvider}
 import uk.gov.hmrc.alcoholdutyaccount.models.HttpErrorResponse
-import uk.gov.hmrc.alcoholdutyaccount.models.hods.{ObligationData, ObligationDetails, ObligationStatus, Open}
+import uk.gov.hmrc.alcoholdutyaccount.models.hods._
 import uk.gov.hmrc.alcoholdutyaccount.utils.DateTimeHelper.instantToLocalDate
 import uk.gov.hmrc.http._
 import uk.gov.hmrc.http.client.HttpClientV2
@@ -45,12 +45,20 @@ class ObligationDataConnector @Inject() (
   override protected val logger: Logger = Logger(this.getClass)
   implicit val scheduler: Scheduler     = system.scheduler
 
-  def getObligationDetails(
+  def getOpenObligations(appaId: String)(implicit hc: HeaderCarrier): Future[Either[ErrorResponse, ObligationData]] =
+    getObligationDetails(appaId, openQueryParams)
+
+  def getFulfilledObligations(appaId: String, year: Int)(implicit
+    hc: HeaderCarrier
+  ): Future[Either[ErrorResponse, ObligationData]] =
+    getObligationDetails(appaId, getFulfilledQueryParams(year))
+
+  private def getObligationDetails(
     appaId: String,
-    obligationStatusFilter: Option[ObligationStatus]
+    queryParams: Seq[(String, String)]
   )(implicit hc: HeaderCarrier): Future[Either[ErrorResponse, ObligationData]] =
     retry(
-      () => call(appaId, obligationStatusFilter),
+      () => call(appaId, queryParams),
       attempts = config.retryAttempts,
       delay = config.retryAttemptsDelay
     ).recoverWith { _ =>
@@ -59,7 +67,7 @@ class ObligationDataConnector @Inject() (
 
   def call(
     appaId: String,
-    obligationStatusFilter: Option[ObligationStatus]
+    queryParams: Seq[(String, String)]
   )(implicit hc: HeaderCarrier): Future[Either[ErrorResponse, ObligationData]] =
     circuitBreakerProvider.get().withCircuitBreaker {
       val headers: Seq[(String, String)] = Seq(
@@ -67,7 +75,6 @@ class ObligationDataConnector @Inject() (
         "Environment"             -> config.obligationDataEnv
       )
       logger.info(s"Fetching all open obligation data for appaId $appaId")
-      val queryParams                    = getQueryParams(obligationStatusFilter)
 
       httpClient
         .get(url"${config.obligationDataUrl(appaId)}?$queryParams")
@@ -80,14 +87,11 @@ class ObligationDataConnector @Inject() (
                 response.json.as[ObligationData]
               } match {
                 case Success(doc)       =>
-                  logger.info(s"Retrieved open obligation data for appaId $appaId")
+                  logger.info(s"Retrieved obligation data for appaId $appaId")
                   Future.successful(Right(filterOutFutureObligations(doc)))
                 case Failure(exception) =>
                   logger.warn(s"Unable to parse obligation data for appaId $appaId", exception)
-                  Future
-                    .successful(
-                      Left(ErrorResponse(INTERNAL_SERVER_ERROR, "Unable to parse obligation data"))
-                    )
+                  Future.successful(Left(ErrorResponse(INTERNAL_SERVER_ERROR, "Unable to parse obligation data")))
               }
             case NOT_FOUND            =>
               logger.info(s"No obligation data found for appaId $appaId")
@@ -108,16 +112,15 @@ class ObligationDataConnector @Inject() (
         }
     }
 
-  private def getQueryParams(obligationStatusFilter: Option[ObligationStatus]): Seq[(String, String)] = {
-    // date filter headers should only be added if the status is not defined or is not Open (according to api specs)
-    val dateFilterHeaders =
-      Seq("from" -> config.obligationDataFilterStartDate, "to" -> instantToLocalDate(Instant.now(clock)).toString)
-    obligationStatusFilter match {
-      case Some(Open)   => Seq("status" -> Open.value)
-      case Some(status) => Seq("status" -> status.value) ++ dateFilterHeaders
-      case None         => dateFilterHeaders
-    }
-  }
+  private val openQueryParams: Seq[(String, String)]                    =
+    Seq("status" -> Open.value)
+
+  private def getFulfilledQueryParams(year: Int): Seq[(String, String)] =
+    Seq(
+      "status"   -> Fulfilled.value,
+      "dateFrom" -> s"$year-01-01",
+      "dateTo"   -> s"$year-12-31"
+    )
 
   private def filterOutFutureObligations(obligationData: ObligationData): ObligationData =
     obligationData.copy(obligations = obligationData.obligations.flatMap { obligation =>

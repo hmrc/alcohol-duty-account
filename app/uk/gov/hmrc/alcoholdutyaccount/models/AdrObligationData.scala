@@ -17,10 +17,12 @@
 package uk.gov.hmrc.alcoholdutyaccount.models
 
 import enumeratum.{Enum, EnumEntry, PlayJsonEnum}
-import play.api.libs.json.{Format, Json}
+import play.api.libs.functional.syntax._
+import play.api.libs.json.{Format, Json, OFormat, __}
 import uk.gov.hmrc.alcoholdutyaccount.models.hods.ObligationDetails
+import uk.gov.hmrc.mongo.play.json.formats.MongoJavatimeFormats
 
-import java.time.LocalDate
+import java.time.{Instant, LocalDate}
 
 sealed trait ObligationStatus extends EnumEntry
 object ObligationStatus extends Enum[ObligationStatus] with PlayJsonEnum[ObligationStatus] {
@@ -56,4 +58,28 @@ object AdrObligationData {
   }
 
   implicit val format: Format[AdrObligationData] = Json.format[AdrObligationData]
+}
+
+case class FulfilledObligations(
+  year: Int,
+  obligations: Seq[AdrObligationData]
+)
+
+object FulfilledObligations {
+  implicit val fulfilledObligationsFormat: OFormat[FulfilledObligations] = Json.format[FulfilledObligations]
+}
+
+case class UserFulfilledObligations(
+  appaId: String,
+  fulfilledObligationsData: Seq[FulfilledObligations],
+  createdAt: Instant
+)
+
+object UserFulfilledObligations {
+  implicit val format: OFormat[UserFulfilledObligations] =
+    (
+      (__ \ "_id").format[String] and
+        (__ \ "fulfilledObligationsData").format[Seq[FulfilledObligations]] and
+        (__ \ "createdAt").format(MongoJavatimeFormats.instantFormat)
+    )(UserFulfilledObligations.apply, unlift(UserFulfilledObligations.unapply))
 }
