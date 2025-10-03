@@ -32,6 +32,11 @@ To run the service with test only routes enabled:
 This endpoint clears all data in the user historic payments repository.
 > `DELETE /alcohol-duty-account/test-only/clear-user-historic-payments`
 
+### Clear fulfilled obligation data
+
+This endpoint clears all data in the user fulfilled obligations (i.e. completed returns) repository.
+> `DELETE /alcohol-duty-account/test-only/clear-user-fulfilled-obligations`
+
 ## Running tests
 
 ### Unit tests

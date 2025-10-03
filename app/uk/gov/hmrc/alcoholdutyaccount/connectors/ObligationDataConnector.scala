@@ -117,9 +117,9 @@ class ObligationDataConnector @Inject() (
 
   private def getFulfilledQueryParams(year: Int): Seq[(String, String)] =
     Seq(
-      "status"   -> Fulfilled.value,
-      "dateFrom" -> s"$year-01-01",
-      "dateTo"   -> s"$year-12-31"
+      "status" -> Fulfilled.value,
+      "from"   -> s"$year-01-01",
+      "to"     -> s"$year-12-31"
     )
 
   private def filterOutFutureObligations(obligationData: ObligationData): ObligationData =

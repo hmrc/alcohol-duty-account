@@ -17,7 +17,7 @@
 package uk.gov.hmrc.alcoholdutyaccount.testonly.controllers
 
 import play.api.mvc.{Action, AnyContent, ControllerComponents}
-import uk.gov.hmrc.alcoholdutyaccount.repositories.UserHistoricPaymentsRepository
+import uk.gov.hmrc.alcoholdutyaccount.repositories.{UserFulfilledObligationsRepository, UserHistoricPaymentsRepository}
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
 import javax.inject.Inject
@@ -25,7 +25,8 @@ import scala.concurrent.ExecutionContext
 
 class TestOnlyController @Inject() (
   cc: ControllerComponents,
-  userHistoricPaymentsRepository: UserHistoricPaymentsRepository
+  userHistoricPaymentsRepository: UserHistoricPaymentsRepository,
+  userFulfilledObligationsRepository: UserFulfilledObligationsRepository
 )(implicit ec: ExecutionContext)
     extends BackendController(cc) {
 
@@ -33,5 +34,11 @@ class TestOnlyController @Inject() (
     for {
       _ <- userHistoricPaymentsRepository.deleteAll()
     } yield Ok("All historic payments data cleared")
+  }
+
+  def clearUserFulfilledObligations: Action[AnyContent] = Action.async { _ =>
+    for {
+      _ <- userFulfilledObligationsRepository.deleteAll()
+    } yield Ok("All fulfilled obligation data cleared")
   }
 }
