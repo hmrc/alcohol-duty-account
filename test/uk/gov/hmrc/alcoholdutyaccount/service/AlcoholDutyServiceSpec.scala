@@ -54,63 +54,68 @@ class AlcoholDutyServiceSpec extends SpecBase {
       }
     }
 
-    "getOpenObligations must" - {
+    "getOpenObligationsForPeriod must" - {
       "return obligation data from the connector where one open return matches the period key" in new SetUp {
-        when(obligationDataConnector.getObligationDetails(appaId, Some(obligationFilterOpen)))
+        when(obligationDataConnector.getOpenObligations(appaId))
           .thenReturn(Future.successful(Right(obligationDataMultipleOpen)))
-        whenReady(service.getOpenObligations(appaId, periodKey).value) {
+        whenReady(service.getOpenObligationsForPeriod(appaId, periodKey).value) {
           _ mustBe Right(adrObligationDetails)
         }
       }
 
-      "return obligation data from the connector where one fulfilled return matches the period key" in new SetUp {
-        when(obligationDataConnector.getObligationDetails(appaId, Some(obligationFilterOpen)))
-          .thenReturn(Future.successful(Right(obligationDataSingleFulfilled)))
-        whenReady(service.getOpenObligations(appaId, periodKey).value) {
-          _ mustBe Right(adrObligationDetailsFulfilled)
-        }
-      }
-
       "return NOT_FOUND where no return matches the period key" in new SetUp {
-        when(obligationDataConnector.getObligationDetails(appaId, Some(obligationFilterOpen)))
+        when(obligationDataConnector.getOpenObligations(appaId))
           .thenReturn(Future.successful(Right(obligationDataMultipleOpen)))
-        whenReady(service.getOpenObligations(appaId, periodKey4).value) {
+        whenReady(service.getOpenObligationsForPeriod(appaId, periodKey4).value) {
           _ mustBe Left(ErrorResponse(NOT_FOUND, "Obligation details not found for period key 24AH"))
         }
       }
 
       "return an error if the connector is unable to obtain obligation data" in new SetUp {
         val error = ErrorResponse(INTERNAL_SERVER_ERROR, "An error occurred")
-        when(obligationDataConnector.getObligationDetails(appaId, Some(obligationFilterOpen)))
+        when(obligationDataConnector.getOpenObligations(appaId))
           .thenReturn(Future.successful(Left(error)))
-        whenReady(service.getOpenObligations(appaId, periodKey).value)(
+        whenReady(service.getOpenObligationsForPeriod(appaId, periodKey).value)(
           _ mustBe Left(error)
         )
       }
     }
 
-    "getObligations must" - {
-      "return obligation data from the connector where multiple open and fulfilled obligations are returned" in new SetUp {
-        when(obligationDataConnector.getObligationDetails(appaId, None))
-          .thenReturn(Future.successful(Right(obligationDataMultipleOpenAndFulfilled)))
-        whenReady(service.getObligations(appaId, None).value) {
-          _ mustBe Right(adrMultipleOpenAndFulfilledData)
-        }
-      }
-
-      "return obligation data from the connector where one fulfilled obligation is returned" in new SetUp {
-        when(obligationDataConnector.getObligationDetails(appaId, None))
-          .thenReturn(Future.successful(Right(obligationDataSingleFulfilled)))
-        whenReady(service.getObligations(appaId, None).value) {
-          _ mustBe Right(Seq(adrObligationDetailsFulfilled))
+    "getOpenObligations must" - {
+      "return obligation data from the connector where multiple open obligations are returned" in new SetUp {
+        when(obligationDataConnector.getOpenObligations(appaId))
+          .thenReturn(Future.successful(Right(obligationDataMultipleOpen)))
+        whenReady(service.getOpenObligations(appaId).value) {
+          _ mustBe Right(adrMultipleOpenData)
         }
       }
 
       "return an error if the connector is unable to obtain obligation data" in new SetUp {
         val error = ErrorResponse(INTERNAL_SERVER_ERROR, "An error occurred")
-        when(obligationDataConnector.getObligationDetails(appaId, None))
+        when(obligationDataConnector.getOpenObligations(appaId))
           .thenReturn(Future.successful(Left(error)))
-        whenReady(service.getObligations(appaId, None).value)(
+        whenReady(service.getOpenObligations(appaId).value)(
+          _ mustBe Left(error)
+        )
+      }
+    }
+
+    "getFulfilledObligations must" - {
+      val year = 2024
+
+      "return multiple fulfilled obligations for the given year" in new SetUp {
+        when(obligationDataConnector.getFulfilledObligations(appaId, year))
+          .thenReturn(Future.successful(Right(obligationDataMultipleFulfilled)))
+        whenReady(service.getFulfilledObligations(appaId, year).value) {
+          _ mustBe Right(FulfilledObligations(year, adrMultipleFulfilledData))
+        }
+      }
+
+      "return an error if the connector is unable to obtain obligation data" in new SetUp {
+        val error = ErrorResponse(INTERNAL_SERVER_ERROR, "An error occurred")
+        when(obligationDataConnector.getFulfilledObligations(appaId, year))
+          .thenReturn(Future.successful(Left(error)))
+        whenReady(service.getFulfilledObligations(appaId, year).value)(
           _ mustBe Left(error)
         )
       }
@@ -450,7 +455,7 @@ class AlcoholDutyServiceSpec extends SpecBase {
 
     "getReturnDetails must" - {
       "return None if the obligationDataConnector returns an error" in new SetUp {
-        when(obligationDataConnector.getObligationDetails(*, *)(*))
+        when(obligationDataConnector.getOpenObligations(*)(*))
           .thenReturn(Future.successful(Left(ErrorResponse(NOT_FOUND, ""))))
 
         val result = service.getReturnDetails(appaId)
@@ -462,7 +467,7 @@ class AlcoholDutyServiceSpec extends SpecBase {
 
       "return a Returns object if the obligationDataConnector returns an obligation" in new SetUp {
         val obligationDataOneDue = ObligationData(obligations = Seq.empty)
-        when(obligationDataConnector.getObligationDetails(*, *)(*))
+        when(obligationDataConnector.getOpenObligations(*)(*))
           .thenReturn(Future.successful(Right(obligationDataOneDue)))
 
         service.getReturnDetails(appaId).onComplete { result =>
@@ -549,7 +554,7 @@ class AlcoholDutyServiceSpec extends SpecBase {
               )
             )
           )
-          when(obligationDataConnector.getObligationDetails(*, *)(*))
+          when(obligationDataConnector.getOpenObligations(*)(*))
             .thenReturn(Future.successful(Right(obligationDataOneDue)))
 
           when(financialDataConnector.getOnlyOpenFinancialData(*)(*))
@@ -599,7 +604,7 @@ class AlcoholDutyServiceSpec extends SpecBase {
               )
             )
           )
-          when(obligationDataConnector.getObligationDetails(*, *)(*))
+          when(obligationDataConnector.getOpenObligations(*)(*))
             .thenReturn(Future.successful(Right(obligationDataOneDue)))
 
           when(financialDataConnector.getOnlyOpenFinancialData(*)(*))
@@ -647,7 +652,7 @@ class AlcoholDutyServiceSpec extends SpecBase {
         )
         subscriptionSummaryConnector.getSubscriptionSummary(*)(*) returnsF Right(subscriptionSummary)
 
-        when(obligationDataConnector.getObligationDetails(*, *)(*))
+        when(obligationDataConnector.getOpenObligations(*)(*))
           .thenReturn(Future.successful(Left(ErrorResponse(BAD_REQUEST, ""))))
 
         when(financialDataConnector.getOnlyOpenFinancialData(*)(*))
@@ -697,7 +702,7 @@ class AlcoholDutyServiceSpec extends SpecBase {
             )
           )
         )
-        when(obligationDataConnector.getObligationDetails(*, *)(*))
+        when(obligationDataConnector.getOpenObligations(*)(*))
           .thenReturn(Future.successful(Right(obligationDataOneDue)))
 
         when(financialDataConnector.getOnlyOpenFinancialData(*)(*))
@@ -732,7 +737,7 @@ class AlcoholDutyServiceSpec extends SpecBase {
           )
           subscriptionSummaryConnector.getSubscriptionSummary(*)(*) returnsF Right(subscriptionSummary)
 
-          when(obligationDataConnector.getObligationDetails(*, *)(*))
+          when(obligationDataConnector.getOpenObligations(*)(*))
             .thenReturn(Future.successful(Left(ErrorResponse(BAD_REQUEST, ""))))
 
           when(financialDataConnector.getOnlyOpenFinancialData(*)(*))
