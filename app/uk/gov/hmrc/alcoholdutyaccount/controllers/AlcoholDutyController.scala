@@ -17,15 +17,17 @@
 package uk.gov.hmrc.alcoholdutyaccount.controllers
 
 import cats.implicits._
+import play.api.Logging
 import play.api.libs.json.Json
 import play.api.mvc.{Action, AnyContent, ControllerComponents}
 import uk.gov.hmrc.alcoholdutyaccount.config.AppConfig
 import uk.gov.hmrc.alcoholdutyaccount.controllers.actions.{AuthorisedAction, CheckAppaIdAction}
 import uk.gov.hmrc.alcoholdutyaccount.models.ErrorCodes
-import uk.gov.hmrc.alcoholdutyaccount.service.AlcoholDutyService
+import uk.gov.hmrc.alcoholdutyaccount.service.{AlcoholDutyService, FulfilledObligationsRepositoryService}
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 import uk.gov.hmrc.play.bootstrap.http.ErrorResponse
 
+import java.time.{Clock, Year}
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.matching.Regex
@@ -35,11 +37,14 @@ class AlcoholDutyController @Inject() (
   authorise: AuthorisedAction,
   checkAppaId: CheckAppaIdAction,
   alcoholDutyService: AlcoholDutyService,
+  fulfilledObligationsRepositoryService: FulfilledObligationsRepositoryService,
   appConfig: AppConfig,
-  cc: ControllerComponents
+  cc: ControllerComponents,
+  clock: Clock
 )(implicit ec: ExecutionContext)
     extends BackendController(cc)
-    with BaseController {
+    with BaseController
+    with Logging {
 
   val returnPeriodPattern: Regex = """^(\d{2}A[A-L])$""".r
 
@@ -58,7 +63,7 @@ class AlcoholDutyController @Inject() (
       periodKey match {
         case returnPeriodPattern(_) =>
           alcoholDutyService
-            .getOpenObligations(alcoholDutyReference, periodKey)
+            .getOpenObligationsForPeriod(alcoholDutyReference, periodKey)
             .fold(
               err => error(err),
               obligationDetails => Ok(Json.toJson(obligationDetails))
@@ -82,13 +87,26 @@ class AlcoholDutyController @Inject() (
       }
     }
 
-  def obligationDetails(alcoholDutyReference: String): Action[AnyContent] =
+  def getOpenObligations(alcoholDutyReference: String): Action[AnyContent] =
     (authorise andThen checkAppaId(alcoholDutyReference)).async { implicit request =>
       alcoholDutyService
-        .getObligations(alcoholDutyReference, None)
+        .getOpenObligations(alcoholDutyReference)
         .fold(
           err => error(err),
           obligationDetails => Ok(Json.toJson(obligationDetails))
         )
+    }
+
+  def getFulfilledObligations(appaId: String): Action[AnyContent] =
+    (authorise andThen checkAppaId(appaId)).async { implicit request =>
+      val currentYear = Year.now(clock).getValue
+      val minYear     = Math.max(currentYear - 6, appConfig.obligationDataMinimumYear)
+
+      fulfilledObligationsRepositoryService.getAllYearsFulfilledObligations(appaId, minYear, currentYear).map {
+        case Left(errorResponse)               =>
+          logger.warn(s"Unable to get fulfilled obligations for $appaId: $errorResponse")
+          error(errorResponse)
+        case Right(fulfilledObligationsByYear) => Ok(Json.toJson(fulfilledObligationsByYear))
+      }
     }
 }

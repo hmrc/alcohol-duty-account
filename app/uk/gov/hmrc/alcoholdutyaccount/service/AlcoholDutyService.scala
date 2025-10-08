@@ -22,7 +22,7 @@ import play.api.Logging
 import play.api.http.Status.NOT_FOUND
 import uk.gov.hmrc.alcoholdutyaccount.connectors.{FinancialDataConnector, ObligationDataConnector, SubscriptionSummaryConnector}
 import uk.gov.hmrc.alcoholdutyaccount.models._
-import uk.gov.hmrc.alcoholdutyaccount.models.hods.{ObligationStatus, _}
+import uk.gov.hmrc.alcoholdutyaccount.models.hods._
 import uk.gov.hmrc.alcoholdutyaccount.models.payments.TransactionType
 import uk.gov.hmrc.alcoholdutyaccount.models.subscription.AdrSubscriptionSummary
 import uk.gov.hmrc.alcoholdutyaccount.models.subscription.ApprovalStatus.{DeRegistered, Revoked, SmallCiderProducer}
@@ -55,13 +55,12 @@ class AlcoholDutyService @Inject() (
         }
     }
 
-  def getObligations(
-    alcoholDutyReference: String,
-    obligationStatusFilter: Option[ObligationStatus]
+  def getOpenObligations(
+    alcoholDutyReference: String
   )(implicit hc: HeaderCarrier): EitherT[Future, ErrorResponse, Seq[AdrObligationData]] =
     EitherT {
       obligationDataConnector
-        .getObligationDetails(alcoholDutyReference, obligationStatusFilter)
+        .getOpenObligations(alcoholDutyReference)
         .map {
           case Left(error)           => Left(error)
           case Right(obligationData) =>
@@ -69,13 +68,32 @@ class AlcoholDutyService @Inject() (
         }
     }
 
-  def getOpenObligations(
+  def getFulfilledObligations(
+    alcoholDutyReference: String,
+    year: Int
+  )(implicit hc: HeaderCarrier): EitherT[Future, ErrorResponse, FulfilledObligations] =
+    EitherT {
+      obligationDataConnector
+        .getFulfilledObligations(alcoholDutyReference, year)
+        .map {
+          case Left(error)           => Left(error)
+          case Right(obligationData) =>
+            Right(
+              FulfilledObligations(
+                year = year,
+                obligations = obligationData.obligations.flatMap(_.obligationDetails.map(AdrObligationData(_)))
+              )
+            )
+        }
+    }
+
+  def getOpenObligationsForPeriod(
     alcoholDutyReference: String,
     periodKey: String
   )(implicit hc: HeaderCarrier): EitherT[Future, ErrorResponse, AdrObligationData] =
     EitherT {
       obligationDataConnector
-        .getObligationDetails(alcoholDutyReference, Some(Open))
+        .getOpenObligations(alcoholDutyReference)
         .map {
           case Left(error)           => Left(error)
           case Right(obligationData) =>
@@ -151,7 +169,7 @@ class AlcoholDutyService @Inject() (
     alcoholDutyReference: String
   )(implicit hc: HeaderCarrier): Future[Option[Returns]] =
     obligationDataConnector
-      .getObligationDetails(alcoholDutyReference, Some(Open))
+      .getOpenObligations(alcoholDutyReference)
       .map {
         case Left(_)               => None
         case Right(obligationData) => Some(extractReturns(obligationData.obligations.flatMap(_.obligationDetails)))

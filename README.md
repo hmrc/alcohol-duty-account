@@ -10,11 +10,12 @@ BTA doesn't shutter the tiles individually. Instead, the shuttering is done by s
 ## API Endpoints
 
 - [Get BTA tile data](api-docs/get-bta-tile-data.md): `GET /alcohol-duty-account/bta-tile-data`
-- [Get historic payments for an appiId for a year](api-docs/historicPayments.md): `GET /alcohol-duty-account/producers/:appaId/payments/historic/:year`
-- [Get obligations for an appaId](api-docs/obligationDetails.md): `GET /alcohol-duty-account/obligationDetails/:alcoholDutyReference`
-- [Get open obligations for an appaId for a period](api-docs/openObligationDetails.md): `GET /alcohol-duty-account/openObligationDetails/:alcoholDutyReference/:periodKey`
-- [Get open payments for an appaId](api-docs/openPayments.md): `GET /alcohol-duty-account/producers/:appaId/payments/open'
-- [Get subscription sumamry for an appaId](api-docs/subscriptionSummary.md): `GET /alcohol-duty-account/subscriptionSummary/:alcoholDutyReference`
+- [Get open payments for an appaId](api-docs/openPayments.md): `GET /alcohol-duty-account/producers/:appaId/payments/open`
+- [Get historic payments for an appaId](api-docs/historicPayments.md): `GET /alcohol-duty-account/producers/:appaId/payments/historic/:year`
+- [Get open obligations for an appaId](api-docs/openObligationDetails.md): `GET /alcohol-duty-account/obligationDetails/open/:alcoholDutyReference`
+- [Get fulfilled obligations for an appaId](api-docs/openObligationDetails.md): `GET /alcohol-duty-account/obligationDetails/fulfilled/:alcoholDutyReference`
+- [Get open obligations for an appaId for a period](api-docs/openObligationForPeriod.md): `GET /alcohol-duty-account/openObligationDetails/:alcoholDutyReference/:periodKey`
+- [Get subscription summary for an appaId](api-docs/subscriptionSummary.md): `GET /alcohol-duty-account/subscriptionSummary/:alcoholDutyReference`
 
 ## Running the service
 
@@ -31,6 +32,11 @@ To run the service with test only routes enabled:
 
 This endpoint clears all data in the user historic payments repository.
 > `DELETE /alcohol-duty-account/test-only/clear-user-historic-payments`
+
+### Clear fulfilled obligation data
+
+This endpoint clears all data in the user fulfilled obligations (i.e. completed returns) repository.
+> `DELETE /alcohol-duty-account/test-only/clear-user-fulfilled-obligations`
 
 ## Running tests
 
