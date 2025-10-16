@@ -18,6 +18,7 @@ package uk.gov.hmrc.alcoholdutyaccount.connectors
 
 import play.api.libs.json.Json
 import uk.gov.hmrc.alcoholdutyaccount.base.{ConnectorTestHelpers, SpecBase}
+import uk.gov.hmrc.alcoholdutyaccount.models.ErrorCodes
 import uk.gov.hmrc.alcoholdutyaccount.models.hods.{Fulfilled, Open}
 import uk.gov.hmrc.play.bootstrap.http.ErrorResponse
 
@@ -160,7 +161,7 @@ class ObligationDataConnectorSpec extends SpecBase with ConnectorTestHelpers {
           Json.toJson(internalServerError).toString
         )
         whenReady(connector.getObligationDetails(appaId, Some(obligationFilterOpen))) { result =>
-          result mustBe Left(ErrorResponse(INTERNAL_SERVER_ERROR, "An error occurred"))
+          result mustBe Left(ErrorCodes.unexpectedResponse)
           verifyGetWithParameters(url, expectedQueryParamsOpen)
         }
       }
@@ -173,7 +174,7 @@ class ObligationDataConnectorSpec extends SpecBase with ConnectorTestHelpers {
           Json.toJson(internalServerError).toString
         )
         whenReady(connectorWithRetry.getObligationDetails(appaId, Some(obligationFilterOpen))) { result =>
-          result mustBe Left(ErrorResponse(INTERNAL_SERVER_ERROR, "An error occurred"))
+          result mustBe Left(ErrorCodes.unexpectedResponse)
           verifyGetWithParametersWithRetry(url, expectedQueryParamsOpen)
         }
       }
@@ -181,7 +182,7 @@ class ObligationDataConnectorSpec extends SpecBase with ConnectorTestHelpers {
       "if an exception thrown when fetching obligation data" in new SetUp {
         stubGetFaultWithParameters(url, expectedQueryParamsOpen)
         whenReady(connector.getObligationDetails(appaId, Some(obligationFilterOpen))) { result =>
-          result mustBe Left(ErrorResponse(INTERNAL_SERVER_ERROR, "An error occurred"))
+          result mustBe Left(ErrorCodes.unexpectedResponse)
           verifyGetWithParameters(url, expectedQueryParamsOpen)
         }
       }

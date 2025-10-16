@@ -21,6 +21,7 @@ import org.apache.pekko.pattern.retry
 import play.api.http.Status._
 import play.api.{Logger, Logging}
 import uk.gov.hmrc.alcoholdutyaccount.config.{AppConfig, CircuitBreakerProvider}
+import uk.gov.hmrc.alcoholdutyaccount.models.ErrorCodes
 import uk.gov.hmrc.alcoholdutyaccount.models.hods.{ObligationData, ObligationDetails, ObligationStatus, Open}
 import uk.gov.hmrc.alcoholdutyaccount.utils.DateTimeHelper.instantToLocalDate
 import uk.gov.hmrc.http._
@@ -56,7 +57,7 @@ class ObligationDataConnector @Inject() (
       logger.error(
         s"An exception was returned while trying to fetch obligation data for appaId $appaId: $error"
       )
-      Future.successful(Left(ErrorResponse(INTERNAL_SERVER_ERROR, "An error occurred")))
+      Future.successful(Left(ErrorCodes.unexpectedResponse))
     }
 
   def call(

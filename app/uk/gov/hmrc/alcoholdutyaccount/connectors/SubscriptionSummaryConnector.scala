@@ -55,7 +55,7 @@ class SubscriptionSummaryConnector @Inject() (
       logger.error(
         s"An exception was returned while trying to fetch subscription summary appaId $appaId: $error"
       )
-      Future.successful(Left(ErrorResponse(INTERNAL_SERVER_ERROR, ErrorCodes.unexpectedResponse.message)))
+      Future.successful(Left(ErrorCodes.unexpectedResponse))
     }
 
   def call(
