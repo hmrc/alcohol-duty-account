@@ -21,7 +21,7 @@ import org.apache.pekko.pattern.retry
 import play.api.http.Status._
 import play.api.{Logger, Logging}
 import uk.gov.hmrc.alcoholdutyaccount.config.{AppConfig, CircuitBreakerProvider}
-import uk.gov.hmrc.alcoholdutyaccount.models.HttpErrorResponse
+import uk.gov.hmrc.alcoholdutyaccount.models.ErrorCodes
 import uk.gov.hmrc.alcoholdutyaccount.models.hods.{ObligationData, ObligationDetails, ObligationStatus, Open}
 import uk.gov.hmrc.alcoholdutyaccount.utils.DateTimeHelper.instantToLocalDate
 import uk.gov.hmrc.http._
@@ -53,8 +53,11 @@ class ObligationDataConnector @Inject() (
       () => call(appaId, obligationStatusFilter),
       attempts = config.retryAttempts,
       delay = config.retryAttemptsDelay
-    ).recoverWith { _ =>
-      Future.successful(Left(ErrorResponse(INTERNAL_SERVER_ERROR, "An error occurred")))
+    ).recoverWith { error =>
+      logger.error(
+        s"An exception was returned while trying to fetch obligation data for appaId $appaId: $error"
+      )
+      Future.successful(Left(ErrorCodes.unexpectedResponse))
     }
 
   def call(
@@ -83,7 +86,7 @@ class ObligationDataConnector @Inject() (
                   logger.info(s"Retrieved open obligation data for appaId $appaId")
                   Future.successful(Right(filterOutFutureObligations(doc)))
                 case Failure(exception) =>
-                  logger.warn(s"Unable to parse obligation data for appaId $appaId", exception)
+                  logger.error(s"Unable to parse obligation data for appaId $appaId", exception)
                   Future
                     .successful(
                       Left(ErrorResponse(INTERNAL_SERVER_ERROR, "Unable to parse obligation data"))
@@ -99,10 +102,7 @@ class ObligationDataConnector @Inject() (
               logger.warn(s"Obligation data request unprocessable for appaId $appaId")
               Future.successful(Left(ErrorResponse(UNPROCESSABLE_ENTITY, "Unprocessable entity")))
             case _                    =>
-              val error: String = response.json.as[HttpErrorResponse].message
-              logger.warn(
-                s"An exception was returned while trying to fetch obligation data for appaId $appaId: $error"
-              )
+              // Retry - do not log until final fail
               Future.failed(new InternalServerException(response.body))
           }
         }

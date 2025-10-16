@@ -22,7 +22,7 @@ import play.api.Logging
 import play.api.http.Status._
 import uk.gov.hmrc.alcoholdutyaccount.config.{AppConfig, CircuitBreakerProvider}
 import uk.gov.hmrc.alcoholdutyaccount.connectors.helpers.HIPHeaders
-import uk.gov.hmrc.alcoholdutyaccount.models.HttpErrorResponse
+import uk.gov.hmrc.alcoholdutyaccount.models.ErrorCodes
 import uk.gov.hmrc.alcoholdutyaccount.models.hods.{SubscriptionSummary, SubscriptionSummarySuccess}
 import uk.gov.hmrc.http._
 import uk.gov.hmrc.http.client.HttpClientV2
@@ -51,8 +51,11 @@ class SubscriptionSummaryConnector @Inject() (
       () => call(appaId),
       attempts = config.retryAttempts,
       delay = config.retryAttemptsDelay
-    ).recoverWith { _ =>
-      Future.successful(Left(ErrorResponse(INTERNAL_SERVER_ERROR, "An error occurred")))
+    ).recoverWith { error =>
+      logger.error(
+        s"An exception was returned while trying to fetch subscription summary appaId $appaId: $error"
+      )
+      Future.successful(Left(ErrorCodes.unexpectedResponse))
     }
 
   def call(
@@ -70,11 +73,11 @@ class SubscriptionSummaryConnector @Inject() (
                 response.json
                   .as[SubscriptionSummarySuccess]
               } match {
-                case Success(doc)       =>
+                case Success(doc) =>
                   logger.info(s"Retrieved subscription summary success for appaId $appaId")
                   Future.successful(Right(doc.success))
-                case Failure(exception) =>
-                  logger.warn(s"Unable to parse subscription summary success for appaId $appaId", exception)
+                case Failure(_)   =>
+                  logger.error(s"Unable to parse subscription summary success for appaId $appaId")
                   Future
                     .successful(
                       Left(ErrorResponse(INTERNAL_SERVER_ERROR, "Unable to parse subscription summary success"))
@@ -90,10 +93,7 @@ class SubscriptionSummaryConnector @Inject() (
               logger.warn(s"Subscription summary request unprocessable for appaId $appaId")
               Future.successful(Left(ErrorResponse(UNPROCESSABLE_ENTITY, "Unprocessable entity")))
             case _                    =>
-              val error: String = response.json.as[HttpErrorResponse].message
-              logger.warn(
-                s"An exception was returned while trying to fetch subscription summary appaId $appaId: $error"
-              )
+              // Retry - log on final fail
               Future.failed(new InternalServerException(response.body))
           }
         }
