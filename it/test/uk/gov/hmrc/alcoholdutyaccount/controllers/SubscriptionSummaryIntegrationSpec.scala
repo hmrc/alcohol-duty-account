@@ -98,7 +98,7 @@ class SubscriptionSummaryIntegrationSpec extends ISpecBase with ConnectorTestHel
       )
 
       status(response)        mustBe INTERNAL_SERVER_ERROR
-      contentAsJson(response) mustBe Json.toJson(ErrorResponse(INTERNAL_SERVER_ERROR, "An error occurred"))
+      contentAsJson(response) mustBe Json.toJson(ErrorResponse(INTERNAL_SERVER_ERROR, "Unexpected Response"))
 
       verifyGet(url)
     }
