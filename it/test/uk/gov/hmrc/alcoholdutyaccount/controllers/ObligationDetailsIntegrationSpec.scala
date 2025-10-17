@@ -24,7 +24,7 @@ import play.api.test.FakeRequest
 import play.api.test.Helpers.await
 import uk.gov.hmrc.alcoholdutyaccount.base.ISpecBase
 import uk.gov.hmrc.alcoholdutyaccount.models.hods._
-import uk.gov.hmrc.alcoholdutyaccount.models.{AdrObligationData, FulfilledObligations}
+import uk.gov.hmrc.alcoholdutyaccount.models.{AdrObligationData, FulfilledObligations, ErrorCodes}
 import uk.gov.hmrc.alcoholdutyaccount.repositories.UserFulfilledObligationsRepository
 import uk.gov.hmrc.http.HeaderNames
 import uk.gov.hmrc.play.bootstrap.http.ErrorResponse
@@ -317,7 +317,7 @@ class ObligationDetailsIntegrationSpec extends ISpecBase {
       )
 
       status(response)        mustBe INTERNAL_SERVER_ERROR
-      contentAsJson(response) mustBe Json.toJson(ErrorResponse(INTERNAL_SERVER_ERROR, "An error occurred"))
+      contentAsJson(response) mustBe Json.toJson(ErrorCodes.unexpectedResponse)
 
       verifyGetWithParametersAndHeaders(url, expectedQueryParamsFulfilled(2024), expectedHeaders)
       verifyGetWithParametersNeverCalled(url, expectedQueryParamsFulfilled(2025))

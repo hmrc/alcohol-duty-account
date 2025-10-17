@@ -70,7 +70,7 @@ class SubscriptionSummaryConnectorSpec extends SpecBase with ConnectorTestHelper
       "if an error other than BAD_REQUEST or NOT_FOUND or UNPROCESSABLE_ENTITY is returned" in new SetUp {
         stubGet(url, INTERNAL_SERVER_ERROR, Json.toJson(internalServerError).toString)
         whenReady(connector.getSubscriptionSummary(appaId)) { result =>
-          result mustBe Left(ErrorResponse(INTERNAL_SERVER_ERROR, "An error occurred"))
+          result mustBe Left(ErrorResponse(INTERNAL_SERVER_ERROR, "Unexpected Response"))
           verifyGet(url)
         }
       }
@@ -78,7 +78,7 @@ class SubscriptionSummaryConnectorSpec extends SpecBase with ConnectorTestHelper
       "if an error other than BAD_REQUEST or NOT_FOUND is returned" in new SetUp {
         stubGet(url, INTERNAL_SERVER_ERROR, Json.toJson(internalServerError).toString)
         whenReady(connector.getSubscriptionSummary(appaId)) { result =>
-          result mustBe Left(ErrorResponse(INTERNAL_SERVER_ERROR, "An error occurred"))
+          result mustBe Left(ErrorResponse(INTERNAL_SERVER_ERROR, "Unexpected Response"))
           verifyGet(url)
         }
       }
@@ -86,7 +86,7 @@ class SubscriptionSummaryConnectorSpec extends SpecBase with ConnectorTestHelper
       "if an error other than BAD_REQUEST or NOT_FOUND is returned the connector will invoke a retry" in new SetUp {
         stubGet(url, INTERNAL_SERVER_ERROR, Json.toJson(internalServerError).toString)
         whenReady(connectorWithRetry.getSubscriptionSummary(appaId)) { result =>
-          result mustBe Left(ErrorResponse(INTERNAL_SERVER_ERROR, "An error occurred"))
+          result mustBe Left(ErrorResponse(INTERNAL_SERVER_ERROR, "Unexpected Response"))
           verifyGetRetry(url)
         }
       }
@@ -94,7 +94,7 @@ class SubscriptionSummaryConnectorSpec extends SpecBase with ConnectorTestHelper
       "if an exception thrown when fetching subscription summary" in new SetUp {
         stubGetFault(url)
         whenReady(connector.getSubscriptionSummary(appaId)) { result =>
-          result mustBe Left(ErrorResponse(INTERNAL_SERVER_ERROR, "An error occurred"))
+          result mustBe Left(ErrorResponse(INTERNAL_SERVER_ERROR, "Unexpected Response"))
           verifyGet(url)
         }
       }

@@ -21,8 +21,8 @@ import org.apache.pekko.pattern.retry
 import play.api.http.Status.{BAD_REQUEST, NOT_FOUND, OK, UNPROCESSABLE_ENTITY}
 import play.api.{Logger, Logging}
 import uk.gov.hmrc.alcoholdutyaccount.config.{AppConfig, CircuitBreakerProvider}
+import uk.gov.hmrc.alcoholdutyaccount.models.ErrorCodes
 import uk.gov.hmrc.alcoholdutyaccount.models.hods.FinancialTransactionDocument
-import uk.gov.hmrc.alcoholdutyaccount.models.{ErrorCodes, HttpErrorResponse}
 import uk.gov.hmrc.http.client.HttpClientV2
 import uk.gov.hmrc.http.{HeaderCarrier, HeaderNames, HttpReadsInstances, HttpResponse, InternalServerException, StringContextOps}
 import uk.gov.hmrc.play.bootstrap.http.ErrorResponse
@@ -63,7 +63,10 @@ class FinancialDataConnector @Inject() (
       () => call(appaId, queryParams),
       attempts = config.retryAttempts,
       delay = config.retryAttemptsDelay
-    ).recoverWith { _ =>
+    ).recoverWith { error =>
+      logger.error(
+        s"An exception was returned while trying to fetch financial data for appaId $appaId: $error"
+      )
       Future.successful(Left(ErrorCodes.unexpectedResponse))
     }
 
@@ -94,7 +97,7 @@ class FinancialDataConnector @Inject() (
                   logger.info(s"Retrieved financial transaction document for appaId $appaId")
                   Future.successful(Right(doc))
                 case Failure(exception) =>
-                  logger.warn(s"Parsing failed for financial transaction document for appaId $appaId", exception)
+                  logger.error(s"Parsing failed for financial transaction document for appaId $appaId", exception)
                   Future.successful(Left(ErrorCodes.unexpectedResponse))
               }
             case NOT_FOUND            =>
@@ -107,10 +110,7 @@ class FinancialDataConnector @Inject() (
               logger.warn(s"Get financial data request unprocessable for appaId $appaId")
               Future.successful(Left(ErrorResponse(UNPROCESSABLE_ENTITY, "Unprocessable entity")))
             case _                    =>
-              val error: String = response.json.as[HttpErrorResponse].message
-              logger.warn(
-                s"An exception was returned while trying to fetch financial data for appaId $appaId: $error"
-              )
+              // Retry - do not log until final fail
               Future.failed(new InternalServerException(response.body))
           }
         }
