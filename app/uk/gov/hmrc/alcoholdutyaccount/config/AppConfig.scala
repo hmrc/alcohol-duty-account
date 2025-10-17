@@ -32,7 +32,7 @@ class AppConfig @Inject() (config: Configuration, servicesConfig: ServicesConfig
   val obligationDataEnv: String            = getConfStringAndThrowIfNotFound("obligation.env")
   private lazy val obligationDataUrlPrefix = getConfStringAndThrowIfNotFound("obligation.url.obligationData")
 
-  val obligationDataFilterStartDate: String = getConfStringAndThrowIfNotFound("obligation.filterStartDate")
+  val obligationDataMinimumYear: Int = config.get[Int]("microservice.services.obligation.minimumYear")
 
   private val financialDataHost: String = servicesConfig.baseUrl("financial")
   val financialDataToken: String        = getConfStringAndThrowIfNotFound("financial.token")

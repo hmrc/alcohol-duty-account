@@ -24,7 +24,7 @@ import uk.gov.hmrc.alcoholdutyaccount.models.payments.TransactionType._
 import uk.gov.hmrc.alcoholdutyaccount.models.payments.{HistoricPayment, HistoricPayments, OpenPayments, TransactionType, UserHistoricPayments}
 import uk.gov.hmrc.alcoholdutyaccount.models.subscription.ContactPreferenceForBTA.Digital
 import uk.gov.hmrc.alcoholdutyaccount.models.subscription.{AdrSubscriptionSummary, AlcoholRegime, ApprovalStatus}
-import uk.gov.hmrc.alcoholdutyaccount.models.{AdrObligationData, ObligationStatus, ReturnPeriod}
+import uk.gov.hmrc.alcoholdutyaccount.models.{AdrObligationData, FulfilledObligations, ObligationStatus, ReturnPeriod, UserFulfilledObligations}
 
 import java.time.{Clock, Instant, LocalDate, Month, YearMonth, ZoneId}
 
@@ -75,9 +75,6 @@ trait TestData extends ModelGenerators {
   val periodKey2 = "24AF"
   val periodKey3 = "24AG"
   val periodKey4 = "24AH"
-
-  val obligationFilterOpen      = Open
-  val obligationFilterFulfilled = Fulfilled
 
   val obligationDetails = ObligationDetails(
     status = Open,
@@ -155,13 +152,21 @@ trait TestData extends ModelGenerators {
   val fulfilledObligationDetailsFromTomorrow =
     fulfilledObligationDetails.copy(inboundCorrespondenceToDate = LocalDate.now(clock))
 
-  val obligationDataSingleFulfilled          = ObligationData(
+  val obligationDataSingleFulfilled   = ObligationData(
     obligations = Seq(
       Obligation(
         obligationDetails = Seq(fulfilledObligationDetails)
       )
     )
   )
+  val obligationDataMultipleFulfilled = ObligationData(obligations =
+    Seq(
+      Obligation(
+        obligationDetails = Seq(fulfilledObligationDetails, fulfilledObligationDetails.copy(periodKey = periodKey2))
+      )
+    )
+  )
+
   val obligationDataMultipleOpenAndFulfilled = ObligationData(obligations =
     Seq(
       Obligation(
@@ -793,7 +798,42 @@ trait TestData extends ModelGenerators {
     Seq(adrObligationDetails, adrObligationDetailsOpen2, adrObligationDetailsFulfilled)
 
   val adrMultipleOpenData =
-    Seq(adrObligationDetails, adrObligationDetailsOpen2)
+    Seq(adrObligationDetails, adrObligationDetailsOpen2, adrObligationDetails.copy(periodKey = periodKey3))
+
+  val adrMultipleFulfilledData =
+    Seq(adrObligationDetailsFulfilled, adrObligationDetailsFulfilled.copy(periodKey = periodKey2))
+
+  def fulfilledObligation(yearMonth: YearMonth): AdrObligationData =
+    AdrObligationData(
+      status = ObligationStatus.Fulfilled,
+      fromDate = yearMonth.atDay(1),
+      toDate = yearMonth.atEndOfMonth(),
+      dueDate = yearMonth.plusMonths(1).atDay(15),
+      periodKey = ReturnPeriod(yearMonth).toPeriodKey
+    )
+
+  val fulfilledObligations2025 = FulfilledObligations(
+    year = 2025,
+    obligations = Seq(
+      fulfilledObligation(YearMonth.of(2025, Month.APRIL)),
+      fulfilledObligation(YearMonth.of(2025, Month.MARCH)),
+      fulfilledObligation(YearMonth.of(2025, Month.FEBRUARY))
+    )
+  )
+
+  val fulfilledObligations2024 = FulfilledObligations(
+    year = 2025,
+    obligations = Seq(
+      fulfilledObligation(YearMonth.of(2024, Month.FEBRUARY)),
+      fulfilledObligation(YearMonth.of(2024, Month.JANUARY))
+    )
+  )
+
+  val fulfilledObligations2023 = FulfilledObligations(2023, Seq.empty)
+
+  val fulfilledObligationsData = Seq(fulfilledObligations2023, fulfilledObligations2024, fulfilledObligations2025)
+
+  val userFulfilledObligations = UserFulfilledObligations(appaId, fulfilledObligationsData, Instant.now(clock))
 
   val noOpenPayments: OpenPayments = OpenPayments(
     outstandingPayments = Seq.empty,

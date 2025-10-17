@@ -38,7 +38,7 @@ class SpecBaseWithConfigOverrides extends SpecBase {
     "microservice.services.obligation.token"                     -> "obligation token",
     "microservice.services.obligation.env"                       -> "obligation env",
     "microservice.services.obligation.url.obligationData"        -> "/enterprise/obligation-data",
-    "microservice.services.obligation.filterStartDate"           -> "2023-09-01",
+    "microservice.services.obligation.minimumYear"               -> 2024,
     "microservice.services.financial.protocol"                   -> "http",
     "microservice.services.financial.host"                       -> "financialhost",
     "microservice.services.financial.port"                       -> 2468,
@@ -92,8 +92,8 @@ class AppConfigSpec extends SpecBaseWithConfigOverrides {
       appConfig.obligationDataEnv mustBe "obligation env"
     }
 
-    "must return the filter start date" in {
-      appConfig.obligationDataFilterStartDate mustBe "2023-09-01"
+    "must return the minimum year" in {
+      appConfig.obligationDataMinimumYear mustBe 2024
     }
   }
 
