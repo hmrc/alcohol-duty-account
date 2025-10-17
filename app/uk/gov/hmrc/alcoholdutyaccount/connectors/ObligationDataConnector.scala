@@ -22,7 +22,7 @@ import play.api.http.Status._
 import play.api.{Logger, Logging}
 import uk.gov.hmrc.alcoholdutyaccount.config.{AppConfig, CircuitBreakerProvider}
 import uk.gov.hmrc.alcoholdutyaccount.models.ErrorCodes
-import uk.gov.hmrc.alcoholdutyaccount.models.hods.{ObligationData, ObligationDetails, ObligationStatus, Open}
+import uk.gov.hmrc.alcoholdutyaccount.models.hods._
 import uk.gov.hmrc.alcoholdutyaccount.utils.DateTimeHelper.instantToLocalDate
 import uk.gov.hmrc.http._
 import uk.gov.hmrc.http.client.HttpClientV2
@@ -94,10 +94,7 @@ class ObligationDataConnector @Inject() (
                   Future.successful(Right(filterOutFutureObligations(doc)))
                 case Failure(exception) =>
                   logger.error(s"Unable to parse obligation data for appaId $appaId", exception)
-                  Future
-                    .successful(
-                      Left(ErrorResponse(INTERNAL_SERVER_ERROR, "Unable to parse obligation data"))
-                    )
+                  Future.successful(Left(ErrorResponse(INTERNAL_SERVER_ERROR, "Unable to parse obligation data")))
               }
             case NOT_FOUND            =>
               logger.info(s"No obligation data found for appaId $appaId")

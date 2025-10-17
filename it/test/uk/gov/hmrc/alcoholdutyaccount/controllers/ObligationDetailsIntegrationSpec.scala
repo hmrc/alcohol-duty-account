@@ -196,7 +196,7 @@ class ObligationDetailsIntegrationSpec extends ISpecBase {
       )
 
       status(response)        mustBe INTERNAL_SERVER_ERROR
-      contentAsJson(response) mustBe Json.toJson(ErrorResponse(INTERNAL_SERVER_ERROR, "An error occurred"))
+      contentAsJson(response) mustBe Json.toJson(ErrorCodes.unexpectedResponse)
 
       verifyGetWithParametersAndHeaders(url, expectedQueryParamsOpen, expectedHeaders)
     }
