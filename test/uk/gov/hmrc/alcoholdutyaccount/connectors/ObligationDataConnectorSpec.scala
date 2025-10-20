@@ -151,12 +151,51 @@ class ObligationDataConnectorSpec extends SpecBase with ConnectorTestHelpers {
         }
       }
 
-      "if an error other than BAD_REQUEST, NOT_FOUND or UNPROCESSABLE_ENTITY is returned the connector will invoke a retry" in new SetUp {
+      "if an internal server error is returned the connector will invoke a retry" in new SetUp {
         stubGetWithParameters(
           url,
           expectedQueryParamsOpen,
           INTERNAL_SERVER_ERROR,
           Json.toJson(internalServerError).toString
+        )
+        whenReady(connectorWithRetry.getOpenObligations(appaId)) { result =>
+          result mustBe Left(ErrorCodes.unexpectedResponse)
+          verifyGetWithParametersWithRetry(url, expectedQueryParamsOpen)
+        }
+      }
+
+      "if bad gateway error is returned the connector will invoke a retry" in new SetUp {
+        stubGetWithParameters(
+          url,
+          expectedQueryParamsOpen,
+          BAD_GATEWAY,
+          Json.toJson(badGateway).toString
+        )
+        whenReady(connectorWithRetry.getOpenObligations(appaId)) { result =>
+          result mustBe Left(ErrorCodes.unexpectedResponse)
+          verifyGetWithParametersWithRetry(url, expectedQueryParamsOpen)
+        }
+      }
+
+      "if service unavailable error is returned the connector will invoke a retry" in new SetUp {
+        stubGetWithParameters(
+          url,
+          expectedQueryParamsOpen,
+          SERVICE_UNAVAILABLE,
+          Json.toJson(serviceUnavailable).toString
+        )
+        whenReady(connectorWithRetry.getOpenObligations(appaId)) { result =>
+          result mustBe Left(ErrorCodes.unexpectedResponse)
+          verifyGetWithParametersWithRetry(url, expectedQueryParamsOpen)
+        }
+      }
+
+      "if gateway timeout error is returned the connector will invoke a retry" in new SetUp {
+        stubGetWithParameters(
+          url,
+          expectedQueryParamsOpen,
+          GATEWAY_TIMEOUT,
+          Json.toJson(gatewayTimeout).toString
         )
         whenReady(connectorWithRetry.getOpenObligations(appaId)) { result =>
           result mustBe Left(ErrorCodes.unexpectedResponse)

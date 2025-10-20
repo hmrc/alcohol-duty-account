@@ -92,8 +92,14 @@ class SubscriptionSummaryConnector @Inject() (
             case UNPROCESSABLE_ENTITY =>
               logger.warn(s"Subscription summary request unprocessable for appaId $appaId")
               Future.successful(Left(ErrorResponse(UNPROCESSABLE_ENTITY, "Unprocessable entity")))
+            // Retry and log on final fail for the following transient errors
+            case BAD_GATEWAY          =>
+              Future.failed(new InternalServerException("Bad gateway"))
+            case SERVICE_UNAVAILABLE  =>
+              Future.failed(new InternalServerException("Service unavailable"))
+            case GATEWAY_TIMEOUT      =>
+              Future.failed(new InternalServerException("Gateway timeout"))
             case _                    =>
-              // Retry - log on final fail
               Future.failed(new InternalServerException(response.body))
           }
         }

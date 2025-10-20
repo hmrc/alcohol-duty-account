@@ -105,8 +105,14 @@ class ObligationDataConnector @Inject() (
             case UNPROCESSABLE_ENTITY =>
               logger.warn(s"Obligation data request unprocessable for appaId $appaId")
               Future.successful(Left(ErrorResponse(UNPROCESSABLE_ENTITY, "Unprocessable entity")))
+            // Retry and log on final fail for the following transient errors
+            case BAD_GATEWAY          =>
+              Future.failed(new InternalServerException("Bad gateway"))
+            case SERVICE_UNAVAILABLE  =>
+              Future.failed(new InternalServerException("Service unavailable"))
+            case GATEWAY_TIMEOUT      =>
+              Future.failed(new InternalServerException("Gateway timeout"))
             case _                    =>
-              // Retry - do not log until final fail
               Future.failed(new InternalServerException(response.body))
           }
         }

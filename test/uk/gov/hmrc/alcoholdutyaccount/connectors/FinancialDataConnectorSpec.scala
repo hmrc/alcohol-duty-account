@@ -87,12 +87,51 @@ class FinancialDataConnectorSpec extends SpecBase with ScalaFutures with Connect
           }
         }
 
-        "if an error other than BAD_REQUEST or NOT_FOUND is returned the connector will invoke a retry" in new SetUp {
+        "if an internal server error is returned the connector will invoke a retry" in new SetUp {
           stubGetWithParameters(
             url,
             expectedOpenQueryParams,
             INTERNAL_SERVER_ERROR,
             Json.toJson(internalServerError).toString
+          )
+          whenReady(connectorWithRetry.getOnlyOpenFinancialData(appaId)) { result =>
+            result mustBe Left(ErrorResponse(INTERNAL_SERVER_ERROR, "Unexpected Response"))
+            verifyGetWithParametersWithRetry(url, expectedOpenQueryParams)
+          }
+        }
+
+        "if bad gateway error is returned the connector will invoke a retry" in new SetUp {
+          stubGetWithParameters(
+            url,
+            expectedOpenQueryParams,
+            BAD_GATEWAY,
+            Json.toJson(badGateway).toString
+          )
+          whenReady(connectorWithRetry.getOnlyOpenFinancialData(appaId)) { result =>
+            result mustBe Left(ErrorResponse(INTERNAL_SERVER_ERROR, "Unexpected Response"))
+            verifyGetWithParametersWithRetry(url, expectedOpenQueryParams)
+          }
+        }
+
+        "if service unavailable error is returned the connector will invoke a retry" in new SetUp {
+          stubGetWithParameters(
+            url,
+            expectedOpenQueryParams,
+            SERVICE_UNAVAILABLE,
+            Json.toJson(serviceUnavailable).toString
+          )
+          whenReady(connectorWithRetry.getOnlyOpenFinancialData(appaId)) { result =>
+            result mustBe Left(ErrorResponse(INTERNAL_SERVER_ERROR, "Unexpected Response"))
+            verifyGetWithParametersWithRetry(url, expectedOpenQueryParams)
+          }
+        }
+
+        "if gateway timeout error is returned the connector will invoke a retry" in new SetUp {
+          stubGetWithParameters(
+            url,
+            expectedOpenQueryParams,
+            GATEWAY_TIMEOUT,
+            Json.toJson(gatewayTimeout).toString
           )
           whenReady(connectorWithRetry.getOnlyOpenFinancialData(appaId)) { result =>
             result mustBe Left(ErrorResponse(INTERNAL_SERVER_ERROR, "Unexpected Response"))

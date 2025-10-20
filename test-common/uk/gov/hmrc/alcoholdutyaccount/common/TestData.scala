@@ -888,4 +888,7 @@ trait TestData extends ModelGenerators {
   val badRequest          = DownstreamErrorDetails("400", "You messed up", "id")
   val unprocessable       = DownstreamErrorDetails("422", "Unprocessable", "id")
   val internalServerError = DownstreamErrorDetails("500", "Computer says No!", "id")
+  val badGateway          = DownstreamErrorDetails("502", "Bad gateway", "id")
+  val serviceUnavailable  = DownstreamErrorDetails("503", "Service unavailable", "id")
+  val gatewayTimeout      = DownstreamErrorDetails("504", "Gateway timeout", "id")
 }
