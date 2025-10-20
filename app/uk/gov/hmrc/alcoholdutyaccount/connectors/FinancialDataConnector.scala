@@ -18,7 +18,7 @@ package uk.gov.hmrc.alcoholdutyaccount.connectors
 
 import org.apache.pekko.actor.{ActorSystem, Scheduler}
 import org.apache.pekko.pattern.retry
-import play.api.http.Status.{BAD_REQUEST, NOT_FOUND, OK, UNPROCESSABLE_ENTITY}
+import play.api.http.Status.{BAD_GATEWAY, BAD_REQUEST, GATEWAY_TIMEOUT, NOT_FOUND, OK, SERVICE_UNAVAILABLE, UNPROCESSABLE_ENTITY}
 import play.api.{Logger, Logging}
 import uk.gov.hmrc.alcoholdutyaccount.config.{AppConfig, CircuitBreakerProvider}
 import uk.gov.hmrc.alcoholdutyaccount.models.ErrorCodes
@@ -109,8 +109,14 @@ class FinancialDataConnector @Inject() (
             case UNPROCESSABLE_ENTITY =>
               logger.warn(s"Get financial data request unprocessable for appaId $appaId")
               Future.successful(Left(ErrorResponse(UNPROCESSABLE_ENTITY, "Unprocessable entity")))
+            // Retry and log on final fail for the following transient errors
+            case BAD_GATEWAY          =>
+              Future.failed(new InternalServerException("Bad gateway"))
+            case SERVICE_UNAVAILABLE  =>
+              Future.failed(new InternalServerException("Service unavailable"))
+            case GATEWAY_TIMEOUT      =>
+              Future.failed(new InternalServerException("Gateway timeout"))
             case _                    =>
-              // Retry - do not log until final fail
               Future.failed(new InternalServerException(response.body))
           }
         }

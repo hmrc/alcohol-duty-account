@@ -83,8 +83,32 @@ class SubscriptionSummaryConnectorSpec extends SpecBase with ConnectorTestHelper
         }
       }
 
-      "if an error other than BAD_REQUEST or NOT_FOUND is returned the connector will invoke a retry" in new SetUp {
+      "if an internal server error is returned the connector will invoke a retry" in new SetUp {
         stubGet(url, INTERNAL_SERVER_ERROR, Json.toJson(internalServerError).toString)
+        whenReady(connectorWithRetry.getSubscriptionSummary(appaId)) { result =>
+          result mustBe Left(ErrorResponse(INTERNAL_SERVER_ERROR, "Unexpected Response"))
+          verifyGetRetry(url)
+        }
+      }
+
+      "if bad gateway error is returned the connector will invoke a retry" in new SetUp {
+        stubGet(url, BAD_GATEWAY, Json.toJson(badGateway).toString)
+        whenReady(connectorWithRetry.getSubscriptionSummary(appaId)) { result =>
+          result mustBe Left(ErrorResponse(INTERNAL_SERVER_ERROR, "Unexpected Response"))
+          verifyGetRetry(url)
+        }
+      }
+
+      "if service unavailable error is returned the connector will invoke a retry" in new SetUp {
+        stubGet(url, SERVICE_UNAVAILABLE, Json.toJson(serviceUnavailable).toString)
+        whenReady(connectorWithRetry.getSubscriptionSummary(appaId)) { result =>
+          result mustBe Left(ErrorResponse(INTERNAL_SERVER_ERROR, "Unexpected Response"))
+          verifyGetRetry(url)
+        }
+      }
+
+      "if gateway timeout error is returned the connector will invoke a retry" in new SetUp {
+        stubGet(url, GATEWAY_TIMEOUT, Json.toJson(gatewayTimeout).toString)
         whenReady(connectorWithRetry.getSubscriptionSummary(appaId)) { result =>
           result mustBe Left(ErrorResponse(INTERNAL_SERVER_ERROR, "Unexpected Response"))
           verifyGetRetry(url)
