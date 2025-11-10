@@ -56,8 +56,8 @@ object RestrictedCardData {
       hasPaymentsError = false,
       returns = Returns(),
       payments = Payments(),
-      contactPreference = subscriptionSummary.contactPreference,
-      emailBounced = subscriptionSummary.emailBounced
+      contactPreference = Some(subscriptionSummary.contactPreference),
+      emailBounced = Some(subscriptionSummary.emailBounced)
     )
 }
 

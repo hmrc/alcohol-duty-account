@@ -533,7 +533,7 @@ class AlcoholDutyServiceSpec extends SpecBase {
             smallciderFlag = false,
             approvalStatus = hods.Approved,
             insolvencyFlag = false,
-            paperlessReference = Some(true),
+            paperlessReference = true,
             bouncedEmailFlag = Some(false)
           )
           subscriptionSummaryConnector.getSubscriptionSummary(*)(*) returnsF Right(subscriptionSummary)
@@ -583,7 +583,7 @@ class AlcoholDutyServiceSpec extends SpecBase {
             smallciderFlag = false,
             approvalStatus = hods.Approved,
             insolvencyFlag = true,
-            paperlessReference = Some(true),
+            paperlessReference = true,
             bouncedEmailFlag = Some(false)
           )
           subscriptionSummaryConnector.getSubscriptionSummary(*)(*) returnsF Right(subscriptionSummary)
@@ -647,7 +647,7 @@ class AlcoholDutyServiceSpec extends SpecBase {
           smallciderFlag = false,
           approvalStatus = hods.Approved,
           insolvencyFlag = false,
-          paperlessReference = Some(true),
+          paperlessReference = true,
           bouncedEmailFlag = Some(false)
         )
         subscriptionSummaryConnector.getSubscriptionSummary(*)(*) returnsF Right(subscriptionSummary)
@@ -681,7 +681,7 @@ class AlcoholDutyServiceSpec extends SpecBase {
           smallciderFlag = false,
           approvalStatus = hods.Approved,
           insolvencyFlag = false,
-          paperlessReference = Some(true),
+          paperlessReference = true,
           bouncedEmailFlag = Some(false)
         )
         subscriptionSummaryConnector.getSubscriptionSummary(*)(*) returnsF Right(subscriptionSummary)
@@ -732,7 +732,7 @@ class AlcoholDutyServiceSpec extends SpecBase {
             smallciderFlag = false,
             approvalStatus = hods.Approved,
             insolvencyFlag = false,
-            paperlessReference = Some(true),
+            paperlessReference = true,
             bouncedEmailFlag = Some(false)
           )
           subscriptionSummaryConnector.getSubscriptionSummary(*)(*) returnsF Right(subscriptionSummary)
@@ -768,7 +768,7 @@ class AlcoholDutyServiceSpec extends SpecBase {
               smallciderFlag = false,
               approvalStatus = hodsApprovalStatus,
               insolvencyFlag = false,
-              paperlessReference = Some(true),
+              paperlessReference = true,
               bouncedEmailFlag = Some(false)
             )
             subscriptionSummaryConnector.getSubscriptionSummary(*)(*) returnsF Right(subscriptionSummary)
@@ -776,8 +776,8 @@ class AlcoholDutyServiceSpec extends SpecBase {
             val adrSubscriptionSummary = AdrSubscriptionSummary(
               approvalStatus = approvalStatus,
               regimes = Set(AlcoholRegime.Beer),
-              contactPreference = Some(Digital),
-              emailBounced = Some(false)
+              contactPreference = Digital,
+              emailBounced = false
             )
 
             whenReady(service.getAlcoholDutyCardData(appaId).value) { result =>
@@ -794,7 +794,7 @@ class AlcoholDutyServiceSpec extends SpecBase {
           smallciderFlag = true,
           approvalStatus = hods.Approved,
           insolvencyFlag = false,
-          paperlessReference = Some(true),
+          paperlessReference = true,
           bouncedEmailFlag = Some(false)
         )
         subscriptionSummaryConnector.getSubscriptionSummary(*)(*) returnsF Right(subscriptionSummary)
@@ -802,8 +802,8 @@ class AlcoholDutyServiceSpec extends SpecBase {
         val adrSubscriptionSummary = AdrSubscriptionSummary(
           approvalStatus = SmallCiderProducer,
           regimes = Set(AlcoholRegime.Beer),
-          contactPreference = Some(Digital),
-          emailBounced = Some(false)
+          contactPreference = Digital,
+          emailBounced = false
         )
 
         whenReady(service.getAlcoholDutyCardData(appaId).value) { result =>
