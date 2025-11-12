@@ -27,8 +27,8 @@ import uk.gov.hmrc.play.bootstrap.http.ErrorResponse
 case class AdrSubscriptionSummary(
   approvalStatus: ApprovalStatus,
   regimes: Set[AlcoholRegime],
-  contactPreference: Option[ContactPreferenceForBTA],
-  emailBounced: Option[Boolean]
+  contactPreference: ContactPreferenceForBTA,
+  emailBounced: Boolean
 )
 
 object AdrSubscriptionSummary {
@@ -38,13 +38,8 @@ object AdrSubscriptionSummary {
   ): Either[ErrorResponse, AdrSubscriptionSummary] = {
     val regimes = mapRegimes(subscriptionSummary.typeOfAlcoholApprovedFor)
 
-    val contactPreferenceForBTA = subscriptionSummary.paperlessReference.map {
-      case true  => Digital
-      case false => Paper
-    }
-    val emailBouncedForBTA      = subscriptionSummary.paperlessReference.map { _ =>
-      subscriptionSummary.bouncedEmailFlag.contains(true)
-    }
+    val contactPreferenceForBTA = if (subscriptionSummary.paperlessReference) Digital else Paper
+    val emailBouncedForBTA      = subscriptionSummary.bouncedEmailFlag.contains(true)
 
     if (regimes.isEmpty) {
       Left(ErrorResponse(INTERNAL_SERVER_ERROR, "Expected at least one approved regime to be provided"))

@@ -160,8 +160,8 @@ class AlcoholDutyService @Inject() (
       hasPaymentsError = fData.isEmpty,
       returns = obData.getOrElse(Returns()),
       payments = fData.getOrElse(Payments()),
-      contactPreference = subscriptionSummary.contactPreference,
-      emailBounced = subscriptionSummary.emailBounced
+      contactPreference = Some(subscriptionSummary.contactPreference),
+      emailBounced = Some(subscriptionSummary.emailBounced)
     ).asRight
   }
 

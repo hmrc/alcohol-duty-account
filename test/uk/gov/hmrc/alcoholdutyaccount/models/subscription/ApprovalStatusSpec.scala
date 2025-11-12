@@ -30,7 +30,7 @@ class ApprovalStatusSpec extends SpecBase {
           smallciderFlag = false,
           approvalStatus = hods.DeRegistered,
           insolvencyFlag = false,
-          paperlessReference = Some(true),
+          paperlessReference = true,
           bouncedEmailFlag = Some(false)
         )
         ApprovalStatus.fromSubscriptionSummary(subscriptionSummary) mustBe ApprovalStatus.DeRegistered
@@ -42,7 +42,7 @@ class ApprovalStatusSpec extends SpecBase {
           smallciderFlag = true,
           approvalStatus = hods.DeRegistered,
           insolvencyFlag = true,
-          paperlessReference = Some(true),
+          paperlessReference = true,
           bouncedEmailFlag = Some(false)
         )
         ApprovalStatus.fromSubscriptionSummary(subscriptionSummary) mustBe ApprovalStatus.DeRegistered
@@ -56,7 +56,7 @@ class ApprovalStatusSpec extends SpecBase {
           smallciderFlag = false,
           approvalStatus = hods.Revoked,
           insolvencyFlag = false,
-          paperlessReference = Some(true),
+          paperlessReference = true,
           bouncedEmailFlag = Some(false)
         )
         ApprovalStatus.fromSubscriptionSummary(subscriptionSummary) mustBe ApprovalStatus.Revoked
@@ -68,7 +68,7 @@ class ApprovalStatusSpec extends SpecBase {
           smallciderFlag = true,
           approvalStatus = hods.Revoked,
           insolvencyFlag = true,
-          paperlessReference = Some(true),
+          paperlessReference = true,
           bouncedEmailFlag = Some(false)
         )
         ApprovalStatus.fromSubscriptionSummary(subscriptionSummary) mustBe ApprovalStatus.Revoked
@@ -82,7 +82,7 @@ class ApprovalStatusSpec extends SpecBase {
           smallciderFlag = true,
           approvalStatus = hods.Approved,
           insolvencyFlag = false,
-          paperlessReference = Some(true),
+          paperlessReference = true,
           bouncedEmailFlag = Some(false)
         )
         ApprovalStatus.fromSubscriptionSummary(subscriptionSummary) mustBe ApprovalStatus.SmallCiderProducer
@@ -94,7 +94,7 @@ class ApprovalStatusSpec extends SpecBase {
           smallciderFlag = true,
           approvalStatus = hods.Approved,
           insolvencyFlag = true,
-          paperlessReference = Some(true),
+          paperlessReference = true,
           bouncedEmailFlag = Some(false)
         )
         ApprovalStatus.fromSubscriptionSummary(subscriptionSummary) mustBe ApprovalStatus.SmallCiderProducer
@@ -107,7 +107,7 @@ class ApprovalStatusSpec extends SpecBase {
         smallciderFlag = false,
         approvalStatus = hods.Approved,
         insolvencyFlag = true,
-        paperlessReference = Some(true),
+        paperlessReference = true,
         bouncedEmailFlag = Some(false)
       )
       ApprovalStatus.fromSubscriptionSummary(subscriptionSummary) mustBe ApprovalStatus.Insolvent
@@ -119,7 +119,7 @@ class ApprovalStatusSpec extends SpecBase {
         smallciderFlag = false,
         approvalStatus = hods.Approved,
         insolvencyFlag = false,
-        paperlessReference = Some(true),
+        paperlessReference = true,
         bouncedEmailFlag = Some(false)
       )
       ApprovalStatus.fromSubscriptionSummary(subscriptionSummary) mustBe ApprovalStatus.Approved
