@@ -1,4 +1,4 @@
-import sbt._
+import sbt.*
 
 object AppDependencies {
 
@@ -14,11 +14,9 @@ object AppDependencies {
   )
 
   val test           = Seq(
-    "uk.gov.hmrc"       %% "bootstrap-test-play-30"   % bootstrapVersion    % Test,
-    "uk.gov.hmrc.mongo" %% "hmrc-mongo-test-play-30"  % hmrcMongoVersion    % Test,
-    "org.mockito"       %% "mockito-scala"            % mockitoScalaVersion % Test,
-    "org.mockito"       %% "mockito-scala-cats"       % mockitoScalaVersion % Test,
-    "org.scalatestplus" %% "scalatestplus-scalacheck" % "3.1.0.0-RC2"       % Test
+    "uk.gov.hmrc"       %% "bootstrap-test-play-30"  % bootstrapVersion % Test,
+    "uk.gov.hmrc.mongo" %% "hmrc-mongo-test-play-30" % hmrcMongoVersion % Test,
+    "org.scalatestplus" %% "scalacheck-1-17"         % "3.2.18.0"       % Test
   )
   val itDependencies = Seq.empty
 }

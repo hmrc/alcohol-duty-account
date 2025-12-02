@@ -17,11 +17,12 @@
 package uk.gov.hmrc.alcoholdutyaccount.service
 
 import cats.data.EitherT
-import org.mockito.ArgumentMatchers.any
-import org.mockito.ArgumentMatchersSugar.eqTo
+import org.mockito.ArgumentMatchers.{any, eq as eqTo}
+import org.mockito.Mockito.{times, verify, when}
 import uk.gov.hmrc.alcoholdutyaccount.base.SpecBase
-import uk.gov.hmrc.alcoholdutyaccount.models.ErrorCodes
+import uk.gov.hmrc.alcoholdutyaccount.models.{ErrorCodes, FulfilledObligations}
 import uk.gov.hmrc.alcoholdutyaccount.repositories.UserFulfilledObligationsRepository
+import uk.gov.hmrc.play.bootstrap.http.ErrorResponse
 
 import scala.concurrent.Future
 
@@ -46,11 +47,11 @@ class FulfilledObligationsRepositoryServiceSpec extends SpecBase {
         when(mockRepository.set(eqTo(userFulfilledObligations))) thenReturn Future.successful(userFulfilledObligations)
 
         when(mockAlcoholDutyService.getFulfilledObligations(eqTo(appaId), eqTo(2023))(any())) thenReturn EitherT
-          .rightT(fulfilledObligations2023)
+          .rightT[Future, FulfilledObligations](fulfilledObligations2023)
         when(mockAlcoholDutyService.getFulfilledObligations(eqTo(appaId), eqTo(2024))(any())) thenReturn EitherT
-          .rightT(fulfilledObligations2024)
+          .rightT[Future, FulfilledObligations](fulfilledObligations2024)
         when(mockAlcoholDutyService.getFulfilledObligations(eqTo(appaId), eqTo(2025))(any())) thenReturn EitherT
-          .rightT(fulfilledObligations2025)
+          .rightT[Future, FulfilledObligations](fulfilledObligations2025)
 
         whenReady(fulfilledObligationsRepositoryService.getAllYearsFulfilledObligations(appaId, startYear, endYear)) {
           result =>
@@ -68,9 +69,9 @@ class FulfilledObligationsRepositoryServiceSpec extends SpecBase {
         when(mockRepository.get(eqTo(appaId))) thenReturn Future.successful(None)
 
         when(mockAlcoholDutyService.getFulfilledObligations(eqTo(appaId), eqTo(2023))(any())) thenReturn EitherT
-          .rightT(fulfilledObligations2023)
+          .rightT[Future, FulfilledObligations](fulfilledObligations2023)
         when(mockAlcoholDutyService.getFulfilledObligations(eqTo(appaId), eqTo(2024))(any())) thenReturn EitherT
-          .leftT(ErrorCodes.unexpectedResponse)
+          .leftT[Future, ErrorResponse](ErrorCodes.unexpectedResponse)
 
         whenReady(fulfilledObligationsRepositoryService.getAllYearsFulfilledObligations(appaId, startYear, endYear)) {
           result =>

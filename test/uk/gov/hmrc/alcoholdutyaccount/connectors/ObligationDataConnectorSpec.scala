@@ -226,7 +226,7 @@ class ObligationDataConnectorSpec extends SpecBase with ConnectorTestHelpers {
     val expectedQueryParamsFulfilled =
       Seq("status" -> Fulfilled.value) ++ dateFilterHeadersHeaders
 
-    val expectedQueryParamsNoStatus  = dateFilterHeadersHeaders
+    val expectedQueryParamsNoStatus = dateFilterHeadersHeaders
 
     val url = appConfig.obligationDataUrl(appaId)
 

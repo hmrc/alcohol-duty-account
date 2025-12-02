@@ -118,7 +118,7 @@ class ObligationDataConnector @Inject() (
         }
     }
 
-  private val openQueryParams: Seq[(String, String)]                    =
+  private val openQueryParams: Seq[(String, String)] =
     Seq("status" -> Open.value)
 
   private def getFulfilledQueryParams(year: Int): Seq[(String, String)] =

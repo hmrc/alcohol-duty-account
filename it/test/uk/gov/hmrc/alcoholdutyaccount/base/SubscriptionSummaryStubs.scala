@@ -16,15 +16,16 @@
 
 package uk.gov.hmrc.alcoholdutyaccount.base
 
+import org.scalatest.Suite
 import play.api.http.Status.{INTERNAL_SERVER_ERROR, NOT_FOUND, OK}
 import play.api.libs.json.Json
 import uk.gov.hmrc.alcoholdutyaccount.common.{TestData, WireMockHelper}
-import uk.gov.hmrc.alcoholdutyaccount.config.AppConfig
 import uk.gov.hmrc.alcoholdutyaccount.models.hods.{SubscriptionSummary, SubscriptionSummarySuccess}
 
-trait SubscriptionSummaryStubs extends WireMockHelper with TestData { ISpecBase =>
-  val config: AppConfig
-  def url(appaId: String) = config.getSubscriptionUrl(appaId)
+trait SubscriptionSummaryStubs extends WireMockHelper with TestData {
+  this: ISpecBase with Suite =>
+  
+  def url(appaId: String): String = config.getSubscriptionUrl(appaId)
 
   def stubGetSubscriptionSummary(appaId: String, subscriptionSummary: SubscriptionSummary): Unit =
     stubGet(url(appaId), OK, Json.toJson(SubscriptionSummarySuccess(subscriptionSummary)).toString)

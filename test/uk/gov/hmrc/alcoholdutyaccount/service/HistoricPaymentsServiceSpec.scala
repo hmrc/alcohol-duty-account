@@ -16,6 +16,7 @@
 
 package uk.gov.hmrc.alcoholdutyaccount.service
 
+import org.mockito.Mockito.when
 import uk.gov.hmrc.alcoholdutyaccount.base.SpecBase
 import uk.gov.hmrc.alcoholdutyaccount.connectors.FinancialDataConnector
 import uk.gov.hmrc.alcoholdutyaccount.models.ReturnPeriod
