@@ -16,14 +16,14 @@
 
 package uk.gov.hmrc.alcoholdutyaccount.base
 
+import org.scalatest.Suite
 import play.api.http.Status.{BAD_REQUEST, NOT_FOUND, OK, UNPROCESSABLE_ENTITY}
 import play.api.libs.json.Json
 import uk.gov.hmrc.alcoholdutyaccount.common.{TestData, WireMockHelper}
-import uk.gov.hmrc.alcoholdutyaccount.config.AppConfig
 import uk.gov.hmrc.alcoholdutyaccount.models.hods.FinancialTransactionDocument
 
-trait FinancialDataStubs extends WireMockHelper with TestData { ISpecBase =>
-  val config: AppConfig
+trait FinancialDataStubs extends WireMockHelper with TestData {
+  this: ISpecBase with Suite =>
 
   private val queryParams: Seq[(String, String)] = Seq(
     "onlyOpenItems"              -> "true",

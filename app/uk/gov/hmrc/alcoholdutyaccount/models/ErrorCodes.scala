@@ -16,8 +16,7 @@
 
 package uk.gov.hmrc.alcoholdutyaccount.models
 
-import play.api.http.Status.{BAD_REQUEST, INTERNAL_SERVER_ERROR, NOT_FOUND, SERVICE_UNAVAILABLE, UNAUTHORIZED, UNPROCESSABLE_ENTITY}
-import play.api.libs.json.{Json, OFormat}
+import play.api.http.Status.*
 import uk.gov.hmrc.play.bootstrap.http.ErrorResponse
 
 object ErrorCodes {
@@ -27,13 +26,4 @@ object ErrorCodes {
   val serviceUnavailable: ErrorResponse  = ErrorResponse(SERVICE_UNAVAILABLE, "Service unavailable")
   val unexpectedResponse: ErrorResponse  = ErrorResponse(INTERNAL_SERVER_ERROR, "Unexpected Response")
   val unauthorisedRequest: ErrorResponse = ErrorResponse(UNAUTHORIZED, "Unauthorised request")
-}
-
-case class HttpErrorResponse(
-  code: String,
-  message: String
-)
-
-object HttpErrorResponse {
-  implicit val format: OFormat[HttpErrorResponse] = Json.format[HttpErrorResponse]
 }

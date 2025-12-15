@@ -81,5 +81,5 @@ object UserFulfilledObligations {
       (__ \ "_id").format[String] and
         (__ \ "fulfilledObligationsData").format[Seq[FulfilledObligations]] and
         (__ \ "createdAt").format(MongoJavatimeFormats.instantFormat)
-    )(UserFulfilledObligations.apply, unlift(UserFulfilledObligations.unapply))
+    )(UserFulfilledObligations.apply, o => Tuple.fromProductTyped(o))
 }

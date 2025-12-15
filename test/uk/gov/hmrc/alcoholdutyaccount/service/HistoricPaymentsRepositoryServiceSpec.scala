@@ -17,11 +17,13 @@
 package uk.gov.hmrc.alcoholdutyaccount.service
 
 import cats.data.EitherT
-import org.mockito.ArgumentMatchers.any
-import org.mockito.ArgumentMatchersSugar.eqTo
+import org.mockito.ArgumentMatchers.{any, eq as eqTo}
+import org.mockito.Mockito.{times, verify, when}
 import uk.gov.hmrc.alcoholdutyaccount.base.SpecBase
 import uk.gov.hmrc.alcoholdutyaccount.models.ErrorCodes
+import uk.gov.hmrc.alcoholdutyaccount.models.payments.HistoricPayments
 import uk.gov.hmrc.alcoholdutyaccount.repositories.UserHistoricPaymentsRepository
+import uk.gov.hmrc.play.bootstrap.http.ErrorResponse
 
 import scala.concurrent.Future
 
@@ -45,13 +47,13 @@ class HistoricPaymentsRepositoryServiceSpec extends SpecBase {
         when(mockRepository.set(eqTo(userHistoricPayments))) thenReturn Future.successful(userHistoricPayments)
 
         when(mockHistoricPaymentsService.getHistoricPayments(eqTo(appaId), eqTo(2022))(any())) thenReturn EitherT
-          .rightT(historicPayments2022)
+          .rightT[Future, HistoricPayments](historicPayments2022)
         when(mockHistoricPaymentsService.getHistoricPayments(eqTo(appaId), eqTo(2023))(any())) thenReturn EitherT
-          .rightT(historicPayments2023)
+          .rightT[Future, HistoricPayments](historicPayments2023)
         when(mockHistoricPaymentsService.getHistoricPayments(eqTo(appaId), eqTo(2024))(any())) thenReturn EitherT
-          .rightT(historicPayments2024)
+          .rightT[Future, HistoricPayments](historicPayments2024)
         when(mockHistoricPaymentsService.getHistoricPayments(eqTo(appaId), eqTo(2025))(any())) thenReturn EitherT
-          .rightT(historicPayments2025)
+          .rightT[Future, HistoricPayments](historicPayments2025)
 
         whenReady(historicPaymentsRepositoryService.getAllYearsHistoricPayments(appaId, startYear, endYear)) { result =>
           result mustBe Right(historicPaymentsData)
@@ -69,9 +71,9 @@ class HistoricPaymentsRepositoryServiceSpec extends SpecBase {
         when(mockRepository.get(eqTo(appaId))) thenReturn Future.successful(None)
 
         when(mockHistoricPaymentsService.getHistoricPayments(eqTo(appaId), eqTo(2022))(any())) thenReturn EitherT
-          .rightT(historicPayments2022)
+          .rightT[Future, HistoricPayments](historicPayments2022)
         when(mockHistoricPaymentsService.getHistoricPayments(eqTo(appaId), eqTo(2023))(any())) thenReturn EitherT
-          .leftT(ErrorCodes.unexpectedResponse)
+          .leftT[Future, ErrorResponse](ErrorCodes.unexpectedResponse)
 
         whenReady(historicPaymentsRepositoryService.getAllYearsHistoricPayments(appaId, startYear, endYear)) { result =>
           result mustBe Left(ErrorCodes.unexpectedResponse)

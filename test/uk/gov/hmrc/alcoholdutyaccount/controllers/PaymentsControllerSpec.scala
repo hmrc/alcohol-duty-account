@@ -17,9 +17,8 @@
 package uk.gov.hmrc.alcoholdutyaccount.controllers
 
 import cats.data.EitherT
-import org.mockito.ArgumentMatchers.any
-import org.mockito.ArgumentMatchersSugar.{*, eqTo}
-import org.mockito.cats.IdiomaticMockitoCats.StubbingOpsCats
+import org.mockito.ArgumentMatchers.{any, eq as eqTo}
+import org.mockito.Mockito.{times, verify, when}
 import play.api.libs.json.Json
 import play.api.mvc.Result
 import play.api.test.Helpers
@@ -37,7 +36,8 @@ class PaymentsControllerSpec extends SpecBase {
   "PaymentsController" - {
     "when calling outstandingPayments" - {
       "return OK when the service returns success" in new SetUp {
-        mockOpenPaymentsService.getOpenPayments(eqTo(appaId))(*) returnsF noOpenPayments
+        when(mockOpenPaymentsService.getOpenPayments(eqTo(appaId))(any())) thenReturn
+          EitherT.rightT[Future, OpenPayments](noOpenPayments)
 
         val result: Future[Result] = controller.openPayments(appaId)(fakeRequest)
         status(result)        mustBe OK
@@ -45,8 +45,8 @@ class PaymentsControllerSpec extends SpecBase {
       }
 
       "return any error returned from the service" in new SetUp {
-        when(mockOpenPaymentsService.getOpenPayments(eqTo(appaId))(*))
-          .thenReturn(EitherT.leftT[Future, OpenPayments](ErrorCodes.unexpectedResponse))
+        when(mockOpenPaymentsService.getOpenPayments(eqTo(appaId))(any())) thenReturn
+          EitherT.leftT[Future, OpenPayments](ErrorCodes.unexpectedResponse)
 
         val result: Future[Result] = controller.openPayments(appaId)(fakeRequest)
         status(result)                          mustBe INTERNAL_SERVER_ERROR
@@ -58,7 +58,7 @@ class PaymentsControllerSpec extends SpecBase {
       "return OK when the service returns success (minimum year is within the last 7 years)" in new SetUp {
         when(mockAppConfig.minimumHistoricPaymentsYear) thenReturn 2024
         when(
-          mockHistoricPaymentsRepositoryService.getAllYearsHistoricPayments(eqTo(appaId), any(), any())(*)
+          mockHistoricPaymentsRepositoryService.getAllYearsHistoricPayments(eqTo(appaId), any(), any())(any())
         ) thenReturn Future.successful(Right(historicPaymentsData))
 
         val result: Future[Result] = controller.historicPayments(appaId)(fakeRequest)
@@ -72,7 +72,7 @@ class PaymentsControllerSpec extends SpecBase {
       "return OK when the service returns success (minimum year is not within the last 7 years)" in new SetUp {
         when(mockAppConfig.minimumHistoricPaymentsYear) thenReturn 2015
         when(
-          mockHistoricPaymentsRepositoryService.getAllYearsHistoricPayments(eqTo(appaId), any(), any())(*)
+          mockHistoricPaymentsRepositoryService.getAllYearsHistoricPayments(eqTo(appaId), any(), any())(any())
         ) thenReturn Future.successful(Right(historicPaymentsData))
 
         val result: Future[Result] = controller.historicPayments(appaId)(fakeRequest)
@@ -86,8 +86,8 @@ class PaymentsControllerSpec extends SpecBase {
       "return any error returned from the service" in new SetUp {
         when(mockAppConfig.minimumHistoricPaymentsYear) thenReturn 2024
         when(
-          mockHistoricPaymentsRepositoryService.getAllYearsHistoricPayments(eqTo(appaId), any(), any())(*)
-        ).thenReturn(Future.successful(Left(ErrorCodes.unexpectedResponse)))
+          mockHistoricPaymentsRepositoryService.getAllYearsHistoricPayments(eqTo(appaId), any(), any())(any())
+        ) thenReturn Future.successful(Left(ErrorCodes.unexpectedResponse))
 
         val result: Future[Result] = controller.historicPayments(appaId)(fakeRequest)
         status(result)                          mustBe INTERNAL_SERVER_ERROR
