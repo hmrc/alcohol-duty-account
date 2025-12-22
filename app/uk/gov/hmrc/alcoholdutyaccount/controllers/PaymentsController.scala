@@ -49,7 +49,7 @@ class PaymentsController @Inject() (
         .getOpenPayments(appaId)
         .fold(
           errorResponse => {
-            logger.warn(s"Unable to get open payments for $appaId: $errorResponse")
+            logger.warn(s"[PaymentsController] [openPayments] Unable to get open payments for $appaId: $errorResponse")
             error(errorResponse)
           },
           openPayments => Ok(Json.toJson(openPayments))
@@ -63,7 +63,9 @@ class PaymentsController @Inject() (
 
       historicPaymentsRepositoryService.getAllYearsHistoricPayments(appaId, minYear, currentYear).map {
         case Left(errorResponse)           =>
-          logger.warn(s"Unable to get historic payments for $appaId: $errorResponse")
+          logger.warn(
+            s"[PaymentsController] [historicPayments] Unable to get historic payments for $appaId: $errorResponse"
+          )
           error(errorResponse)
         case Right(historicPaymentsByYear) => Ok(Json.toJson(historicPaymentsByYear))
       }

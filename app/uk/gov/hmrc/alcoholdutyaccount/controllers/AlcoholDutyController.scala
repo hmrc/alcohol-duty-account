@@ -104,7 +104,9 @@ class AlcoholDutyController @Inject() (
 
       fulfilledObligationsRepositoryService.getAllYearsFulfilledObligations(appaId, minYear, currentYear).map {
         case Left(errorResponse)               =>
-          logger.warn(s"Unable to get fulfilled obligations for $appaId: $errorResponse")
+          logger.warn(
+            s"[AlcoholDutyController] [getFulfilledObligations] Unable to get fulfilled obligations for $appaId: $errorResponse"
+          )
           error(errorResponse)
         case Right(fulfilledObligationsByYear) => Ok(Json.toJson(fulfilledObligationsByYear))
       }

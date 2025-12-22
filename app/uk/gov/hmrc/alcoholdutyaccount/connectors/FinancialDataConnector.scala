@@ -65,7 +65,7 @@ class FinancialDataConnector @Inject() (
       delay = config.retryAttemptsDelay
     ).recoverWith { error =>
       logger.error(
-        s"An exception was returned while trying to fetch financial data for appaId $appaId: $error"
+        s"[FinancialDataConnector] [getFinancialData] An exception was returned while trying to fetch financial data for appaId $appaId: $error"
       )
       Future.successful(Left(ErrorCodes.unexpectedResponse))
     }
@@ -80,7 +80,9 @@ class FinancialDataConnector @Inject() (
         "Environment"             -> config.financialDataEnv
       )
 
-      logger.info(s"Fetching financial transaction document for appaId $appaId")
+      logger.info(
+        s"[FinancialDataConnector] [getFinancialData] Fetching financial transaction document for appaId $appaId"
+      )
 
       httpClient
         .get(url"${config.financialDataUrl(appaId)}?$queryParams")
@@ -94,20 +96,29 @@ class FinancialDataConnector @Inject() (
                   .as[FinancialTransactionDocument]
               } match {
                 case Success(doc)       =>
-                  logger.info(s"Retrieved financial transaction document for appaId $appaId")
+                  logger.info(
+                    s"[FinancialDataConnector] [getFinancialData] Retrieved financial transaction document for appaId $appaId"
+                  )
                   Future.successful(Right(doc))
                 case Failure(exception) =>
-                  logger.error(s"Parsing failed for financial transaction document for appaId $appaId", exception)
+                  logger.error(
+                    s"[FinancialDataConnector] [getFinancialData] Parsing failed for financial transaction document for appaId $appaId",
+                    exception
+                  )
                   Future.successful(Left(ErrorCodes.unexpectedResponse))
               }
             case NOT_FOUND            =>
-              logger.info(s"No financial data found for appaId $appaId")
+              logger.info(s"[FinancialDataConnector] [getFinancialData] No financial data found for appaId $appaId")
               Future.successful(Right(FinancialTransactionDocument.emptyDocument))
             case BAD_REQUEST          =>
-              logger.warn(s"Bad request sent to get financial data for appaId $appaId")
+              logger.warn(
+                s"[FinancialDataConnector] [getFinancialData] Bad request sent to get financial data for appaId $appaId"
+              )
               Future.successful(Left(ErrorResponse(BAD_REQUEST, "Bad request")))
             case UNPROCESSABLE_ENTITY =>
-              logger.warn(s"Get financial data request unprocessable for appaId $appaId")
+              logger.warn(
+                s"[FinancialDataConnector] [getFinancialData] Get financial data request unprocessable for appaId $appaId"
+              )
               Future.successful(Left(ErrorResponse(UNPROCESSABLE_ENTITY, "Unprocessable entity")))
             // Retry and log on final fail for the following transient errors
             case BAD_GATEWAY          =>
