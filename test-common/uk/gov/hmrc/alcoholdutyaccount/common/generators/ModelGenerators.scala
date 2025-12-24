@@ -27,8 +27,7 @@ trait ModelGenerators {
   } yield s"${year}A${(month + 'A').toChar}"
 
   def invalidPeriodKeyGen: Gen[String] = Gen.alphaStr
-    .suchThat(_.nonEmpty)
-    .suchThat(!_.matches(ReturnPeriod.returnPeriodPattern.toString()))
+    .retryUntil(s => s.nonEmpty && !s.matches(ReturnPeriod.returnPeriodPattern.toString()))
 
   def appaIdGen: Gen[String] = Gen.listOfN(10, Gen.numChar).map(id => s"XMADP${id.mkString}")
 
