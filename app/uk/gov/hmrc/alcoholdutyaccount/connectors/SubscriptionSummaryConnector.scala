@@ -53,7 +53,7 @@ class SubscriptionSummaryConnector @Inject() (
       delay = config.retryAttemptsDelay
     ).recoverWith { error =>
       logger.error(
-        s"An exception was returned while trying to fetch subscription summary appaId $appaId: $error"
+        s"[SubscriptionSummaryConnector] [getSubscriptionSummary] An exception was returned while trying to fetch subscription summary appaId $appaId: $error"
       )
       Future.successful(Left(ErrorCodes.unexpectedResponse))
     }
@@ -74,23 +74,33 @@ class SubscriptionSummaryConnector @Inject() (
                   .as[SubscriptionSummarySuccess]
               } match {
                 case Success(doc) =>
-                  logger.info(s"Retrieved subscription summary success for appaId $appaId")
+                  logger.info(
+                    s"[SubscriptionSummaryConnector] [getSubscriptionSummary] Retrieved subscription summary success for appaId $appaId"
+                  )
                   Future.successful(Right(doc.success))
                 case Failure(_)   =>
-                  logger.error(s"Unable to parse subscription summary success for appaId $appaId")
+                  logger.error(
+                    s"[SubscriptionSummaryConnector] [getSubscriptionSummary] Unable to parse subscription summary success for appaId $appaId"
+                  )
                   Future
                     .successful(
                       Left(ErrorResponse(INTERNAL_SERVER_ERROR, "Unable to parse subscription summary success"))
                     )
               }
             case BAD_REQUEST          =>
-              logger.warn(s"Bad request sent to get subscription for appaId $appaId")
+              logger.warn(
+                s"[SubscriptionSummaryConnector] [getSubscriptionSummary] Bad request sent to get subscription for appaId $appaId"
+              )
               Future.successful(Left(ErrorResponse(BAD_REQUEST, "Bad request")))
             case NOT_FOUND            =>
-              logger.warn(s"No subscription summary found for appaId $appaId")
+              logger.warn(
+                s"[SubscriptionSummaryConnector] [getSubscriptionSummary] No subscription summary found for appaId $appaId"
+              )
               Future.successful(Left(ErrorResponse(NOT_FOUND, "Subscription summary not found")))
             case UNPROCESSABLE_ENTITY =>
-              logger.warn(s"Subscription summary request unprocessable for appaId $appaId")
+              logger.warn(
+                s"[SubscriptionSummaryConnector] [getSubscriptionSummary] Subscription summary request unprocessable for appaId $appaId"
+              )
               Future.successful(Left(ErrorResponse(UNPROCESSABLE_ENTITY, "Unprocessable entity")))
             // Retry and log on final fail for the following transient errors
             case BAD_GATEWAY          =>

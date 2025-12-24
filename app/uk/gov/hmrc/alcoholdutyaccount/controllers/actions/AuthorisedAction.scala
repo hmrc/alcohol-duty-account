@@ -88,7 +88,9 @@ class BaseAuthorisedAction @Inject() (
 
   private def getOrElseFailWithUnauthorised[T](o: Option[T], failureMessage: String): T =
     o.getOrElse {
-      logger.warn(s"Authorised Action failed with error: $failureMessage")
+      logger.warn(
+        s"[AuthorisedAction] [getOrElseFailWithUnauthorised] Authorised Action failed with error: $failureMessage"
+      )
       throw new IllegalStateException(failureMessage)
     }
 }

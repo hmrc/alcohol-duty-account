@@ -69,7 +69,7 @@ class PaymentsValidator @Inject() () extends Logging {
       .fromMainTransactionType(mainTransactionType)
       .fold[Either[ErrorResponse, TransactionType]] {
         logger.warn(
-          s"Unexpected transaction type $mainTransactionType on financial transaction $sapDocumentNumber."
+          s"[PaymentsValidator] [getTransactionType] Unexpected transaction type $mainTransactionType on financial transaction $sapDocumentNumber."
         )
         Left(ErrorCodes.unexpectedResponse)
       } { transactionType =>
@@ -89,7 +89,9 @@ class PaymentsValidator @Inject() () extends Logging {
     financialTransactionsForDocument
       .map(financialTransaction =>
         if (financialTransaction.items.isEmpty) {
-          logger.warn(s"Expected at least one item on line items for financial transaction $sapDocumentNumber.")
+          logger.warn(
+            s"[PaymentsValidator] [validateFinancialLineItems] Expected at least one item on line items for financial transaction $sapDocumentNumber."
+          )
           Left(ErrorCodes.unexpectedResponse)
         } else {
           Right(
@@ -107,7 +109,7 @@ class PaymentsValidator @Inject() () extends Logging {
       .filterOrElse(
         _.forall(identity), {
           logger.warn(
-            s"Not all chargeRefs, periodKeys, mainTransactions and/or dueDates matched against the first entry of financial transaction $sapDocumentNumber."
+            s"[PaymentsValidator] [validateFinancialLineItems] Not all chargeRefs, periodKeys, mainTransactions and/or dueDates matched against the first entry of financial transaction $sapDocumentNumber."
           )
           ErrorCodes.unexpectedResponse
         }
@@ -121,10 +123,14 @@ class PaymentsValidator @Inject() () extends Logging {
     financialTransactionLineItem.items.toList match {
       case FinancialTransactionItem(_, Some(dueDate), _) :: _ => Right(dueDate)
       case FinancialTransactionItem(_, None, _) :: _          =>
-        logger.warn(s"Due date not found on first item of first entry of financial transaction $sapDocumentNumber.")
+        logger.warn(
+          s"[PaymentsValidator] [getFirstItemDueDate] Due date not found on first item of first entry of financial transaction $sapDocumentNumber."
+        )
         Left(ErrorCodes.unexpectedResponse)
       case _                                                  =>
-        logger.warn(s"Expected at least one item on line items for financial transaction $sapDocumentNumber.")
+        logger.warn(
+          s"[PaymentsValidator] [getFirstItemDueDate] Expected at least one item on line items for financial transaction $sapDocumentNumber."
+        )
         Left(ErrorCodes.unexpectedResponse)
     }
 
@@ -135,7 +141,9 @@ class PaymentsValidator @Inject() () extends Logging {
     financialTransactionsForDocument.toList match {
       case firstFinancialTransactionLineItem :: _ => Right(firstFinancialTransactionLineItem)
       case _                                      =>
-        logger.warn(s"Should have had a least one entry for financial transaction $sapDocumentNumber.")
+        logger.warn(
+          s"[PaymentsValidator] [getFirstFinancialTransactionLineItem] Should have had a least one entry for financial transaction $sapDocumentNumber."
+        )
         Left(ErrorCodes.unexpectedResponse)
     }
 }
