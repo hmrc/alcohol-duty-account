@@ -575,6 +575,40 @@ trait TestData extends ModelGenerators {
     )
   }
 
+  def twoSeparateOverpaymentsSameSAPDocDifferentPeriods(onlyOpenItems: Boolean): FinancialTransactionDocument = {
+    val sapDocumentNumber = sapDocumentNumberGen.sample.get
+    val dueDate           = ReturnPeriod.fromPeriodKeyOrThrow(periodKey).dueDate()
+
+    combineFinancialTransactionDocuments(
+      Seq(
+        createFinancialDocument(
+          onlyOpenItems = onlyOpenItems,
+          sapDocumentNumber = sapDocumentNumber,
+          originalAmount = BigDecimal("-5000"),
+          maybeOutstandingAmount = Some(BigDecimal("-5000")),
+          dueDate = dueDate,
+          transactionType = TransactionType.Overpayment,
+          maybePeriodKey = Some(periodKey),
+          maybeTaxPeriodFrom = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).periodFromDate()),
+          maybeTaxPeriodTo = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).periodToDate()),
+          maybeChargeReference = None
+        ),
+        createFinancialDocument(
+          onlyOpenItems = onlyOpenItems,
+          sapDocumentNumber = sapDocumentNumber,
+          originalAmount = BigDecimal("-2000"),
+          maybeOutstandingAmount = Some(BigDecimal("-2000")),
+          dueDate = dueDate,
+          transactionType = TransactionType.Overpayment,
+          maybePeriodKey = Some(periodKey2),
+          maybeTaxPeriodFrom = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey2).periodFromDate()),
+          maybeTaxPeriodTo = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey2).periodToDate()),
+          maybeChargeReference = None
+        )
+      )
+    )
+  }
+
   val singleFullyOutstandingLPI: FinancialTransactionDocument = {
     val sapDocumentNumber = sapDocumentNumberGen.sample.get
     val chargeReference   = chargeReferenceGen.sample.get

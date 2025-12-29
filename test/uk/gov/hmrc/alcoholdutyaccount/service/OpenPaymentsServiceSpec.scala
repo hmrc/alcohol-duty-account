@@ -493,7 +493,7 @@ class OpenPaymentsServiceSpec extends SpecBase {
         }
       }
 
-      "if all period key is there on some, but not all document entries" in new SetUp {
+      "if period key is there on some, but not all document entries" in new SetUp {
         val mismatchedTransactionTypesOnLineItems =
           twoLineItemPartiallyOutstandingReturnOpen.copy(financialTransactions =
             Seq(
@@ -528,6 +528,31 @@ class OpenPaymentsServiceSpec extends SpecBase {
 
         whenReady(paymentsService.getOpenPayments(appaId).value) {
           _ mustBe Left(ErrorCodes.unexpectedResponse)
+        }
+      }
+
+      "for overpayments (0060)" - {
+
+        "if all period keys are present, but do not match on all document line items" in new SetUp {
+          val testData = overpaymentsSameSAPDocumentDifferentPeriods
+
+          when(mockFinancialDataConnector.getOnlyOpenFinancialData(appaId))
+            .thenReturn(Future.successful(Right(testData)))
+
+          whenReady(paymentsService.getOpenPayments(appaId).value) {
+            _ mustBe Right(
+              OpenPayments(
+                List(),
+                0,
+                List(
+                  UnallocatedPayment(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).dueDate(), -5000),
+                  UnallocatedPayment(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).dueDate(), -2000)
+                ),
+                -7000,
+                -7000
+              )
+            )
+          }
         }
       }
 
@@ -660,6 +685,9 @@ class OpenPaymentsServiceSpec extends SpecBase {
     val year                                      = 2024
     val singlePartiallyOutstandingReturnOpen      = singlePartiallyOutstandingReturn(onlyOpenItems = true)
     val twoLineItemPartiallyOutstandingReturnOpen = twoLineItemPartiallyOutstandingReturn(onlyOpenItems = true)
+
+    val overpaymentsSameSAPDocumentDifferentPeriods =
+      twoSeparateOverpaymentsSameSAPDocDifferentPeriods(onlyOpenItems = true)
 
     val singleOverpaymentAmountMismatch = singleOverpayment.copy(financialTransactions =
       singleOverpayment.financialTransactions.map(_.copy(outstandingAmount = Some(BigDecimal("-1000"))))

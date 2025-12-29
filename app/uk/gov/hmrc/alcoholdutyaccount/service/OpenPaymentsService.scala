@@ -44,7 +44,8 @@ class OpenPaymentsService @Inject() (
     for {
       financialTransactionDocument <- EitherT(financialDataConnector.getOnlyOpenFinancialData(appaId))
       openPayments                 <- extractOpenPayments(financialTransactionDocument)
-    } yield buildOpenPaymentsPayload(openPayments)
+      openOverPayments             <- extractOpenOverPayments(financialTransactionDocument)
+    } yield buildOpenPaymentsPayload(openPayments ::: openOverPayments)
 
   private def extractOpenPayments(
     financialTransactionDocument: FinancialTransactionDocument
@@ -52,13 +53,41 @@ class OpenPaymentsService @Inject() (
     EitherT {
       Future.successful(
         financialTransactionDocument.financialTransactions
-          .filter(transaction => // Ignore overpayments that aren't ZADP
+          .filter(transaction => // Ignore overpayments
             !TransactionType.isOverpayment(
               transaction.mainTransaction
-            ) || transaction.contractObjectType.contains(contractObjectType)
+            )
           )
           .groupBy(_.sapDocumentNumber)
           .map { case (sapDocumentNumber, financialTransactionsForDocument) =>
+            financialDataValidator
+              .validateAndGetFinancialTransactionData(
+                sapDocumentNumber,
+                financialTransactionsForDocument
+              )
+              .map {
+                val outstandingAmount = calculateOutstandingAmount(financialTransactionsForDocument)
+                buildOpenPayment(_, outstandingAmount)
+              }
+          }
+          .toList
+          .sequence
+      )
+    }
+
+  private def extractOpenOverPayments(
+    financialTransactionDocument: FinancialTransactionDocument
+  ): EitherT[Future, ErrorResponse, List[OpenPayment]] =
+    EitherT {
+      Future.successful(
+        financialTransactionDocument.financialTransactions
+          .filter(transaction => // Ignore overpayments that aren't ZADP
+            TransactionType.isOverpayment(
+              transaction.mainTransaction
+            ) && transaction.contractObjectType.contains(contractObjectType)
+          )
+          .groupBy(x => (x.sapDocumentNumber, x.periodKey))
+          .map { case ((sapDocumentNumber, _), financialTransactionsForDocument) =>
             financialDataValidator
               .validateAndGetFinancialTransactionData(
                 sapDocumentNumber,
@@ -91,7 +120,7 @@ class OpenPaymentsService @Inject() (
     OpenPayments(
       outstandingPayments = outstandingPayments,
       totalOutstandingPayments = paymentTotals.totalOutstandingPayments,
-      unallocatedPayments = unallocatedPayments,
+      unallocatedPayments = unallocatedPayments.sortBy(x => (x.paymentDate, x.unallocatedAmount)),
       totalUnallocatedPayments = paymentTotals.totalUnallocatedPayments,
       totalOpenPaymentsAmount = paymentTotals.totalOpenPaymentsAmount
     )
