@@ -16,6 +16,7 @@
 
 package uk.gov.hmrc.alcoholdutyaccount.repositories
 
+import org.mockito.Mockito.when
 import org.mongodb.scala.model.Filters
 import org.scalatest.Assertion
 import uk.gov.hmrc.alcoholdutyaccount.base.ISpecBase
@@ -29,12 +30,12 @@ class UserFulfilledObligationsRepositorySpec
     extends ISpecBase
     with DefaultPlayMongoRepositorySupport[UserFulfilledObligations] {
 
-  private val DB_TTL_IN_SEC = 100
+  private val DB_TTL_IN_SEC: Long = 100
 
   private val mockAppConfig = mock[AppConfig]
   when(mockAppConfig.dbTimeToLiveInSeconds) thenReturn DB_TTL_IN_SEC
 
-  protected override val repository = new UserFulfilledObligationsRepository(
+  protected override val repository: UserFulfilledObligationsRepository = new UserFulfilledObligationsRepository(
     mongoComponent = mongoComponent,
     appConfig = mockAppConfig
   )

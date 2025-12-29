@@ -16,14 +16,14 @@
 
 package uk.gov.hmrc.alcoholdutyaccount.base
 
+import org.scalatest.Suite
 import play.api.http.Status.{BAD_REQUEST, INTERNAL_SERVER_ERROR, NOT_FOUND, OK}
 import play.api.libs.json.Json
 import uk.gov.hmrc.alcoholdutyaccount.common.{TestData, WireMockHelper}
-import uk.gov.hmrc.alcoholdutyaccount.config.AppConfig
 import uk.gov.hmrc.alcoholdutyaccount.models.hods.{ObligationData, Open}
 
-trait ObligationDataStubs extends WireMockHelper with TestData { ISpecBase =>
-  val config: AppConfig
+trait ObligationDataStubs extends WireMockHelper with TestData { 
+  this: ISpecBase with Suite =>
 
   private def url(appaId: String): String = config.obligationDataUrl(appaId)
 

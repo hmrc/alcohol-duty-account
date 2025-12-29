@@ -16,13 +16,13 @@
 
 package uk.gov.hmrc.alcoholdutyaccount.service
 
-import org.mockito.ArgumentMatchersSugar.*
-import org.mockito.cats.IdiomaticMockitoCats.StubbingOpsCats
+import org.mockito.ArgumentMatchers.any
+import org.mockito.Mockito.when
 import uk.gov.hmrc.alcoholdutyaccount.base.SpecBase
 import uk.gov.hmrc.alcoholdutyaccount.common.TestData
 import uk.gov.hmrc.alcoholdutyaccount.connectors.{FinancialDataConnector, ObligationDataConnector, SubscriptionSummaryConnector}
-import uk.gov.hmrc.alcoholdutyaccount.models._
-import uk.gov.hmrc.alcoholdutyaccount.models.hods._
+import uk.gov.hmrc.alcoholdutyaccount.models.*
+import uk.gov.hmrc.alcoholdutyaccount.models.hods.*
 import uk.gov.hmrc.alcoholdutyaccount.models.subscription.ApprovalStatus.{Approved, DeRegistered, Insolvent, Revoked, SmallCiderProducer}
 import uk.gov.hmrc.alcoholdutyaccount.models.subscription.ContactPreferenceForBTA.Digital
 import uk.gov.hmrc.alcoholdutyaccount.models.subscription.{AdrSubscriptionSummary, AlcoholRegime, ApprovalStatus}
@@ -455,7 +455,7 @@ class AlcoholDutyServiceSpec extends SpecBase {
 
     "getReturnDetails must" - {
       "return None if the obligationDataConnector returns an error" in new SetUp {
-        when(obligationDataConnector.getOpenObligations(*)(*))
+        when(obligationDataConnector.getOpenObligations(any())(any()))
           .thenReturn(Future.successful(Left(ErrorResponse(NOT_FOUND, ""))))
 
         val result = service.getReturnDetails(appaId)
@@ -467,7 +467,7 @@ class AlcoholDutyServiceSpec extends SpecBase {
 
       "return a Returns object if the obligationDataConnector returns an obligation" in new SetUp {
         val obligationDataOneDue = ObligationData(obligations = Seq.empty)
-        when(obligationDataConnector.getOpenObligations(*)(*))
+        when(obligationDataConnector.getOpenObligations(any())(any()))
           .thenReturn(Future.successful(Right(obligationDataOneDue)))
 
         service.getReturnDetails(appaId).onComplete { result =>
@@ -478,7 +478,7 @@ class AlcoholDutyServiceSpec extends SpecBase {
 
     "getPaymentInformation must" - {
       "return None if the financialDataConnector returns an error" in new SetUp {
-        when(financialDataConnector.getOnlyOpenFinancialData(*)(*))
+        when(financialDataConnector.getOnlyOpenFinancialData(any())(any()))
           .thenReturn(Future.successful(Left(ErrorCodes.unexpectedResponse)))
 
         val result = service.getPaymentInformation(appaId)
@@ -489,7 +489,7 @@ class AlcoholDutyServiceSpec extends SpecBase {
       }
 
       "return a empty Payments object if the financialDataConnector returns NOT_FOUND" in new SetUp {
-        when(financialDataConnector.getOnlyOpenFinancialData(*)(*))
+        when(financialDataConnector.getOnlyOpenFinancialData(any())(any()))
           .thenReturn(Future.successful(Left(ErrorCodes.entityNotFound)))
 
         service.getPaymentInformation(appaId).onComplete { result =>
@@ -498,7 +498,7 @@ class AlcoholDutyServiceSpec extends SpecBase {
       }
 
       "return a Payments object if the financialDataConnector returns a Document" in new SetUp {
-        when(financialDataConnector.getOnlyOpenFinancialData(*)(*))
+        when(financialDataConnector.getOnlyOpenFinancialData(any())(any()))
           .thenReturn(Future.successful(Right(financialDocumentWithSingleSapDocumentNo)))
 
         service.getPaymentInformation(appaId).onComplete { result =>
@@ -507,7 +507,7 @@ class AlcoholDutyServiceSpec extends SpecBase {
       }
 
       "filter any overpayments that are missing contractObjectType" in new SetUp {
-        when(financialDataConnector.getOnlyOpenFinancialData(*)(*))
+        when(financialDataConnector.getOnlyOpenFinancialData(any())(any()))
           .thenReturn(Future.successful(Right(singleOverpaymentNoContractObjectType)))
 
         service.getPaymentInformation(appaId).onComplete { result =>
@@ -516,7 +516,7 @@ class AlcoholDutyServiceSpec extends SpecBase {
       }
 
       "filter any overpayments that are not of contractObjectType ZADP" in new SetUp {
-        when(financialDataConnector.getOnlyOpenFinancialData(*)(*))
+        when(financialDataConnector.getOnlyOpenFinancialData(any())(any()))
           .thenReturn(Future.successful(Right(singleOverpaymentNotZADP)))
 
         service.getPaymentInformation(appaId).onComplete { result =>
@@ -533,10 +533,11 @@ class AlcoholDutyServiceSpec extends SpecBase {
             smallciderFlag = false,
             approvalStatus = hods.Approved,
             insolvencyFlag = false,
-            paperlessReference = Some(true),
+            paperlessReference = true,
             bouncedEmailFlag = Some(false)
           )
-          subscriptionSummaryConnector.getSubscriptionSummary(*)(*) returnsF Right(subscriptionSummary)
+          when(subscriptionSummaryConnector.getSubscriptionSummary(any())(any()))
+            .thenReturn(Future.successful(Right(subscriptionSummary)))
 
           val obligationDataOneDue = ObligationData(obligations =
             Seq(
@@ -554,10 +555,10 @@ class AlcoholDutyServiceSpec extends SpecBase {
               )
             )
           )
-          when(obligationDataConnector.getOpenObligations(*)(*))
+          when(obligationDataConnector.getOpenObligations(any())(any()))
             .thenReturn(Future.successful(Right(obligationDataOneDue)))
 
-          when(financialDataConnector.getOnlyOpenFinancialData(*)(*))
+          when(financialDataConnector.getOnlyOpenFinancialData(any())(any()))
             .thenReturn(Future.successful(Right(financialDocumentWithSingleSapDocumentNo)))
 
           whenReady(service.getAlcoholDutyCardData(appaId).value) { result =>
@@ -583,10 +584,11 @@ class AlcoholDutyServiceSpec extends SpecBase {
             smallciderFlag = false,
             approvalStatus = hods.Approved,
             insolvencyFlag = true,
-            paperlessReference = Some(true),
+            paperlessReference = true,
             bouncedEmailFlag = Some(false)
           )
-          subscriptionSummaryConnector.getSubscriptionSummary(*)(*) returnsF Right(subscriptionSummary)
+          when(subscriptionSummaryConnector.getSubscriptionSummary(any())(any()))
+            .thenReturn(Future.successful(Right(subscriptionSummary)))
 
           val obligationDataOneDue = ObligationData(obligations =
             Seq(
@@ -604,10 +606,10 @@ class AlcoholDutyServiceSpec extends SpecBase {
               )
             )
           )
-          when(obligationDataConnector.getOpenObligations(*)(*))
+          when(obligationDataConnector.getOpenObligations(any())(any()))
             .thenReturn(Future.successful(Right(obligationDataOneDue)))
 
-          when(financialDataConnector.getOnlyOpenFinancialData(*)(*))
+          when(financialDataConnector.getOnlyOpenFinancialData(any())(any()))
             .thenReturn(Future.successful(Right(financialDocumentWithSingleSapDocumentNo)))
 
           whenReady(service.getAlcoholDutyCardData(appaId).value) { result =>
@@ -647,15 +649,16 @@ class AlcoholDutyServiceSpec extends SpecBase {
           smallciderFlag = false,
           approvalStatus = hods.Approved,
           insolvencyFlag = false,
-          paperlessReference = Some(true),
+          paperlessReference = true,
           bouncedEmailFlag = Some(false)
         )
-        subscriptionSummaryConnector.getSubscriptionSummary(*)(*) returnsF Right(subscriptionSummary)
+        when(subscriptionSummaryConnector.getSubscriptionSummary(any())(any()))
+          .thenReturn(Future.successful(Right(subscriptionSummary)))
 
-        when(obligationDataConnector.getOpenObligations(*)(*))
+        when(obligationDataConnector.getOpenObligations(any())(any()))
           .thenReturn(Future.successful(Left(ErrorResponse(BAD_REQUEST, ""))))
 
-        when(financialDataConnector.getOnlyOpenFinancialData(*)(*))
+        when(financialDataConnector.getOnlyOpenFinancialData(any())(any()))
           .thenReturn(Future.successful(Right(financialDocumentWithSingleSapDocumentNo)))
 
         whenReady(service.getAlcoholDutyCardData(appaId).value) { result =>
@@ -681,10 +684,11 @@ class AlcoholDutyServiceSpec extends SpecBase {
           smallciderFlag = false,
           approvalStatus = hods.Approved,
           insolvencyFlag = false,
-          paperlessReference = Some(true),
+          paperlessReference = true,
           bouncedEmailFlag = Some(false)
         )
-        subscriptionSummaryConnector.getSubscriptionSummary(*)(*) returnsF Right(subscriptionSummary)
+        when(subscriptionSummaryConnector.getSubscriptionSummary(any())(any()))
+          .thenReturn(Future.successful(Right(subscriptionSummary)))
 
         val obligationDataOneDue = ObligationData(obligations =
           Seq(
@@ -702,10 +706,10 @@ class AlcoholDutyServiceSpec extends SpecBase {
             )
           )
         )
-        when(obligationDataConnector.getOpenObligations(*)(*))
+        when(obligationDataConnector.getOpenObligations(any())(any()))
           .thenReturn(Future.successful(Right(obligationDataOneDue)))
 
-        when(financialDataConnector.getOnlyOpenFinancialData(*)(*))
+        when(financialDataConnector.getOnlyOpenFinancialData(any())(any()))
           .thenReturn(Future.successful(Left(ErrorCodes.unexpectedResponse)))
 
         whenReady(service.getAlcoholDutyCardData(appaId).value) { result =>
@@ -732,15 +736,16 @@ class AlcoholDutyServiceSpec extends SpecBase {
             smallciderFlag = false,
             approvalStatus = hods.Approved,
             insolvencyFlag = false,
-            paperlessReference = Some(true),
+            paperlessReference = true,
             bouncedEmailFlag = Some(false)
           )
-          subscriptionSummaryConnector.getSubscriptionSummary(*)(*) returnsF Right(subscriptionSummary)
+          when(subscriptionSummaryConnector.getSubscriptionSummary(any())(any()))
+            .thenReturn(Future.successful(Right(subscriptionSummary)))
 
-          when(obligationDataConnector.getOpenObligations(*)(*))
+          when(obligationDataConnector.getOpenObligations(any())(any()))
             .thenReturn(Future.successful(Left(ErrorResponse(BAD_REQUEST, ""))))
 
-          when(financialDataConnector.getOnlyOpenFinancialData(*)(*))
+          when(financialDataConnector.getOnlyOpenFinancialData(any())(any()))
             .thenReturn(Future.successful(Left(ErrorCodes.unexpectedResponse)))
 
           whenReady(service.getAlcoholDutyCardData(appaId).value) { result =>
@@ -768,16 +773,17 @@ class AlcoholDutyServiceSpec extends SpecBase {
               smallciderFlag = false,
               approvalStatus = hodsApprovalStatus,
               insolvencyFlag = false,
-              paperlessReference = Some(true),
+              paperlessReference = true,
               bouncedEmailFlag = Some(false)
             )
-            subscriptionSummaryConnector.getSubscriptionSummary(*)(*) returnsF Right(subscriptionSummary)
+            when(subscriptionSummaryConnector.getSubscriptionSummary(any())(any()))
+              .thenReturn(Future.successful(Right(subscriptionSummary)))
 
             val adrSubscriptionSummary = AdrSubscriptionSummary(
               approvalStatus = approvalStatus,
               regimes = Set(AlcoholRegime.Beer),
-              contactPreference = Some(Digital),
-              emailBounced = Some(false)
+              contactPreference = Digital,
+              emailBounced = false
             )
 
             whenReady(service.getAlcoholDutyCardData(appaId).value) { result =>
@@ -794,16 +800,17 @@ class AlcoholDutyServiceSpec extends SpecBase {
           smallciderFlag = true,
           approvalStatus = hods.Approved,
           insolvencyFlag = false,
-          paperlessReference = Some(true),
+          paperlessReference = true,
           bouncedEmailFlag = Some(false)
         )
-        subscriptionSummaryConnector.getSubscriptionSummary(*)(*) returnsF Right(subscriptionSummary)
+        when(subscriptionSummaryConnector.getSubscriptionSummary(any())(any()))
+          .thenReturn(Future.successful(Right(subscriptionSummary)))
 
         val adrSubscriptionSummary = AdrSubscriptionSummary(
           approvalStatus = SmallCiderProducer,
           regimes = Set(AlcoholRegime.Beer),
-          contactPreference = Some(Digital),
-          emailBounced = Some(false)
+          contactPreference = Digital,
+          emailBounced = false
         )
 
         whenReady(service.getAlcoholDutyCardData(appaId).value) { result =>

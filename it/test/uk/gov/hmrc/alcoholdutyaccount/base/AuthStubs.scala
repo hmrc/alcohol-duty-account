@@ -17,13 +17,16 @@
 package uk.gov.hmrc.alcoholdutyaccount.base
 
 import play.api.http.Status.OK
+import org.scalatest.Suite
 import uk.gov.hmrc.alcoholdutyaccount.common.WireMockHelper
 
 trait AuthStubs extends WireMockHelper {
+  this: Suite =>
+  
   val authUrl            = "/auth/authorise"
   val testAuthInternalId = "internalId"
 
-  def authOKResponse(appaId: String) =
+  def authOKResponse(appaId: String): String =
     s"""|  {
         |    "authorisedEnrolments" : [ {
         |      "key" : "HMRC-AD-ORG",

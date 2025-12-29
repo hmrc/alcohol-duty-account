@@ -46,16 +46,14 @@ This endpoint clears all data in the user fulfilled obligations (i.e. completed 
 ### Integration tests
 
 > `sbt it/test`
-## Scalafmt and Scalastyle
+
+## Scalafmt
 
 To check if all the scala files in the project are formatted correctly:
 > `sbt scalafmtCheckAll`
 
 To format all the scala files in the project correctly:
 > `sbt scalafmtAll`
-
-To check if there are any scalastyle errors, warnings or infos:
-> `sbt scalastyle`
 
 ### All tests and checks
 This is an sbt command alias specific to this project. It will run a scala format

@@ -57,5 +57,5 @@ object UserHistoricPayments {
       (__ \ "_id").format[String] and
         (__ \ "historicPaymentsData").format[Seq[HistoricPayments]] and
         (__ \ "createdAt").format(MongoJavatimeFormats.instantFormat)
-    )(UserHistoricPayments.apply, unlift(UserHistoricPayments.unapply))
+    )(UserHistoricPayments.apply, o => Tuple.fromProductTyped(o))
 }

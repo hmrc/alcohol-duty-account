@@ -63,7 +63,7 @@ class ObligationDataConnector @Inject() (
       delay = config.retryAttemptsDelay
     ).recoverWith { error =>
       logger.error(
-        s"An exception was returned while trying to fetch obligation data for appaId $appaId: $error"
+        s"[ObligationDataConnector] [getObligationDetails] An exception was returned while trying to fetch obligation data for appaId $appaId: $error"
       )
       Future.successful(Left(ErrorCodes.unexpectedResponse))
     }
@@ -77,7 +77,9 @@ class ObligationDataConnector @Inject() (
         HeaderNames.authorisation -> s"Bearer ${config.obligationDataToken}",
         "Environment"             -> config.obligationDataEnv
       )
-      logger.info(s"Fetching all open obligation data for appaId $appaId")
+      logger.info(
+        s"[ObligationDataConnector] [getObligationDetails] Fetching all open obligation data for appaId $appaId"
+      )
 
       httpClient
         .get(url"${config.obligationDataUrl(appaId)}?$queryParams")
@@ -90,20 +92,31 @@ class ObligationDataConnector @Inject() (
                 response.json.as[ObligationData]
               } match {
                 case Success(doc)       =>
-                  logger.info(s"Retrieved obligation data for appaId $appaId")
+                  logger.info(
+                    s"[ObligationDataConnector] [getObligationDetails] Retrieved obligation data for appaId $appaId"
+                  )
                   Future.successful(Right(filterOutFutureObligations(doc)))
                 case Failure(exception) =>
-                  logger.error(s"Unable to parse obligation data for appaId $appaId", exception)
+                  logger.error(
+                    s"[ObligationDataConnector] [getObligationDetails] Unable to parse obligation data for appaId $appaId",
+                    exception
+                  )
                   Future.successful(Left(ErrorResponse(INTERNAL_SERVER_ERROR, "Unable to parse obligation data")))
               }
             case NOT_FOUND            =>
-              logger.info(s"No obligation data found for appaId $appaId")
+              logger.info(
+                s"[ObligationDataConnector] [getObligationDetails] No obligation data found for appaId $appaId"
+              )
               Future.successful(Right(ObligationData.noObligations))
             case BAD_REQUEST          =>
-              logger.warn(s"Bad request sent to get obligation for appaId $appaId")
+              logger.warn(
+                s"[ObligationDataConnector] [getObligationDetails] Bad request sent to get obligation for appaId $appaId"
+              )
               Future.successful(Left(ErrorResponse(BAD_REQUEST, "Bad request")))
             case UNPROCESSABLE_ENTITY =>
-              logger.warn(s"Obligation data request unprocessable for appaId $appaId")
+              logger.warn(
+                s"[ObligationDataConnector] [getObligationDetails] Obligation data request unprocessable for appaId $appaId"
+              )
               Future.successful(Left(ErrorResponse(UNPROCESSABLE_ENTITY, "Unprocessable entity")))
             // Retry and log on final fail for the following transient errors
             case BAD_GATEWAY          =>
@@ -118,7 +131,7 @@ class ObligationDataConnector @Inject() (
         }
     }
 
-  private val openQueryParams: Seq[(String, String)]                    =
+  private val openQueryParams: Seq[(String, String)] =
     Seq("status" -> Open.value)
 
   private def getFulfilledQueryParams(year: Int): Seq[(String, String)] =

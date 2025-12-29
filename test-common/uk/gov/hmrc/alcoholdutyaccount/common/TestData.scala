@@ -54,7 +54,7 @@ trait TestData extends ModelGenerators {
     smallciderFlag = false,
     approvalStatus = Approved,
     insolvencyFlag = false,
-    paperlessReference = Some(true),
+    paperlessReference = true,
     bouncedEmailFlag = Some(false)
   )
 
@@ -800,8 +800,8 @@ trait TestData extends ModelGenerators {
       AlcoholRegime.Spirits,
       AlcoholRegime.OtherFermentedProduct
     ),
-    contactPreference = Some(Digital),
-    emailBounced = Some(false)
+    contactPreference = Digital,
+    emailBounced = false
   )
 
   val adrObligationDetails = new AdrObligationData(

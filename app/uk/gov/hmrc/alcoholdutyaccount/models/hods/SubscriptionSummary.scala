@@ -82,7 +82,7 @@ final case class SubscriptionSummary(
   smallciderFlag: Boolean,
   approvalStatus: ApprovalStatus,
   insolvencyFlag: Boolean,
-  paperlessReference: Option[Boolean],
+  paperlessReference: Boolean,
   bouncedEmailFlag: Option[Boolean]
 )
 

@@ -89,53 +89,37 @@ class AdrSubscriptionSummarySpec extends SpecBase {
       "must return a AdrSubscriptionSummary with digital preference given a SubscriptionSummary with paperlessReference=true" in {
         val adrSubscriptionSummary = AdrSubscriptionSummary.fromSubscriptionSummary(approvedSubscriptionSummary)
 
-        adrSubscriptionSummary.map(_.contactPreference) mustBe Right(Some(Digital))
+        adrSubscriptionSummary.map(_.contactPreference) mustBe Right(Digital)
       }
 
       "must return a AdrSubscriptionSummary with paper preference given a SubscriptionSummary with paperlessReference=false" in {
         val adrSubscriptionSummary = AdrSubscriptionSummary.fromSubscriptionSummary(
-          approvedSubscriptionSummary.copy(paperlessReference = Some(false), bouncedEmailFlag = Some(true))
+          approvedSubscriptionSummary.copy(paperlessReference = false)
         )
 
-        adrSubscriptionSummary.map(_.contactPreference) mustBe Right(Some(Paper))
+        adrSubscriptionSummary.map(_.contactPreference) mustBe Right(Paper)
       }
 
-      "must return a AdrSubscriptionSummary with missing contact preference given a SubscriptionSummary without ECP fields" in {
+      "must return a AdrSubscriptionSummary with emailBounced=true given a SubscriptionSummary with bouncedEmailFlag=true" in {
         val adrSubscriptionSummary = AdrSubscriptionSummary.fromSubscriptionSummary(
-          approvedSubscriptionSummary.copy(paperlessReference = None, bouncedEmailFlag = None)
+          approvedSubscriptionSummary.copy(paperlessReference = false, bouncedEmailFlag = Some(true))
         )
 
-        adrSubscriptionSummary.map(_.contactPreference) mustBe Right(None)
+        adrSubscriptionSummary.map(_.emailBounced) mustBe Right(true)
       }
 
-      "must return a AdrSubscriptionSummary with emailBounced=true given a SubscriptionSummary with paperlessReference defined and bouncedEmailFlag=true" in {
-        val adrSubscriptionSummary = AdrSubscriptionSummary.fromSubscriptionSummary(
-          approvedSubscriptionSummary.copy(paperlessReference = Some(false), bouncedEmailFlag = Some(true))
-        )
-
-        adrSubscriptionSummary.map(_.emailBounced) mustBe Right(Some(true))
-      }
-
-      "must return a AdrSubscriptionSummary with emailBounced=false given a SubscriptionSummary with paperlessReference defined and bouncedEmailFlag=false" in {
+      "must return a AdrSubscriptionSummary with emailBounced=false given a SubscriptionSummary with bouncedEmailFlag=false" in {
         val adrSubscriptionSummary = AdrSubscriptionSummary.fromSubscriptionSummary(approvedSubscriptionSummary)
 
-        adrSubscriptionSummary.map(_.emailBounced) mustBe Right(Some(false))
+        adrSubscriptionSummary.map(_.emailBounced) mustBe Right(false)
       }
 
-      "must return a AdrSubscriptionSummary with emailBounced=false given a SubscriptionSummary with paperlessReference defined and no bouncedEmailFlag" in {
+      "must return a AdrSubscriptionSummary with emailBounced=false given a SubscriptionSummary with no bouncedEmailFlag" in {
         val adrSubscriptionSummary = AdrSubscriptionSummary.fromSubscriptionSummary(
-          approvedSubscriptionSummary.copy(paperlessReference = Some(false), bouncedEmailFlag = None)
+          approvedSubscriptionSummary.copy(bouncedEmailFlag = None)
         )
 
-        adrSubscriptionSummary.map(_.emailBounced) mustBe Right(Some(false))
-      }
-
-      "must return a AdrSubscriptionSummary with missing emailBounced given a SubscriptionSummary without ECP fields" in {
-        val adrSubscriptionSummary = AdrSubscriptionSummary.fromSubscriptionSummary(
-          approvedSubscriptionSummary.copy(paperlessReference = None, bouncedEmailFlag = None)
-        )
-
-        adrSubscriptionSummary.map(_.emailBounced) mustBe Right(None)
+        adrSubscriptionSummary.map(_.emailBounced) mustBe Right(false)
       }
 
       "must return an INTERNAL_SERVER_ERROR if no alcohol types were approved" in {

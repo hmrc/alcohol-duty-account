@@ -17,16 +17,17 @@
 package uk.gov.hmrc.alcoholdutyaccount.controllers
 
 import cats.data.EitherT
-import org.mockito.ArgumentMatchersSugar.{*, eqTo}
+import org.mockito.ArgumentMatchers.{any, eq as eqTo}
+import org.mockito.Mockito.{never, times, verify, when}
 import play.api.test.Helpers
-import org.mockito.cats.IdiomaticMockitoCats.StubbingOpsCats
 import play.api.libs.json.Json
 import play.api.mvc.Result
 import uk.gov.hmrc.alcoholdutyaccount.base.SpecBase
 import uk.gov.hmrc.alcoholdutyaccount.config.AppConfig
 import uk.gov.hmrc.alcoholdutyaccount.models.AlcoholDutyCardData
 import uk.gov.hmrc.alcoholdutyaccount.models.subscription.ApprovalStatus.Approved
-import uk.gov.hmrc.alcoholdutyaccount.models._
+import uk.gov.hmrc.alcoholdutyaccount.models.*
+import uk.gov.hmrc.alcoholdutyaccount.models.subscription.AdrSubscriptionSummary
 import uk.gov.hmrc.alcoholdutyaccount.models.subscription.ContactPreferenceForBTA.Digital
 import uk.gov.hmrc.alcoholdutyaccount.service.{AlcoholDutyService, FulfilledObligationsRepositoryService}
 import uk.gov.hmrc.play.bootstrap.http.ErrorResponse
@@ -37,7 +38,8 @@ class AlcoholDutyControllerSpec extends SpecBase {
 
   "GET /subscriptionSummary" - {
     "return OK when is called with a valid appaId" in new SetUp {
-      alcoholDutyService.getSubscriptionSummary(eqTo(appaId))(*) returnsF approvedAdrSubscriptionSummary
+      when(alcoholDutyService.getSubscriptionSummary(eqTo(appaId))(any())) thenReturn
+        EitherT.rightT[Future, AdrSubscriptionSummary](approvedAdrSubscriptionSummary)
 
       val result: Future[Result] = controller.subscriptionSummary(appaId)(fakeRequest)
       status(result)        mustBe OK
@@ -45,21 +47,20 @@ class AlcoholDutyControllerSpec extends SpecBase {
     }
 
     "return any error returned from the service" in new SetUp {
-      when(alcoholDutyService.getSubscriptionSummary(*)(*))
-        .thenReturn(EitherT.fromEither(Left(ErrorResponse(INTERNAL_SERVER_ERROR, "An error occurred"))))
+      when(alcoholDutyService.getSubscriptionSummary(any())(any())) thenReturn
+        EitherT.leftT[Future, ErrorResponse](ErrorResponse(INTERNAL_SERVER_ERROR, "An error occurred"))
 
       val result: Future[Result] = controller.subscriptionSummary(appaId)(fakeRequest)
       status(result) mustBe INTERNAL_SERVER_ERROR
 
-      verify(alcoholDutyService, times(1)).getSubscriptionSummary(*)(*)
+      verify(alcoholDutyService, times(1)).getSubscriptionSummary(any())(any())
     }
   }
 
   "GET /openObligationDetails" - {
     "return OK when is called with a valid appaId" in new SetUp {
-      alcoholDutyService.getOpenObligationsForPeriod(eqTo(appaId), eqTo(periodKey))(
-        *
-      ) returnsF adrObligationDetails
+      when(alcoholDutyService.getOpenObligationsForPeriod(eqTo(appaId), eqTo(periodKey))(any())) thenReturn
+        EitherT.rightT[Future, AdrObligationData](adrObligationDetails)
 
       val result: Future[Result] = controller.openObligationDetails(appaId, periodKey)(fakeRequest)
       status(result)        mustBe OK
@@ -67,28 +68,30 @@ class AlcoholDutyControllerSpec extends SpecBase {
     }
 
     "return BAD_REQUEST when periodKey is invalid" in new SetUp {
-      alcoholDutyService.getOpenObligationsForPeriod(*, *)(*) returnsF adrObligationDetails
+      when(alcoholDutyService.getOpenObligationsForPeriod(any(), any())(any())) thenReturn
+        EitherT.rightT[Future, AdrObligationData](adrObligationDetails)
 
       val result: Future[Result] = controller.openObligationDetails(appaId, badPeriodKey)(fakeRequest)
       status(result) mustBe BAD_REQUEST
 
-      verify(alcoholDutyService, never).getOpenObligationsForPeriod(*, *)(*)
+      verify(alcoholDutyService, never).getOpenObligationsForPeriod(any(), any())(any())
     }
 
     "return any error returned from the service" in new SetUp {
-      when(alcoholDutyService.getOpenObligationsForPeriod(*, *)(*))
-        .thenReturn(EitherT.fromEither(Left(ErrorResponse(INTERNAL_SERVER_ERROR, "An error occurred"))))
+      when(alcoholDutyService.getOpenObligationsForPeriod(any(), any())(any())) thenReturn
+        EitherT.leftT[Future, ErrorResponse](ErrorResponse(INTERNAL_SERVER_ERROR, "An error occurred"))
 
       val result: Future[Result] = controller.openObligationDetails(appaId, periodKey)(fakeRequest)
       status(result) mustBe INTERNAL_SERVER_ERROR
 
-      verify(alcoholDutyService, times(1)).getOpenObligationsForPeriod(*, *)(*)
+      verify(alcoholDutyService, times(1)).getOpenObligationsForPeriod(any(), any())(any())
     }
   }
 
   "GET /getOpenObligations" - {
     "return OK when is called with a valid appaId" in new SetUp {
-      alcoholDutyService.getOpenObligations(eqTo(appaId))(*) returnsF adrMultipleOpenData
+      when(alcoholDutyService.getOpenObligations(eqTo(appaId))(any())) thenReturn
+        EitherT.rightT[Future, Seq[AdrObligationData]](adrMultipleOpenData)
 
       val result: Future[Result] = controller.getOpenObligations(appaId)(fakeRequest)
       status(result)        mustBe OK
@@ -96,13 +99,13 @@ class AlcoholDutyControllerSpec extends SpecBase {
     }
 
     "return any error returned from the service" in new SetUp {
-      when(alcoholDutyService.getOpenObligations(*)(*))
-        .thenReturn(EitherT.fromEither(Left(ErrorResponse(INTERNAL_SERVER_ERROR, "An error occurred"))))
+      when(alcoholDutyService.getOpenObligations(any())(any())) thenReturn
+        EitherT.leftT[Future, ErrorResponse](ErrorResponse(INTERNAL_SERVER_ERROR, "An error occurred"))
 
       val result: Future[Result] = controller.getOpenObligations(appaId)(fakeRequest)
       status(result) mustBe INTERNAL_SERVER_ERROR
 
-      verify(alcoholDutyService, times(1)).getOpenObligations(*)(*)
+      verify(alcoholDutyService, times(1)).getOpenObligations(any())(any())
     }
   }
 
@@ -110,7 +113,7 @@ class AlcoholDutyControllerSpec extends SpecBase {
     "return OK when the service returns success (minimum year is within the last 7 years)" in new SetUp {
       when(appConfig.obligationDataMinimumYear) thenReturn 2024
       when(
-        fulfilledObligationsRepositoryService.getAllYearsFulfilledObligations(eqTo(appaId), *, *)(*)
+        fulfilledObligationsRepositoryService.getAllYearsFulfilledObligations(eqTo(appaId), any(), any())(any())
       ) thenReturn Future.successful(Right(fulfilledObligationsData))
 
       val result: Future[Result] = controller.getFulfilledObligations(appaId)(fakeRequest)
@@ -118,13 +121,13 @@ class AlcoholDutyControllerSpec extends SpecBase {
       contentAsJson(result) mustBe Json.toJson(fulfilledObligationsData)
 
       verify(fulfilledObligationsRepositoryService, times(1))
-        .getAllYearsFulfilledObligations(eqTo(appaId), eqTo(2024), eqTo(2025))(*)
+        .getAllYearsFulfilledObligations(eqTo(appaId), eqTo(2024), eqTo(2025))(any())
     }
 
     "return OK when the service returns success (minimum year is not within the last 7 years)" in new SetUp {
       when(appConfig.obligationDataMinimumYear) thenReturn 2015
       when(
-        fulfilledObligationsRepositoryService.getAllYearsFulfilledObligations(eqTo(appaId), *, *)(*)
+        fulfilledObligationsRepositoryService.getAllYearsFulfilledObligations(eqTo(appaId), any(), any())(any())
       ) thenReturn Future.successful(Right(fulfilledObligationsData))
 
       val result: Future[Result] = controller.getFulfilledObligations(appaId)(fakeRequest)
@@ -132,27 +135,28 @@ class AlcoholDutyControllerSpec extends SpecBase {
       contentAsJson(result) mustBe Json.toJson(fulfilledObligationsData)
 
       verify(fulfilledObligationsRepositoryService, times(1))
-        .getAllYearsFulfilledObligations(eqTo(appaId), eqTo(2019), eqTo(2025))(*)
+        .getAllYearsFulfilledObligations(eqTo(appaId), eqTo(2019), eqTo(2025))(any())
     }
 
     "return any error returned from the service" in new SetUp {
       when(appConfig.obligationDataMinimumYear) thenReturn 2024
       when(
-        fulfilledObligationsRepositoryService.getAllYearsFulfilledObligations(eqTo(appaId), *, *)(*)
+        fulfilledObligationsRepositoryService.getAllYearsFulfilledObligations(eqTo(appaId), any(), any())(any())
       ) thenReturn Future.successful(Left(ErrorCodes.unexpectedResponse))
 
       val result: Future[Result] = controller.getFulfilledObligations(appaId)(fakeRequest)
       status(result) mustBe INTERNAL_SERVER_ERROR
 
       verify(fulfilledObligationsRepositoryService, times(1))
-        .getAllYearsFulfilledObligations(eqTo(appaId), eqTo(2024), eqTo(2025))(*)
+        .getAllYearsFulfilledObligations(eqTo(appaId), eqTo(2024), eqTo(2025))(any())
     }
   }
 
   "GET /bta-tile-data" - {
     "return 200 when is called with a valid appaId and available" in new SetUp {
-      when(appConfig.btaServiceAvailable).thenReturn(true)
-      alcoholDutyService.getAlcoholDutyCardData(*)(*) returnsF cardData
+      when(appConfig.btaServiceAvailable) thenReturn true
+      when(alcoholDutyService.getAlcoholDutyCardData(any())(any())) thenReturn
+        EitherT.rightT[Future, AlcoholDutyCardData](cardData)
 
       val result: Future[Result] = controller.btaTileData(appaId)(fakeRequest)
       status(result)        mustBe OK
@@ -160,11 +164,12 @@ class AlcoholDutyControllerSpec extends SpecBase {
     }
 
     "return 400 when is called with an invalid appaId" in new SetUp {
-      when(appConfig.btaServiceAvailable).thenReturn(true)
+      when(appConfig.btaServiceAvailable) thenReturn true
 
       val expectedError = ErrorResponse(BAD_REQUEST, "Invalid alcohol duty reference")
 
-      when(alcoholDutyService.getAlcoholDutyCardData(*)(*)).thenReturn(EitherT.fromEither(Left(expectedError)))
+      when(alcoholDutyService.getAlcoholDutyCardData(any())(any())) thenReturn
+        EitherT.leftT[Future, ErrorResponse](expectedError)
 
       val result: Future[Result] = controller.btaTileData(appaId)(fakeRequest)
       status(result)        mustBe BAD_REQUEST
@@ -172,9 +177,10 @@ class AlcoholDutyControllerSpec extends SpecBase {
     }
 
     "return 503 when shuttered" in new SetUp {
-      when(appConfig.btaServiceAvailable).thenReturn(false)
+      when(appConfig.btaServiceAvailable) thenReturn false
 
-      alcoholDutyService.getAlcoholDutyCardData(*)(*) returnsF cardData
+      when(alcoholDutyService.getAlcoholDutyCardData(any())(any())) thenReturn
+        EitherT.rightT[Future, AlcoholDutyCardData](cardData)
 
       val result: Future[Result] = controller.btaTileData(appaId)(fakeRequest)
       status(result)        mustBe SERVICE_UNAVAILABLE

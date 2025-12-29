@@ -22,7 +22,7 @@ import uk.gov.hmrc.alcoholdutyaccount.base.SpecBase
 class SubscriptionSummarySpec extends SpecBase {
 
   "SubscriptionSummary" - {
-    "must be able to to be serialised from the full json" in {
+    "must be able to be deserialised from the full json" in {
 
       val expectedSubscriptionSummarySuccess = SubscriptionSummarySuccess(
         SubscriptionSummary(
@@ -30,7 +30,7 @@ class SubscriptionSummarySpec extends SpecBase {
           smallciderFlag = false,
           approvalStatus = Approved,
           insolvencyFlag = true,
-          paperlessReference = Some(true),
+          paperlessReference = true,
           bouncedEmailFlag = Some(false)
         )
       )
@@ -63,19 +63,59 @@ class SubscriptionSummarySpec extends SpecBase {
       result mustBe Some(expectedSubscriptionSummarySuccess)
     }
 
+    "must be able to be deserialised from the full json with no bouncedEmailFlag" in {
+
+      val expectedSubscriptionSummarySuccess = SubscriptionSummarySuccess(
+        SubscriptionSummary(
+          typeOfAlcoholApprovedFor = allApprovals,
+          smallciderFlag = false,
+          approvalStatus = Approved,
+          insolvencyFlag = true,
+          paperlessReference = false,
+          bouncedEmailFlag = None
+        )
+      )
+
+      val businessName = businessGen.sample.get
+
+      val json =
+        s"""
+           |{   "success": {
+           |        "processingDate":"2024-06-11T15:07:47.838Z",
+           |        "organizationName":"$businessName",
+           |        "typeOfAlcoholApprovedFor": [
+           |            "01",
+           |            "02",
+           |            "03",
+           |            "04",
+           |            "05"
+           |        ],
+           |        "smallciderFlag": "0",
+           |        "paperlessReference":"0",
+           |        "emailAddress":"john.doe@example.com",
+           |        "approvalStatus": "01",
+           |        "insolvencyFlag": "1"
+           |    }
+           |}
+           |""".stripMargin
+
+      val result = Json.parse(json).asOpt[SubscriptionSummarySuccess]
+      result mustBe Some(expectedSubscriptionSummarySuccess)
+    }
+
     Seq(
       (Approved, "01"),
       (DeRegistered, "02"),
       (Revoked, "03")
     ).foreach { case (approvalStatus, approvalCode) =>
-      s"must be able to to be deserialise the approval status $approvalStatus from json" in {
+      s"must be able to deserialise the approval status $approvalStatus from json" in {
 
         val expectedSubscriptionSummary = SubscriptionSummary(
           typeOfAlcoholApprovedFor = Set(Beer),
           smallciderFlag = false,
           approvalStatus = approvalStatus,
           insolvencyFlag = false,
-          paperlessReference = Some(false),
+          paperlessReference = false,
           bouncedEmailFlag = Some(true)
         )
 

@@ -18,21 +18,20 @@ package uk.gov.hmrc.alcoholdutyaccount.base
 
 import org.apache.pekko.actor.ActorSystem
 import org.apache.pekko.stream.Materializer
-import org.mockito.MockitoSugar
 import org.scalacheck.{Arbitrary, Gen}
 import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.must.Matchers
-import org.scalatest.{Status => _, _}
+import org.scalatest.{Status as _, *}
+import org.scalatestplus.mockito.MockitoSugar
 import org.scalatestplus.play.guice.GuiceOneServerPerSuite
-import play.api.http._
+import play.api.http.*
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.mvc.{Result, Results}
-import play.api.test._
+import play.api.test.*
 import play.api.{Application, Mode}
 import uk.gov.hmrc.alcoholdutyaccount.common.TestData
 import uk.gov.hmrc.alcoholdutyaccount.config.AppConfig
-import uk.gov.hmrc.http.test.WireMockSupport
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 
 import scala.concurrent.ExecutionContext.global
@@ -58,7 +57,6 @@ abstract class ISpecBase
     with HttpProtocol
     with HttpVerbs
     with ResultExtractors
-    with WireMockSupport
     with AuthStubs
     with IntegrationPatience
     with TestData
