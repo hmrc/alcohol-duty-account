@@ -556,7 +556,7 @@ class OpenPaymentsServiceSpec extends SpecBase {
       }
 
       "for allocated overpayments (0060)" - {
-        "filters out of the open payments" in new SetUp {
+        "returns an empty list of Open Payments" in new SetUp {
           val testData = twoAllocatedOverpayments
 
           when(mockFinancialDataConnector.getOnlyOpenFinancialData(appaId))
