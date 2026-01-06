@@ -94,14 +94,21 @@ class PaymentsValidator @Inject() () extends Logging {
           )
           Left(ErrorCodes.unexpectedResponse)
         } else {
-          Right(
-            mainTransactionType == financialTransaction.mainTransaction &&
-              maybePeriodKey == financialTransaction.periodKey &&
-              maybeTaxPeriodFrom == financialTransaction.taxPeriodFrom &&
-              maybeTaxPeriodTo == financialTransaction.taxPeriodTo &&
-              maybeChargeReference == financialTransaction.chargeReference &&
-              financialTransaction.items.forall(_.dueDate.fold(false)(_.isEqual(dueDate)))
-          )
+          if (TransactionType.isOverpayment(mainTransactionType)) {
+            Right(
+              mainTransactionType == financialTransaction.mainTransaction &&
+                financialTransaction.items.forall(_.dueDate.fold(false)(_.isEqual(dueDate)))
+            )
+          } else {
+            Right(
+              mainTransactionType == financialTransaction.mainTransaction &&
+                maybePeriodKey == financialTransaction.periodKey &&
+                maybeTaxPeriodFrom == financialTransaction.taxPeriodFrom &&
+                maybeTaxPeriodTo == financialTransaction.taxPeriodTo &&
+                maybeChargeReference == financialTransaction.chargeReference &&
+                financialTransaction.items.forall(_.dueDate.fold(false)(_.isEqual(dueDate)))
+            )
+          }
         }
       )
       .toList

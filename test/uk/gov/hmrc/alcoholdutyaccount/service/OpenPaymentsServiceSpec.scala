@@ -532,10 +532,9 @@ class OpenPaymentsServiceSpec extends SpecBase {
         }
       }
 
-      "for overpayments (0060)" - {
-
-        "if all period keys are present, but do not match on all document line items" in new SetUp {
-          val testData = overpaymentsSameSAPDocumentDifferentPeriods
+      "for unallocated overpayments (0060)" - {
+        "renders the summed total" in new SetUp {
+          val testData = twoUnallocatedOverpayments
 
           when(mockFinancialDataConnector.getOnlyOpenFinancialData(appaId))
             .thenReturn(Future.successful(Right(testData)))
@@ -546,11 +545,31 @@ class OpenPaymentsServiceSpec extends SpecBase {
                 List(),
                 0,
                 List(
-                  UnallocatedPayment(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).dueDate(), -5000),
-                  UnallocatedPayment(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).dueDate(), -2000)
+                  UnallocatedPayment(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).dueDate(), -7000)
                 ),
                 -7000,
                 -7000
+              )
+            )
+          }
+        }
+      }
+
+      "for allocated overpayments (0060)" - {
+        "filters out of the open payments" in new SetUp {
+          val testData = twoAllocatedOverpayments
+
+          when(mockFinancialDataConnector.getOnlyOpenFinancialData(appaId))
+            .thenReturn(Future.successful(Right(testData)))
+
+          whenReady(paymentsService.getOpenPayments(appaId).value) {
+            _ mustBe Right(
+              OpenPayments(
+                List(),
+                0,
+                List(),
+                -0,
+                -0
               )
             )
           }
@@ -687,8 +706,8 @@ class OpenPaymentsServiceSpec extends SpecBase {
     val singlePartiallyOutstandingReturnOpen      = singlePartiallyOutstandingReturn(onlyOpenItems = true)
     val twoLineItemPartiallyOutstandingReturnOpen = twoLineItemPartiallyOutstandingReturn(onlyOpenItems = true)
 
-    val overpaymentsSameSAPDocumentDifferentPeriods =
-      twoSeparateOverpaymentsSameSAPDocDifferentPeriods(onlyOpenItems = true)
+    val twoUnallocatedOverpayments = twoUnallocatedSeparateOverpayments(onlyOpenItems = true)
+    val twoAllocatedOverpayments   = twoAllocatedSeparateOverpayments(onlyOpenItems = true)
 
     val singleOverpaymentAmountMismatch = singleOverpayment.copy(financialTransactions =
       singleOverpayment.financialTransactions.map(_.copy(outstandingAmount = Some(BigDecimal("-1000"))))
