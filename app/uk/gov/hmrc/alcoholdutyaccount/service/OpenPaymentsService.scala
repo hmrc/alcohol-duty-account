@@ -43,52 +43,37 @@ class OpenPaymentsService @Inject() (
   )(implicit hc: HeaderCarrier): EitherT[Future, ErrorResponse, OpenPayments] =
     for {
       financialTransactionDocument <- EitherT(financialDataConnector.getOnlyOpenFinancialData(appaId))
-      openPayments                 <- extractOpenPayments(financialTransactionDocument)
-      openOverPayments             <- extractUnallocatedOverPayments(financialTransactionDocument)
+      openPayments                 <- extractPayments(filterNonOverpayment(financialTransactionDocument))
+      openOverPayments             <- extractPayments(filterOverpayment(financialTransactionDocument))
     } yield buildOpenPaymentsPayload(openPayments ::: openOverPayments)
 
-  private def extractOpenPayments(
+  private def filterNonOverpayment(
     financialTransactionDocument: FinancialTransactionDocument
-  ): EitherT[Future, ErrorResponse, List[OpenPayment]] =
-    EitherT {
-      Future.successful(
-        financialTransactionDocument.financialTransactions
-          .filter(transaction =>
-            !TransactionType.isOverpayment(
-              transaction.mainTransaction
-            ) &&
-              transaction.outstandingAmount.isDefined
-          )
-          .groupBy(_.sapDocumentNumber)
-          .map { case (sapDocumentNumber, financialTransactionsForDocument) =>
-            financialDataValidator
-              .validateAndGetFinancialTransactionData(
-                sapDocumentNumber,
-                financialTransactionsForDocument
-              )
-              .map {
-                val outstandingAmount = calculateOutstandingAmount(financialTransactionsForDocument)
-                buildOpenPayment(_, outstandingAmount)
-              }
-          }
-          .toList
-          .sequence
+  ): Seq[FinancialTransaction] =
+    financialTransactionDocument.financialTransactions
+      .filter(transaction =>
+        !TransactionType.isOverpayment(
+          transaction.mainTransaction
+        ) &&
+          transaction.outstandingAmount.isDefined
       )
-    }
 
-  private def extractUnallocatedOverPayments(
-    financialTransactionDocument: FinancialTransactionDocument
+  private def filterOverpayment(financialTransactionDocument: FinancialTransactionDocument): Seq[FinancialTransaction] =
+    financialTransactionDocument.financialTransactions
+      .filter(transaction =>
+        TransactionType.isOverpayment(
+          transaction.mainTransaction
+        ) &&
+          transaction.contractObjectType.contains(contractObjectType) &&
+          transaction.clearedAmount.isEmpty
+      )
+
+  private def extractPayments(
+    transactions: Seq[FinancialTransaction]
   ): EitherT[Future, ErrorResponse, List[OpenPayment]] =
     EitherT {
       Future.successful(
-        financialTransactionDocument.financialTransactions
-          .filter(transaction =>
-            TransactionType.isOverpayment(
-              transaction.mainTransaction
-            ) &&
-              transaction.contractObjectType.contains(contractObjectType) &&
-              transaction.clearedAmount.isEmpty
-          )
+        transactions
           .groupBy(_.sapDocumentNumber)
           .map { case (sapDocumentNumber, financialTransactionsForDocument) =>
             financialDataValidator
