@@ -52,6 +52,9 @@ class OpenPaymentsService @Inject() (
     EitherT {
       Future.successful(
         financialTransactionDocument.financialTransactions
+          .filter(transaction => // Ignore payments that are actually cleared
+            TransactionType.isOverpayment(transaction.mainTransaction) || transaction.outstandingAmount.isDefined
+          )
           .filter(transaction => // Ignore overpayments that aren't ZADP
             !TransactionType.isOverpayment(
               transaction.mainTransaction
