@@ -164,6 +164,37 @@ class OpenPaymentsServiceSpec extends SpecBase {
           }
         }
 
+        "must ignore any cleared payments returned despite an API call for only open items" in new SetUp {
+          when(mockFinancialDataConnector.getOnlyOpenFinancialData(appaId))
+            .thenReturn(Future.successful(Right(clearedPaymentsReturnedAsOpen)))
+
+          whenReady(paymentsService.getOpenPayments(appaId).value) {
+            _ mustBe Right(
+              OpenPayments(
+                outstandingPayments = Seq(
+                  OutstandingPayment(
+                    taxPeriodFrom = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).periodFromDate()),
+                    taxPeriodTo = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).periodToDate()),
+                    transactionType = TransactionType.Return,
+                    dueDate = singleFullyOutstandingReturn.financialTransactions.head.items.head.dueDate.get,
+                    chargeReference = singleFullyOutstandingReturn.financialTransactions.head.chargeReference,
+                    remainingAmount = BigDecimal("9000")
+                  )
+                ),
+                totalOutstandingPayments = BigDecimal("9000"),
+                unallocatedPayments = Seq(
+                  UnallocatedPayment(
+                    paymentDate = singleOverpayment.financialTransactions.head.items.head.dueDate.get,
+                    unallocatedAmount = BigDecimal("-9000")
+                  )
+                ),
+                totalUnallocatedPayments = BigDecimal("-9000"),
+                totalOpenPaymentsAmount = BigDecimal("0")
+              )
+            )
+          }
+        }
+
         "must ignore overpayments that have no contract object type" in new SetUp {
           when(mockFinancialDataConnector.getOnlyOpenFinancialData(appaId))
             .thenReturn(Future.successful(Right(singleOverpaymentNoContractObjectType)))
@@ -745,6 +776,37 @@ class OpenPaymentsServiceSpec extends SpecBase {
             transactionType = TransactionType.Overpayment,
             maybeChargeReference = None
           )
+        )
+      )
+
+    val clearedPaymentsReturnedAsOpen: FinancialTransactionDocument =
+      combineFinancialTransactionDocuments(
+        Seq(
+          singleFullyOutstandingReturn,
+          createFinancialDocument(
+            onlyOpenItems = true,
+            sapDocumentNumber = sapDocumentNumberGen.sample.get,
+            originalAmount = BigDecimal("9000"),
+            maybeOutstandingAmount = None,
+            dueDate = ReturnPeriod.fromPeriodKeyOrThrow(periodKey).dueDate(),
+            transactionType = TransactionType.Return,
+            maybePeriodKey = Some(periodKey),
+            maybeTaxPeriodFrom = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).periodFromDate()),
+            maybeTaxPeriodTo = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).periodToDate()),
+            maybeChargeReference = Some(chargeReference)
+          ),
+          createFinancialDocument(
+            onlyOpenItems = true,
+            sapDocumentNumber = sapDocumentNumberGen.sample.get,
+            originalAmount = BigDecimal("50"),
+            maybeOutstandingAmount = None,
+            dueDate = ReturnPeriod.fromPeriodKeyOrThrow(periodKey).dueDate(),
+            transactionType = TransactionType.LPI,
+            maybeTaxPeriodFrom = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).periodFromDate()),
+            maybeTaxPeriodTo = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).periodToDate()),
+            maybeChargeReference = Some(chargeReference)
+          ),
+          singleOverpayment
         )
       )
   }
