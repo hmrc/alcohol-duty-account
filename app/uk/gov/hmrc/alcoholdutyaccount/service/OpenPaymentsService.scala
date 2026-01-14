@@ -65,7 +65,7 @@ class OpenPaymentsService @Inject() (
           transaction.mainTransaction
         ) &&
           transaction.contractObjectType.contains(contractObjectType) &&
-          transaction.clearedAmount.isEmpty
+          transaction.outstandingAmount.isDefined
       )
 
   private def extractPayments(
