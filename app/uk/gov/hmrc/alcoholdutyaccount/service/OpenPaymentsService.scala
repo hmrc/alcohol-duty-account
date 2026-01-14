@@ -44,7 +44,7 @@ class OpenPaymentsService @Inject() (
     for {
       financialTransactionDocument <- EitherT(financialDataConnector.getOnlyOpenFinancialData(appaId))
       openPayments                 <- extractPayments(filterNonOverpayment(financialTransactionDocument))
-      openOverPayments             <- extractPayments(filterOverpayment(financialTransactionDocument))
+      openOverPayments             <- extractOverPayments(filterOverpayment(financialTransactionDocument))
     } yield buildOpenPaymentsPayload(openPayments ::: openOverPayments)
 
   private def filterNonOverpayment(
@@ -76,20 +76,41 @@ class OpenPaymentsService @Inject() (
         transactions
           .groupBy(_.sapDocumentNumber)
           .map { case (sapDocumentNumber, financialTransactionsForDocument) =>
-            financialDataValidator
-              .validateAndGetFinancialTransactionData(
-                sapDocumentNumber,
-                financialTransactionsForDocument
-              )
-              .map {
-                val outstandingAmount = calculateOutstandingAmount(financialTransactionsForDocument)
-                buildOpenPayment(_, outstandingAmount)
-              }
+            validate(sapDocumentNumber, financialTransactionsForDocument)
           }
           .toList
           .sequence
       )
     }
+
+  private def extractOverPayments(
+    transactions: Seq[FinancialTransaction]
+  ): EitherT[Future, ErrorResponse, List[OpenPayment]] =
+    EitherT {
+      Future.successful(
+        transactions
+          .groupBy(x => (x.sapDocumentNumber, x.items.map(i => i.dueDate)))
+          .map { case ((sapDocumentNumber, _), financialTransactionsForDocument) =>
+            validate(sapDocumentNumber, financialTransactionsForDocument)
+          }
+          .toList
+          .sequence
+      )
+    }
+
+  private def validate(
+    sapDocumentNumber: String,
+    financialTransactionsForDocument: Seq[FinancialTransaction]
+  ): Either[ErrorResponse, OpenPayment] =
+    financialDataValidator
+      .validateAndGetFinancialTransactionData(
+        sapDocumentNumber,
+        financialTransactionsForDocument
+      )
+      .map {
+        val outstandingAmount = calculateOutstandingAmount(financialTransactionsForDocument)
+        buildOpenPayment(_, outstandingAmount)
+      }
 
   private def buildOpenPaymentsPayload(openPayments: List[OpenPayment]): OpenPayments = {
     val (outstandingPayments, unallocatedPayments) =
@@ -108,7 +129,7 @@ class OpenPaymentsService @Inject() (
     OpenPayments(
       outstandingPayments = outstandingPayments,
       totalOutstandingPayments = paymentTotals.totalOutstandingPayments,
-      unallocatedPayments = unallocatedPayments,
+      unallocatedPayments = unallocatedPayments.sortBy(_.paymentDate),
       totalUnallocatedPayments = paymentTotals.totalUnallocatedPayments,
       totalOpenPaymentsAmount = paymentTotals.totalOpenPaymentsAmount
     )

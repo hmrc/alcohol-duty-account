@@ -564,24 +564,50 @@ class OpenPaymentsServiceSpec extends SpecBase {
       }
 
       "for unallocated overpayments (0060)" - {
-        "renders the summed total" in new SetUp {
-          val testData = twoUnallocatedOverpayments
+        "for different due dates" - {
+          "groups by due date and renders the separate unallocated payments" in new SetUp {
+            val testData = twoUnallocatedOverpayments
 
-          when(mockFinancialDataConnector.getOnlyOpenFinancialData(appaId))
-            .thenReturn(Future.successful(Right(testData)))
+            when(mockFinancialDataConnector.getOnlyOpenFinancialData(appaId))
+              .thenReturn(Future.successful(Right(testData)))
 
-          whenReady(paymentsService.getOpenPayments(appaId).value) {
-            _ mustBe Right(
-              OpenPayments(
-                List(),
-                0,
-                List(
-                  UnallocatedPayment(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).dueDate(), -7000)
-                ),
-                -7000,
-                -7000
+            whenReady(paymentsService.getOpenPayments(appaId).value) {
+              _ mustBe Right(
+                OpenPayments(
+                  List(),
+                  0,
+                  List(
+                    UnallocatedPayment(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).dueDate().minusMonths(1), -2000),
+                    UnallocatedPayment(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).dueDate(), -5000)
+                  ),
+                  -7000,
+                  -7000
+                )
               )
-            )
+            }
+          }
+        }
+
+        "for the same due dates" - {
+          "groups by due date and renders the summed total" in new SetUp {
+            val testData = twoUnallocatedOverpaymentsSameDueDate
+
+            when(mockFinancialDataConnector.getOnlyOpenFinancialData(appaId))
+              .thenReturn(Future.successful(Right(testData)))
+
+            whenReady(paymentsService.getOpenPayments(appaId).value) {
+              _ mustBe Right(
+                OpenPayments(
+                  List(),
+                  0,
+                  List(
+                    UnallocatedPayment(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).dueDate(), -7000)
+                  ),
+                  -7000,
+                  -7000
+                )
+              )
+            }
           }
         }
       }
@@ -737,8 +763,9 @@ class OpenPaymentsServiceSpec extends SpecBase {
     val singlePartiallyOutstandingReturnOpen      = singlePartiallyOutstandingReturn(onlyOpenItems = true)
     val twoLineItemPartiallyOutstandingReturnOpen = twoLineItemPartiallyOutstandingReturn(onlyOpenItems = true)
 
-    val twoUnallocatedOverpayments = twoUnallocatedSeparateOverpayments(onlyOpenItems = true)
-    val twoAllocatedOverpayments   = twoAllocatedSeparateOverpayments(onlyOpenItems = true)
+    val twoUnallocatedOverpayments            = twoUnallocatedSeparateOverpayments(onlyOpenItems = true)
+    val twoUnallocatedOverpaymentsSameDueDate = twoUnallocatedSeparateOverpaymentsSameDueDate(onlyOpenItems = true)
+    val twoAllocatedOverpayments              = twoAllocatedSeparateOverpayments(onlyOpenItems = true)
 
     val singleOverpaymentAmountMismatch = singleOverpayment.copy(financialTransactions =
       singleOverpayment.financialTransactions.map(_.copy(outstandingAmount = Some(BigDecimal("-1000"))))
