@@ -89,7 +89,7 @@ class OpenPaymentsService @Inject() (
     EitherT {
       Future.successful(
         transactions
-          .groupBy(x => (x.sapDocumentNumber, x.items.map(i => i.dueDate)))
+          .groupBy(transaction => (transaction.sapDocumentNumber, transaction.items.map(item => item.dueDate)))
           .map { case ((sapDocumentNumber, _), financialTransactionsForDocument) =>
             validate(sapDocumentNumber, financialTransactionsForDocument)
           }
