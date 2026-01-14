@@ -96,8 +96,7 @@ class PaymentsValidator @Inject() () extends Logging {
         } else {
           if (TransactionType.isOverpayment(mainTransactionType)) {
             Right(
-              mainTransactionType == financialTransaction.mainTransaction &&
-                financialTransaction.items.forall(_.dueDate.fold(false)(_.isEqual(dueDate)))
+              mainTransactionType == financialTransaction.mainTransaction
             )
           } else {
             Right(
