@@ -649,8 +649,8 @@ class OpenPaymentsServiceSpec extends SpecBase {
                 List(),
                 0,
                 List(),
-                -0,
-                -0
+                0,
+                0
               )
             )
           }
