@@ -16,8 +16,10 @@
 
 package uk.gov.hmrc.alcoholdutyaccount.models
 
-import play.api.libs.json._
+import play.api.libs.json.*
 import uk.gov.hmrc.alcoholdutyaccount.models.subscription.{AdrSubscriptionSummary, ApprovalStatus, ContactPreferenceForBTA}
+
+import java.time.LocalDateTime
 
 final case class Balance(
   totalPaymentAmount: BigDecimal,
@@ -70,7 +72,8 @@ case class AlcoholDutyCardData(
   returns: Returns,
   payments: Payments,
   contactPreference: Option[ContactPreferenceForBTA],
-  emailBounced: Option[Boolean]
+  emailBounced: Option[Boolean],
+  shutterEndTime: Option[LocalDateTime] = None
 )
 
 object AlcoholDutyCardData {

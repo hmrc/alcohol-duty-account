@@ -18,6 +18,8 @@ package uk.gov.hmrc.alcoholdutyaccount.config
 
 import uk.gov.hmrc.alcoholdutyaccount.base.SpecBase
 
+import java.time.LocalDateTime
+
 class SpecBaseWithConfigOverrides extends SpecBase {
   override def configOverrides: Map[String, Any] = Map(
     "appName"                                                    -> "appName",
@@ -50,7 +52,8 @@ class SpecBaseWithConfigOverrides extends SpecBase {
     "downstream-apis.contractObjectType"                         -> "ZADP",
     "enrolment.serviceName"                                      -> "HMRC-AD-ORG",
     "payments.minimumHistoricPaymentsYear"                       -> 2024,
-    "features.bta-service-available"                             -> true
+    "features.bta-service-available"                             -> true,
+    "features.bta-shutter-end-time"                              -> "2026-02-01T09:00:00"
   )
 }
 
@@ -146,6 +149,10 @@ class AppConfigSpec extends SpecBaseWithConfigOverrides {
   "for features" - {
     "btaServiceAvailable must return whether the service is available" in {
       appConfig.btaServiceAvailable mustBe true
+    }
+
+    "btaShutterEndTime must return the correct date and time if provided" in {
+      appConfig.btaShutterEndTime mustBe Some(LocalDateTime.of(2026, 2, 1, 9, 0, 0))
     }
   }
 

@@ -39,19 +39,34 @@ Calls to this API must be made by an authenticated and authorised user with an A
 | hasSubscriptionSummaryError           | Indicates if there is an error for displaying the whole card as the subscription summary call fails     | Boolean    | Mandatory          |                                                                                    |
 | hasReturnsError                       | Indicates if there is an error for displaying the returns section                                       | Boolean    | Mandatory          |                                                                                    |
 | hasPaymentsError                      | Indicates if there is an error for displaying the payments section                                      | Boolean    | Mandatory          |                                                                                    |
-| returns                               | The data needed to create the returns section                                                           | Object     | Optional           | Empty when there is no return due, also depends approvalStatus and hasReturnsError |
-| returns.dueReturnExists               | Indicates if there is a return due for the current period                                               | Boolean    | Mandatory          |                                                                                    |
-| returns.numberOfOverdueReturns        | The number of overdue returns for previous periods                                                      | Integer    | Mandatory          |                                                                                    |
+| returns                               | The data needed to create the returns section                                                           | Object     | Mandatory          | Empty when there is no return due, also depends approvalStatus and hasReturnsError |
+| returns.dueReturnExists               | Indicates if there is a return due for the current period                                               | Boolean    | Optional           |                                                                                    |
+| returns.numberOfOverdueReturns        | The number of overdue returns for previous periods                                                      | Integer    | Optional           |                                                                                    |
 | returns.periodKey                     | The key that is needed to start Returns journey(Only applies if a single return is due)                 | String     | Optional           | Conditional based on the dueReturnExists and numberOfOverdueReturns                |
-| payments                              | The data needed to create the payments section                                                          | Object     | Optional           | Conditional based on the approvalStatus and hasPaymentsError                       |
+| payments                              | The data needed to create the payments section                                                          | Object     | Mandatory          | Conditional based on the approvalStatus and hasPaymentsError                       |
 | payments.balance                      | The data needed to show the balance information                                                         | Object     | Optional           | Empty when there is no payment due                                                 |
 | payments.balance.totalPaymentAmount   | The outstanding total payment amount                                                                    | BigDecimal | Mandatory          |                                                                                    |
 | payments.balance.isMultiplePaymentDue | Indicates if the total payment amount is related to multiple payments(charges)                          | Boolean    | Mandatory          |                                                                                    |
 | payments.balance.chargeReference      | The reference that is needed to start an OPS journey(Only applies if a single payment is due)           | String     | Optional           | Conditional based on the isMultiplePaymentDue                                      |
 | contactPreference                     | The user's current contact preference (digital or paper)                                                | Enum       | Optional           | Conditional based on the hasSubscriptionSummaryError                               |
 | emailBounced                          | Whether the user has a bounced email                                                                    | Boolean    | Optional           | Conditional based on the hasSubscriptionSummaryError                               |
+| shutterEndTime                        | The date and time at which BTA will become available if shuttered                                       | DateTime   | Optional           | e.g. 2026-02-01T09:00:00                                                           |
 
 **Response Body Examples**
+
+***Where BTA tile is shuttered and shutter end time is provided:***
+
+```json
+{
+  "alcoholDutyReference": "AP0000000001",
+  "hasSubscriptionSummaryError": false,
+  "hasReturnsError": false,
+  "hasPaymentsError": false,
+  "returns": {},
+  "payments": {},
+  "shutterEndTime": "2026-02-01T09:00:00"
+}
+```
 
 ***Where no return is due / no payment is due:***
 
@@ -226,8 +241,13 @@ This response can occur when a call is made by any consumer without an authorize
 }
 ```
 
-This response occurs when the service is shuttered. See below.
+This response occurs when the BTA tile is shuttered and features.shutter-end-time is not provided. See below.
 
 ## Shuttering the BTA tile
 
-BTA doesn't shutter the tiles individually. Instead, the shuttering is done by setting features.bta-service-available in config to false. The service will then return 503 when attempting to get bta tile data and BTA will display relevant tile.
+BTA doesn't shutter the tiles individually. Instead, the shuttering is done by setting features.bta-service-available in
+config to false. BTA will then display the relevant alternative tile when attempting to get bta tile data.
+
+- If the shutter end time is known, this can be provided in features.bta-shutter-end-time, e.g. "2026-02-01T09:00:00".
+  The service will then return a response body as in the first example.
+- If the shutter end time is not provided, the service will return 503.
