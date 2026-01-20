@@ -16,13 +16,13 @@
 
 package uk.gov.hmrc.alcoholdutyaccount.controllers
 
-import cats.implicits._
+import cats.implicits.*
 import play.api.Logging
 import play.api.libs.json.Json
 import play.api.mvc.{Action, AnyContent, ControllerComponents}
 import uk.gov.hmrc.alcoholdutyaccount.config.AppConfig
 import uk.gov.hmrc.alcoholdutyaccount.controllers.actions.{AuthorisedAction, CheckAppaIdAction}
-import uk.gov.hmrc.alcoholdutyaccount.models.ErrorCodes
+import uk.gov.hmrc.alcoholdutyaccount.models.{AlcoholDutyCardData, ErrorCodes, Payments, Returns}
 import uk.gov.hmrc.alcoholdutyaccount.service.{AlcoholDutyService, FulfilledObligationsRepositoryService}
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 import uk.gov.hmrc.play.bootstrap.http.ErrorResponse
@@ -83,7 +83,24 @@ class AlcoholDutyController @Inject() (
             alcoholDutyCardData => Ok(Json.toJson(alcoholDutyCardData))
           )
       } else {
-        Future.successful(error(ErrorCodes.serviceUnavailable))
+        appConfig.btaShutterEndTime match {
+          case Some(dateTime) =>
+            val alcoholDutyCardData = AlcoholDutyCardData(
+              alcoholDutyReference = alcoholDutyReference,
+              approvalStatus = None,
+              hasSubscriptionSummaryError = false,
+              hasReturnsError = false,
+              hasPaymentsError = false,
+              returns = Returns(),
+              payments = Payments(),
+              contactPreference = None,
+              emailBounced = None,
+              shutterEndTime = Some(dateTime)
+            )
+            Future.successful(Ok(Json.toJson(alcoholDutyCardData)))
+          case None           =>
+            Future.successful(error(ErrorCodes.serviceUnavailable))
+        }
       }
     }
 

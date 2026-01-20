@@ -17,13 +17,16 @@
 package uk.gov.hmrc.alcoholdutyaccount.config
 
 import javax.inject.{Inject, Singleton}
-import play.api.Configuration
+import play.api.{ConfigLoader, Configuration}
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 
+import java.time.LocalDateTime
 import scala.concurrent.duration.FiniteDuration
 
 @Singleton
 class AppConfig @Inject() (config: Configuration, servicesConfig: ServicesConfig) {
+
+  implicit val dateTimeLoader: ConfigLoader[LocalDateTime] = ConfigLoader(_.getString).map(LocalDateTime.parse(_))
 
   val appName: String = config.get[String]("appName")
 
@@ -68,6 +71,8 @@ class AppConfig @Inject() (config: Configuration, servicesConfig: ServicesConfig
     config.get[Int]("payments.minimumHistoricPaymentsYear")
 
   def btaServiceAvailable: Boolean = config.get[Boolean]("features.bta-service-available")
+
+  lazy val btaShutterEndTime: Option[LocalDateTime] = config.getOptional[LocalDateTime]("features.bta-shutter-end-time")
 
   private[config] def getConfStringAndThrowIfNotFound(key: String) =
     servicesConfig.getConfString(key, throw new RuntimeException(s"Could not find services config key '$key'"))

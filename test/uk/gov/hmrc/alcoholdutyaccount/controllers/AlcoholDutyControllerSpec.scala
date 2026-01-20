@@ -32,6 +32,7 @@ import uk.gov.hmrc.alcoholdutyaccount.models.subscription.ContactPreferenceForBT
 import uk.gov.hmrc.alcoholdutyaccount.service.{AlcoholDutyService, FulfilledObligationsRepositoryService}
 import uk.gov.hmrc.play.bootstrap.http.ErrorResponse
 
+import java.time.LocalDateTime
 import scala.concurrent.Future
 
 class AlcoholDutyControllerSpec extends SpecBase {
@@ -176,8 +177,9 @@ class AlcoholDutyControllerSpec extends SpecBase {
       contentAsJson(result) mustBe Json.toJson(expectedError)
     }
 
-    "return 503 when shuttered" in new SetUp {
+    "return 503 when shuttered and shutterEndTime is not provided" in new SetUp {
       when(appConfig.btaServiceAvailable) thenReturn false
+      when(appConfig.btaShutterEndTime) thenReturn None
 
       when(alcoholDutyService.getAlcoholDutyCardData(any())(any())) thenReturn
         EitherT.rightT[Future, AlcoholDutyCardData](cardData)
@@ -186,6 +188,16 @@ class AlcoholDutyControllerSpec extends SpecBase {
       status(result)        mustBe SERVICE_UNAVAILABLE
       contentAsJson(result) mustBe Json.toJson(ErrorCodes.serviceUnavailable)
     }
+
+    "return 200 with the correct response body when shuttered and shutterEndTime is provided" in new SetUp {
+      when(appConfig.btaServiceAvailable) thenReturn false
+      when(appConfig.btaShutterEndTime) thenReturn Some(LocalDateTime.of(2026, 2, 12, 8, 30, 0))
+
+      val result: Future[Result] = controller.btaTileData(appaId)(fakeRequest)
+      status(result)        mustBe OK
+      contentAsJson(result) mustBe Json.toJson(shutteredCardData)
+    }
+
   }
 
   class SetUp {
@@ -217,6 +229,19 @@ class AlcoholDutyControllerSpec extends SpecBase {
         Payments(balance = Some(Balance(isMultiplePaymentDue = true, totalPaymentAmount = 2, chargeReference = None))),
       contactPreference = Some(Digital),
       emailBounced = Some(false)
+    )
+
+    val shutteredCardData = AlcoholDutyCardData(
+      alcoholDutyReference = appaId,
+      approvalStatus = None,
+      hasSubscriptionSummaryError = false,
+      hasReturnsError = false,
+      hasPaymentsError = false,
+      returns = Returns(),
+      payments = Payments(),
+      contactPreference = None,
+      emailBounced = None,
+      shutterEndTime = Some(LocalDateTime.of(2026, 2, 12, 8, 30, 0))
     )
   }
 }
