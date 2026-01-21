@@ -43,39 +43,74 @@ class OpenPaymentsService @Inject() (
   )(implicit hc: HeaderCarrier): EitherT[Future, ErrorResponse, OpenPayments] =
     for {
       financialTransactionDocument <- EitherT(financialDataConnector.getOnlyOpenFinancialData(appaId))
-      openPayments                 <- extractOpenPayments(financialTransactionDocument)
-    } yield buildOpenPaymentsPayload(openPayments)
+      openPayments                 <- extractPayments(filterNonOverpayment(financialTransactionDocument))
+      openOverPayments             <- extractOverPayments(filterOverpayment(financialTransactionDocument))
+    } yield buildOpenPaymentsPayload(openPayments ::: openOverPayments)
 
-  private def extractOpenPayments(
+  private def filterNonOverpayment(
     financialTransactionDocument: FinancialTransactionDocument
+  ): Seq[FinancialTransaction] =
+    financialTransactionDocument.financialTransactions
+      .filter(transaction =>
+        !TransactionType.isOverpayment(
+          transaction.mainTransaction
+        ) &&
+          transaction.outstandingAmount.isDefined
+      )
+
+  private def filterOverpayment(financialTransactionDocument: FinancialTransactionDocument): Seq[FinancialTransaction] =
+    financialTransactionDocument.financialTransactions
+      .filter(transaction =>
+        TransactionType.isOverpayment(
+          transaction.mainTransaction
+        ) &&
+          transaction.contractObjectType.contains(contractObjectType) &&
+          transaction.outstandingAmount.isDefined
+      )
+
+  private def extractPayments(
+    transactions: Seq[FinancialTransaction]
   ): EitherT[Future, ErrorResponse, List[OpenPayment]] =
     EitherT {
       Future.successful(
-        financialTransactionDocument.financialTransactions
-          .filter(transaction => // Ignore payments that are actually cleared
-            TransactionType.isOverpayment(transaction.mainTransaction) || transaction.outstandingAmount.isDefined
-          )
-          .filter(transaction => // Ignore overpayments that aren't ZADP
-            !TransactionType.isOverpayment(
-              transaction.mainTransaction
-            ) || transaction.contractObjectType.contains(contractObjectType)
-          )
+        transactions
           .groupBy(_.sapDocumentNumber)
           .map { case (sapDocumentNumber, financialTransactionsForDocument) =>
-            financialDataValidator
-              .validateAndGetFinancialTransactionData(
-                sapDocumentNumber,
-                financialTransactionsForDocument
-              )
-              .map {
-                val outstandingAmount = calculateOutstandingAmount(financialTransactionsForDocument)
-                buildOpenPayment(_, outstandingAmount)
-              }
+            validate(sapDocumentNumber, financialTransactionsForDocument)
           }
           .toList
           .sequence
       )
     }
+
+  private def extractOverPayments(
+    transactions: Seq[FinancialTransaction]
+  ): EitherT[Future, ErrorResponse, List[OpenPayment]] =
+    EitherT {
+      Future.successful(
+        transactions
+          .groupBy(transaction => (transaction.sapDocumentNumber, transaction.items.map(item => item.dueDate)))
+          .map { case ((sapDocumentNumber, _), financialTransactionsForDocument) =>
+            validate(sapDocumentNumber, financialTransactionsForDocument)
+          }
+          .toList
+          .sequence
+      )
+    }
+
+  private def validate(
+    sapDocumentNumber: String,
+    financialTransactionsForDocument: Seq[FinancialTransaction]
+  ): Either[ErrorResponse, OpenPayment] =
+    financialDataValidator
+      .validateAndGetFinancialTransactionData(
+        sapDocumentNumber,
+        financialTransactionsForDocument
+      )
+      .map {
+        val outstandingAmount = calculateOutstandingAmount(financialTransactionsForDocument)
+        buildOpenPayment(_, outstandingAmount)
+      }
 
   private def buildOpenPaymentsPayload(openPayments: List[OpenPayment]): OpenPayments = {
     val (outstandingPayments, unallocatedPayments) =
@@ -94,7 +129,7 @@ class OpenPaymentsService @Inject() (
     OpenPayments(
       outstandingPayments = outstandingPayments,
       totalOutstandingPayments = paymentTotals.totalOutstandingPayments,
-      unallocatedPayments = unallocatedPayments,
+      unallocatedPayments = unallocatedPayments.sortBy(_.paymentDate),
       totalUnallocatedPayments = paymentTotals.totalUnallocatedPayments,
       totalOpenPaymentsAmount = paymentTotals.totalOpenPaymentsAmount
     )

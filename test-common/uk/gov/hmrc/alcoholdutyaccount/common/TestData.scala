@@ -575,7 +575,142 @@ trait TestData extends ModelGenerators {
     )
   }
 
-  val singleFullyOutstandingLPI: FinancialTransactionDocument = {
+  def twoUnallocatedSeparateOverpayments(onlyOpenItems: Boolean): FinancialTransactionDocument = {
+    val sapDocumentNumber = sapDocumentNumberGen.sample.get
+    val dueDate           = ReturnPeriod.fromPeriodKeyOrThrow(periodKey).dueDate()
+
+    combineFinancialTransactionDocuments(
+      Seq(
+        createFinancialDocument(
+          onlyOpenItems = onlyOpenItems,
+          sapDocumentNumber = sapDocumentNumber,
+          originalAmount = BigDecimal("-5000"),
+          maybeOutstandingAmount = Some(BigDecimal("-5000")),
+          dueDate = dueDate,
+          transactionType = TransactionType.Overpayment,
+          maybePeriodKey = Some(periodKey),
+          maybeTaxPeriodFrom = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).periodFromDate()),
+          maybeTaxPeriodTo = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).periodToDate()),
+          maybeChargeReference = None
+        ),
+        createFinancialDocument(
+          onlyOpenItems = onlyOpenItems,
+          sapDocumentNumber = sapDocumentNumber,
+          originalAmount = BigDecimal("-2000"),
+          maybeOutstandingAmount = Some(BigDecimal("-2000")),
+          dueDate = dueDate.minusMonths(1),
+          transactionType = TransactionType.Overpayment,
+          maybePeriodKey = Some(periodKey2),
+          maybeTaxPeriodFrom = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey2).periodFromDate()),
+          maybeTaxPeriodTo = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey2).periodToDate()),
+          maybeChargeReference = None
+        )
+      )
+    )
+  }
+
+  def twoPartiallyAllocatedSeparateOverpayments(onlyOpenItems: Boolean): FinancialTransactionDocument = {
+    val sapDocumentNumber = sapDocumentNumberGen.sample.get
+    val dueDate           = ReturnPeriod.fromPeriodKeyOrThrow(periodKey).dueDate()
+
+    combineFinancialTransactionDocuments(
+      Seq(
+        createFinancialDocument(
+          onlyOpenItems = onlyOpenItems,
+          sapDocumentNumber = sapDocumentNumber,
+          originalAmount = BigDecimal("-5000"),
+          maybeOutstandingAmount = Some(BigDecimal("-1000")),
+          dueDate = dueDate,
+          transactionType = TransactionType.Overpayment,
+          maybePeriodKey = Some(periodKey),
+          maybeTaxPeriodFrom = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).periodFromDate()),
+          maybeTaxPeriodTo = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).periodToDate()),
+          maybeChargeReference = None
+        ),
+        createFinancialDocument(
+          onlyOpenItems = onlyOpenItems,
+          sapDocumentNumber = sapDocumentNumber,
+          originalAmount = BigDecimal("-2000"),
+          maybeOutstandingAmount = Some(BigDecimal("-1000")),
+          dueDate = dueDate.minusMonths(1),
+          transactionType = TransactionType.Overpayment,
+          maybePeriodKey = Some(periodKey2),
+          maybeTaxPeriodFrom = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey2).periodFromDate()),
+          maybeTaxPeriodTo = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey2).periodToDate()),
+          maybeChargeReference = None
+        )
+      )
+    )
+  }
+
+  def twoUnallocatedSeparateOverpaymentsSameDueDate(onlyOpenItems: Boolean): FinancialTransactionDocument = {
+    val sapDocumentNumber = sapDocumentNumberGen.sample.get
+    val dueDate           = ReturnPeriod.fromPeriodKeyOrThrow(periodKey).dueDate()
+
+    combineFinancialTransactionDocuments(
+      Seq(
+        createFinancialDocument(
+          onlyOpenItems = onlyOpenItems,
+          sapDocumentNumber = sapDocumentNumber,
+          originalAmount = BigDecimal("-5000"),
+          maybeOutstandingAmount = Some(BigDecimal("-5000")),
+          dueDate = dueDate,
+          transactionType = TransactionType.Overpayment,
+          maybePeriodKey = Some(periodKey),
+          maybeTaxPeriodFrom = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).periodFromDate()),
+          maybeTaxPeriodTo = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).periodToDate()),
+          maybeChargeReference = None
+        ),
+        createFinancialDocument(
+          onlyOpenItems = onlyOpenItems,
+          sapDocumentNumber = sapDocumentNumber,
+          originalAmount = BigDecimal("-2000"),
+          maybeOutstandingAmount = Some(BigDecimal("-2000")),
+          dueDate = dueDate,
+          transactionType = TransactionType.Overpayment,
+          maybePeriodKey = Some(periodKey2),
+          maybeTaxPeriodFrom = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey2).periodFromDate()),
+          maybeTaxPeriodTo = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey2).periodToDate()),
+          maybeChargeReference = None
+        )
+      )
+    )
+  }
+
+  def twoAllocatedSeparateOverpayments(onlyOpenItems: Boolean): FinancialTransactionDocument = {
+    val sapDocumentNumber = sapDocumentNumberGen.sample.get
+    val dueDate           = ReturnPeriod.fromPeriodKeyOrThrow(periodKey).dueDate()
+
+    combineFinancialTransactionDocuments(
+      Seq(
+        createFinancialDocument(
+          onlyOpenItems = onlyOpenItems,
+          sapDocumentNumber = sapDocumentNumber,
+          originalAmount = BigDecimal("-5000"),
+          maybeOutstandingAmount = None,
+          dueDate = dueDate,
+          transactionType = TransactionType.Overpayment,
+          maybePeriodKey = Some(periodKey),
+          maybeTaxPeriodFrom = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).periodFromDate()),
+          maybeTaxPeriodTo = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).periodToDate()),
+          maybeChargeReference = None
+        ),
+        createFinancialDocument(
+          onlyOpenItems = onlyOpenItems,
+          sapDocumentNumber = sapDocumentNumber,
+          originalAmount = BigDecimal("-5000"),
+          maybeOutstandingAmount = None,
+          dueDate = dueDate,
+          transactionType = TransactionType.Overpayment,
+          maybePeriodKey = Some(periodKey2),
+          maybeTaxPeriodFrom = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey2).periodFromDate()),
+          maybeTaxPeriodTo = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey2).periodToDate()),
+          maybeChargeReference = None
+        )
+      )
+    )
+  }
+  val singleFullyOutstandingLPI: FinancialTransactionDocument                                = {
     val sapDocumentNumber = sapDocumentNumberGen.sample.get
     val chargeReference   = chargeReferenceGen.sample.get
 

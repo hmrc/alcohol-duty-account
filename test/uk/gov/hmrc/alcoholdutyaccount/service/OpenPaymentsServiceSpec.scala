@@ -525,7 +525,7 @@ class OpenPaymentsServiceSpec extends SpecBase {
         }
       }
 
-      "if all period key is there on some, but not all document entries" in new SetUp {
+      "if period key is there on some, but not all document entries" in new SetUp {
         val mismatchedTransactionTypesOnLineItems =
           twoLineItemPartiallyOutstandingReturnOpen.copy(financialTransactions =
             Seq(
@@ -560,6 +560,100 @@ class OpenPaymentsServiceSpec extends SpecBase {
 
         whenReady(paymentsService.getOpenPayments(appaId).value) {
           _ mustBe Left(ErrorCodes.unexpectedResponse)
+        }
+      }
+
+      "for unallocated overpayments (0060)" - {
+        "for different due dates" - {
+          "groups by due date and renders the separate unallocated payments" in new SetUp {
+            val testData = twoUnallocatedOverpayments
+
+            when(mockFinancialDataConnector.getOnlyOpenFinancialData(appaId))
+              .thenReturn(Future.successful(Right(testData)))
+
+            whenReady(paymentsService.getOpenPayments(appaId).value) {
+              _ mustBe Right(
+                OpenPayments(
+                  List(),
+                  0,
+                  List(
+                    UnallocatedPayment(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).dueDate().minusMonths(1), -2000),
+                    UnallocatedPayment(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).dueDate(), -5000)
+                  ),
+                  -7000,
+                  -7000
+                )
+              )
+            }
+          }
+        }
+
+        "for the same due dates" - {
+          "groups by due date and renders the summed total" in new SetUp {
+            val testData = twoUnallocatedOverpaymentsSameDueDate
+
+            when(mockFinancialDataConnector.getOnlyOpenFinancialData(appaId))
+              .thenReturn(Future.successful(Right(testData)))
+
+            whenReady(paymentsService.getOpenPayments(appaId).value) {
+              _ mustBe Right(
+                OpenPayments(
+                  List(),
+                  0,
+                  List(
+                    UnallocatedPayment(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).dueDate(), -7000)
+                  ),
+                  -7000,
+                  -7000
+                )
+              )
+            }
+          }
+        }
+      }
+
+      "for partially allocated overpayments (0060)" - {
+        "groups by due date and renders the separate unallocated payments" in new SetUp {
+          val testData = twoPartiallyAllocatedOverpayments
+
+          when(mockFinancialDataConnector.getOnlyOpenFinancialData(appaId))
+            .thenReturn(Future.successful(Right(testData)))
+
+          whenReady(paymentsService.getOpenPayments(appaId).value) {
+            _ mustBe Right(
+              OpenPayments(
+                List(),
+                0,
+                List(
+                  UnallocatedPayment(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).dueDate().minusMonths(1), -1000),
+                  UnallocatedPayment(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).dueDate(), -1000)
+                ),
+                -2000,
+                -2000
+              )
+            )
+          }
+        }
+      }
+
+      "for allocated overpayments (0060)" - {
+        "returns an empty list of Open Payments" in new SetUp {
+          val testData = twoAllocatedOverpayments
+
+          when(mockFinancialDataConnector.getOnlyOpenFinancialData(appaId))
+            .thenReturn(Future.successful(Right(testData)))
+
+          whenReady(paymentsService.getOpenPayments(appaId).value) {
+            _ mustBe Right(
+              OpenPayments(
+                List(),
+                0,
+                List(),
+                0,
+                0
+              )
+            )
+          }
         }
       }
 
@@ -692,6 +786,11 @@ class OpenPaymentsServiceSpec extends SpecBase {
     val year                                      = 2024
     val singlePartiallyOutstandingReturnOpen      = singlePartiallyOutstandingReturn(onlyOpenItems = true)
     val twoLineItemPartiallyOutstandingReturnOpen = twoLineItemPartiallyOutstandingReturn(onlyOpenItems = true)
+
+    val twoUnallocatedOverpayments            = twoUnallocatedSeparateOverpayments(onlyOpenItems = true)
+    val twoUnallocatedOverpaymentsSameDueDate = twoUnallocatedSeparateOverpaymentsSameDueDate(onlyOpenItems = true)
+    val twoAllocatedOverpayments              = twoAllocatedSeparateOverpayments(onlyOpenItems = true)
+    val twoPartiallyAllocatedOverpayments     = twoPartiallyAllocatedSeparateOverpayments(onlyOpenItems = true)
 
     val singleOverpaymentAmountMismatch = singleOverpayment.copy(financialTransactions =
       singleOverpayment.financialTransactions.map(_.copy(outstandingAmount = Some(BigDecimal("-1000"))))
