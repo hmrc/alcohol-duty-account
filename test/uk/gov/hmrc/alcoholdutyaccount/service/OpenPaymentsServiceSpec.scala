@@ -17,10 +17,11 @@
 package uk.gov.hmrc.alcoholdutyaccount.service
 
 import org.mockito.Mockito.when
+import org.scalactic.Prettifier.default
 import uk.gov.hmrc.alcoholdutyaccount.base.SpecBase
 import uk.gov.hmrc.alcoholdutyaccount.connectors.FinancialDataConnector
 import uk.gov.hmrc.alcoholdutyaccount.models.hods.FinancialTransactionDocument
-import uk.gov.hmrc.alcoholdutyaccount.models.payments._
+import uk.gov.hmrc.alcoholdutyaccount.models.payments.*
 import uk.gov.hmrc.alcoholdutyaccount.models.{ErrorCodes, ReturnPeriod}
 import uk.gov.hmrc.alcoholdutyaccount.utils.payments.PaymentsValidator
 import uk.gov.hmrc.play.bootstrap.http.ErrorResponse
@@ -762,6 +763,27 @@ class OpenPaymentsServiceSpec extends SpecBase {
         whenReady(paymentsService.getOpenPayments(appaId).value) {
           _ mustBe Left(ErrorCodes.unexpectedResponse)
         }
+      }
+
+      "correctly sum outstanding amounts including RPI and missing values" in new SetUp {
+        val transactions = Seq(
+          twoLineItemPartiallyOutstandingReturnOpen
+            .financialTransactions.head
+            .copy(outstandingAmount = Some(BigDecimal(100))),
+          twoLineItemPartiallyOutstandingReturnOpen
+            .financialTransactions(1)
+            .copy(
+              mainTransaction = TransactionType.toMainTransactionType(TransactionType.RPI),
+              outstandingAmount = Some(BigDecimal(50))
+            ),
+          twoLineItemPartiallyOutstandingReturnOpen
+            .financialTransactions(1)
+            .copy(
+              outstandingAmount = None
+            )
+        )
+
+        paymentsService.calculateOutstandingAmount(transactions) mustBe BigDecimal(50) // 100 - 50 + 0
       }
     }
 

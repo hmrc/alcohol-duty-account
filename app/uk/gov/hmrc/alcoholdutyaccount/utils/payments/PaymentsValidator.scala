@@ -16,7 +16,7 @@
 
 package uk.gov.hmrc.alcoholdutyaccount.utils.payments
 
-import cats.implicits._
+import cats.implicits.*
 import play.api.Logging
 import uk.gov.hmrc.alcoholdutyaccount.models.ErrorCodes
 import uk.gov.hmrc.alcoholdutyaccount.models.hods.{FinancialTransaction, FinancialTransactionItem}
@@ -34,7 +34,7 @@ class PaymentsValidator @Inject() () extends Logging {
   ): Either[ErrorResponse, FinancialTransactionData] =
     for {
       firstFinancialTransactionLineItem <-
-        getFirstFinancialTransactionLineItem(sapDocumentNumber, financialTransactionsForDocument)
+        resolvePrimaryFinancialTransaction(sapDocumentNumber, financialTransactionsForDocument)
       mainTransactionType                = firstFinancialTransactionLineItem.mainTransaction
       maybePeriodKey                     = firstFinancialTransactionLineItem.periodKey
       maybeTaxPeriodFrom                 = firstFinancialTransactionLineItem.taxPeriodFrom
@@ -98,6 +98,16 @@ class PaymentsValidator @Inject() () extends Logging {
             Right(
               mainTransactionType == financialTransaction.mainTransaction
             )
+          } else if (
+            TransactionType.isLPIorRPI(mainTransactionType) &&
+            TransactionType.isLPIorRPI(financialTransaction.mainTransaction)
+          ) {
+            Right(
+              maybePeriodKey == financialTransaction.periodKey &&
+                maybeTaxPeriodFrom == financialTransaction.taxPeriodFrom &&
+                maybeTaxPeriodTo == financialTransaction.taxPeriodTo &&
+                maybeChargeReference == financialTransaction.chargeReference
+            )
           } else {
             Right(
               mainTransactionType == financialTransaction.mainTransaction &&
@@ -140,16 +150,40 @@ class PaymentsValidator @Inject() () extends Logging {
         Left(ErrorCodes.unexpectedResponse)
     }
 
-  private def getFirstFinancialTransactionLineItem(
+  private def resolvePrimaryFinancialTransaction(
     sapDocumentNumber: String,
-    financialTransactionsForDocument: Seq[FinancialTransaction]
-  ): Either[ErrorResponse, FinancialTransaction] =
-    financialTransactionsForDocument.toList match {
-      case firstFinancialTransactionLineItem :: _ => Right(firstFinancialTransactionLineItem)
-      case _                                      =>
+    transactions: Seq[FinancialTransaction]
+  ): Either[ErrorResponse, FinancialTransaction] = {
+
+    val txList = transactions.toList
+
+    txList match {
+      case Nil =>
         logger.warn(
           s"[PaymentsValidator] [getFirstFinancialTransactionLineItem] Should have had a least one entry for financial transaction $sapDocumentNumber."
         )
         Left(ErrorCodes.unexpectedResponse)
+
+      case _ =>
+        val rpiTxs = txList.filter(tx => TransactionType.isRPI(tx.mainTransaction))
+        val lpiTxs = txList.filter(tx => TransactionType.isLPI(tx.mainTransaction))
+
+        val rpiTotal = rpiTxs.map(_.outstandingAmount.getOrElse(BigDecimal(0))).sum.abs
+        val lpiTotal = lpiTxs.map(_.outstandingAmount.getOrElse(BigDecimal(0))).sum.abs
+
+        logger.info(
+          s"[PaymentsValidator] [resolvePrimaryFinancialTransaction] RPI Total: $rpiTotal, LPI Total: $lpiTotal"
+        )
+
+        if (rpiTotal > 0 && lpiTotal > 0) {
+          if (rpiTotal > lpiTotal) {
+            Right(rpiTxs.head)
+          } else {
+            Right(lpiTxs.head)
+          }
+        } else {
+          Right(txList.head)
+        }
     }
+  }
 }

@@ -152,7 +152,17 @@ class OpenPaymentsService @Inject() (
   private[service] def calculateOutstandingAmount(
     financialTransactionsForDocument: Seq[FinancialTransaction]
   ): BigDecimal =
-    financialTransactionsForDocument.map(_.outstandingAmount.getOrElse(BigDecimal(0))).sum
+
+    financialTransactionsForDocument.map { tx =>
+      val rawAmount = tx.outstandingAmount.getOrElse(BigDecimal(0))
+
+      val normalizedAmount = tx.mainTransaction match {
+        case t if TransactionType.isRPI(t) => -rawAmount.abs // force negative
+        case _                             => rawAmount // leave other types
+      }
+
+      normalizedAmount
+    }.sum
 
   private def buildOpenPayment(
     financialTransactionData: FinancialTransactionData,
