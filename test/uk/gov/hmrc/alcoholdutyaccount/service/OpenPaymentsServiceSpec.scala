@@ -17,10 +17,11 @@
 package uk.gov.hmrc.alcoholdutyaccount.service
 
 import org.mockito.Mockito.when
+import org.scalactic.Prettifier.default
 import uk.gov.hmrc.alcoholdutyaccount.base.SpecBase
 import uk.gov.hmrc.alcoholdutyaccount.connectors.FinancialDataConnector
 import uk.gov.hmrc.alcoholdutyaccount.models.hods.FinancialTransactionDocument
-import uk.gov.hmrc.alcoholdutyaccount.models.payments._
+import uk.gov.hmrc.alcoholdutyaccount.models.payments.*
 import uk.gov.hmrc.alcoholdutyaccount.models.{ErrorCodes, ReturnPeriod}
 import uk.gov.hmrc.alcoholdutyaccount.utils.payments.PaymentsValidator
 import uk.gov.hmrc.play.bootstrap.http.ErrorResponse
@@ -762,6 +763,90 @@ class OpenPaymentsServiceSpec extends SpecBase {
         whenReady(paymentsService.getOpenPayments(appaId).value) {
           _ mustBe Left(ErrorCodes.unexpectedResponse)
         }
+      }
+
+      "if RPI value is bigger than LPI, display negative you owe for same sap document" in new SetUp {
+        private val sapDoc: FinancialTransactionDocument = twoLineItemPartiallyOutstandingReturn(onlyOpenItems = true)
+        val transactions                                 = Seq(
+          sapDoc.financialTransactions.head
+            .copy(outstandingAmount = Some(BigDecimal(100))),
+          sapDoc
+            .financialTransactions(1)
+            .copy(
+              mainTransaction = TransactionType.toMainTransactionType(TransactionType.RPI),
+              outstandingAmount = Some(BigDecimal(150))
+            )
+        )
+
+        paymentsService.calculateOutstandingAmount(transactions) mustBe BigDecimal(-50) // (100 - 150) = -50
+      }
+
+      "if LPI value is bigger than RPI, display positive you owe for same sap document" in new SetUp {
+        private val sapDoc: FinancialTransactionDocument = twoLineItemPartiallyOutstandingReturn(onlyOpenItems = true)
+        val transactions                                 = Seq(
+          sapDoc.financialTransactions.head
+            .copy(outstandingAmount = Some(BigDecimal(100))),
+          sapDoc
+            .financialTransactions(1)
+            .copy(
+              mainTransaction = TransactionType.toMainTransactionType(TransactionType.RPI),
+              outstandingAmount = Some(BigDecimal(75))
+            )
+        )
+
+        paymentsService.calculateOutstandingAmount(transactions) mustBe BigDecimal(25) // (100 - 75) = 25
+      }
+
+      "if LPIs value is bigger than RPIs, display positive you owe for different sap documents" in new SetUp {
+        private val sapDoc01: FinancialTransactionDocument = twoLineItemPartiallyOutstandingReturn(onlyOpenItems = true)
+        private val sapDoc02: FinancialTransactionDocument = twoLineItemPartiallyOutstandingReturn(onlyOpenItems = true)
+        val transactions                                   = Seq(
+          sapDoc01.financialTransactions.head
+            .copy(outstandingAmount = Some(BigDecimal(100))),
+          sapDoc01
+            .financialTransactions(1)
+            .copy(
+              mainTransaction = TransactionType.toMainTransactionType(TransactionType.RPI),
+              outstandingAmount = Some(BigDecimal(75))
+            ),
+          sapDoc02.financialTransactions.head
+            .copy(outstandingAmount = Some(BigDecimal(150))),
+          sapDoc02
+            .financialTransactions(1)
+            .copy(
+              mainTransaction = TransactionType.toMainTransactionType(TransactionType.RPI),
+              outstandingAmount = Some(BigDecimal(75))
+            )
+        )
+
+        paymentsService.calculateOutstandingAmount(transactions) mustBe BigDecimal(100) // (100 - 75) + (150 - 75) = 100
+      }
+
+      "if RPIS value is bigger than LPI, display negative you owe for different sap documents" in new SetUp {
+        private val sapDoc01: FinancialTransactionDocument = twoLineItemPartiallyOutstandingReturn(onlyOpenItems = true)
+        private val sapDoc02: FinancialTransactionDocument = twoLineItemPartiallyOutstandingReturn(onlyOpenItems = true)
+        val transactions                                   = Seq(
+          sapDoc01.financialTransactions.head
+            .copy(outstandingAmount = Some(BigDecimal(100))),
+          sapDoc01
+            .financialTransactions(1)
+            .copy(
+              mainTransaction = TransactionType.toMainTransactionType(TransactionType.RPI),
+              outstandingAmount = Some(BigDecimal(150))
+            ),
+          sapDoc02.financialTransactions.head
+            .copy(outstandingAmount = Some(BigDecimal(100))),
+          sapDoc02
+            .financialTransactions(1)
+            .copy(
+              mainTransaction = TransactionType.toMainTransactionType(TransactionType.RPI),
+              outstandingAmount = Some(BigDecimal(75))
+            )
+        )
+
+        paymentsService.calculateOutstandingAmount(transactions) mustBe BigDecimal(
+          -25
+        ) // (100 - 150) + (100 - 75) = -25
       }
     }
 

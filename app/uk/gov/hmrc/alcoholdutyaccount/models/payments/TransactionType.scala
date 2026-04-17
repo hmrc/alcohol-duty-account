@@ -62,6 +62,9 @@ object TransactionType extends Enum[TransactionType] with PlayJsonEnum[Transacti
   def toMainTransactionType(transactionType: TransactionType): String = transactionType.mainTransactionType
 
   def isRPI(mainTransactionType: String): Boolean = mainTransactionType == RPI.mainTransactionType
+  def isLPI(mainTransactionType: String): Boolean = mainTransactionType == LPI.mainTransactionType
+
+  def isLPIorRPI(mainTransactionType: String): Boolean = isLPI(mainTransactionType) || isRPI(mainTransactionType)
 
   def isOverpayment(mainTransactionType: String): Boolean =
     mainTransactionType == Overpayment.mainTransactionType
