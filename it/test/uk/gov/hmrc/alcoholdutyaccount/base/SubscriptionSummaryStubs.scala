@@ -24,7 +24,7 @@ import uk.gov.hmrc.alcoholdutyaccount.models.hods.{SubscriptionSummary, Subscrip
 
 trait SubscriptionSummaryStubs extends WireMockHelper with TestData {
   this: ISpecBase with Suite =>
-  
+
   def url(appaId: String): String = config.getSubscriptionUrl(appaId)
 
   def stubGetSubscriptionSummary(appaId: String, subscriptionSummary: SubscriptionSummary): Unit =

@@ -40,7 +40,6 @@ trait FinancialDataStubs extends WireMockHelper with TestData {
       |}
       |""".stripMargin
 
-
   private val unprocessableEntityErrorMessage: String =
     """
       |{
@@ -73,12 +72,11 @@ trait FinancialDataStubs extends WireMockHelper with TestData {
       |}
       |""".stripMargin
 
-
   private def url(appaId: String): String = config.financialDataUrl(appaId)
 
   def stubGetFinancialData(
-                            appaId: String,
-                            financialTransactionDocument: FinancialTransactionDocument
+    appaId: String,
+    financialTransactionDocument: FinancialTransactionDocument
   ): Unit =
     stubGetWithParameters(
       url(appaId),

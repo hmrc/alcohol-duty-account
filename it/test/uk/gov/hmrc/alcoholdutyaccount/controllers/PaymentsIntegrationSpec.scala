@@ -44,7 +44,7 @@ class PaymentsIntegrationSpec extends ISpecBase with ConnectorTestHelpers {
     await(repository.deleteAll())
     super.beforeEach()
   }
-  override def afterEach(): Unit = {
+  override def afterEach(): Unit  = {
     await(repository.deleteAll())
     super.afterEach()
   }

@@ -22,7 +22,7 @@ import uk.gov.hmrc.alcoholdutyaccount.common.WireMockHelper
 
 trait AuthStubs extends WireMockHelper {
   this: Suite =>
-  
+
   val authUrl            = "/auth/authorise"
   val testAuthInternalId = "internalId"
 

@@ -22,7 +22,7 @@ import play.api.libs.json.Json
 import uk.gov.hmrc.alcoholdutyaccount.common.{TestData, WireMockHelper}
 import uk.gov.hmrc.alcoholdutyaccount.models.hods.{ObligationData, Open}
 
-trait ObligationDataStubs extends WireMockHelper with TestData { 
+trait ObligationDataStubs extends WireMockHelper with TestData {
   this: ISpecBase with Suite =>
 
   private def url(appaId: String): String = config.obligationDataUrl(appaId)
