@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 HM Revenue & Customs
+ * Copyright 2026 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,7 +40,6 @@ trait FinancialDataStubs extends WireMockHelper with TestData {
       |}
       |""".stripMargin
 
-
   private val unprocessableEntityErrorMessage: String =
     """
       |{
@@ -73,12 +72,11 @@ trait FinancialDataStubs extends WireMockHelper with TestData {
       |}
       |""".stripMargin
 
-
   private def url(appaId: String): String = config.financialDataUrl(appaId)
 
   def stubGetFinancialData(
-                            appaId: String,
-                            financialTransactionDocument: FinancialTransactionDocument
+    appaId: String,
+    financialTransactionDocument: FinancialTransactionDocument
   ): Unit =
     stubGetWithParameters(
       url(appaId),

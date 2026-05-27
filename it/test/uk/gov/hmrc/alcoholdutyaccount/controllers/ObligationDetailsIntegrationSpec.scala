@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 HM Revenue & Customs
+ * Copyright 2026 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,7 +24,7 @@ import play.api.test.FakeRequest
 import play.api.test.Helpers.await
 import uk.gov.hmrc.alcoholdutyaccount.base.ISpecBase
 import uk.gov.hmrc.alcoholdutyaccount.models.hods._
-import uk.gov.hmrc.alcoholdutyaccount.models.{AdrObligationData, FulfilledObligations, ErrorCodes}
+import uk.gov.hmrc.alcoholdutyaccount.models.{AdrObligationData, ErrorCodes, FulfilledObligations}
 import uk.gov.hmrc.alcoholdutyaccount.repositories.UserFulfilledObligationsRepository
 import uk.gov.hmrc.http.HeaderNames
 import uk.gov.hmrc.play.bootstrap.http.ErrorResponse
@@ -47,7 +47,7 @@ class ObligationDetailsIntegrationSpec extends ISpecBase {
     await(repository.deleteAll())
     super.beforeEach()
   }
-  override def afterEach(): Unit = {
+  override def afterEach(): Unit  = {
     await(repository.deleteAll())
     super.afterEach()
   }
@@ -331,7 +331,7 @@ class ObligationDetailsIntegrationSpec extends ISpecBase {
     def expectedQueryParamsFulfilled(year: Int): Seq[(String, String)] =
       Seq("status" -> Fulfilled.value, "from" -> s"$year-01-01", "to" -> s"$year-12-31")
 
-    val expectedHeaders                                                = Seq(
+    val expectedHeaders = Seq(
       HeaderNames.authorisation -> s"Bearer ${config.obligationDataToken}",
       "Environment"             -> config.obligationDataEnv
     )

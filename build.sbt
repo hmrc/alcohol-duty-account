@@ -16,7 +16,7 @@ lazy val microservice = Project("alcohol-duty-account", file("."))
       "-feature",
       "-Wconf:msg=Flag.*repeatedly:s,msg=feature:w,msg=optimizer:w,src=target/.*:s"
     ),
-    scalafmtOnCompile := true,
+    scalafmtOnCompile := true
   )
   .settings(inConfig(Test)(testSettings): _*)
   .settings(CodeCoverageSettings.settings: _*)
@@ -38,4 +38,4 @@ lazy val it = project
   .settings(DefaultBuildSettings.itSettings())
   .settings(libraryDependencies ++= AppDependencies.itDependencies)
 
-addCommandAlias("runAllChecks", ";clean;compile;it/compile;scalafmtAll;coverage;test;it/test;coverageReport")
+addCommandAlias("scalafmtAll", "all scalafmtSbt scalafmt Test/scalafmt it/Test/scalafmt")
