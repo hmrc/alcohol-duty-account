@@ -38,4 +38,5 @@ lazy val it = project
   .settings(DefaultBuildSettings.itSettings())
   .settings(libraryDependencies ++= AppDependencies.itDependencies)
 
+addCommandAlias("scalafmtAll", "all scalafmtSbt scalafmt Test/scalafmt it/Test/scalafmt")
 addCommandAlias("runAllChecks", ";clean;compile;it/compile;scalafmtAll;coverage;test;it/test;coverageReport")
