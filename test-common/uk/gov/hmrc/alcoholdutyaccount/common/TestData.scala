@@ -777,6 +777,23 @@ trait TestData extends ModelGenerators {
     )
   }
 
+  val singleOfficerAssessment: FinancialTransactionDocument = {
+    val sapDocumentNumber = sapDocumentNumberGen.sample.get
+    val chargeReference   = chargeReferenceGen.sample.get
+
+    createFinancialDocument(
+      onlyOpenItems = false,
+      sapDocumentNumber = sapDocumentNumber,
+      originalAmount = BigDecimal("20"),
+      maybeOutstandingAmount = Some(BigDecimal("20")),
+      dueDate = ReturnPeriod.fromPeriodKeyOrThrow(periodKey).dueDate(),
+      transactionType = TransactionType.CAI,
+      maybeTaxPeriodFrom = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).periodFromDate()),
+      maybeTaxPeriodTo = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).periodToDate()),
+      maybeChargeReference = Some(chargeReference)
+    )
+  }
+
   def multipleStatuses(onlyOpenItems: Boolean): FinancialTransactionDocument =
     combineFinancialTransactionDocuments(
       Seq(

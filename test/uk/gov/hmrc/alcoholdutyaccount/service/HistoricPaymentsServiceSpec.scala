@@ -18,10 +18,11 @@ package uk.gov.hmrc.alcoholdutyaccount.service
 
 import org.mockito.Mockito.when
 import uk.gov.hmrc.alcoholdutyaccount.base.SpecBase
+import uk.gov.hmrc.alcoholdutyaccount.config.AppConfig
 import uk.gov.hmrc.alcoholdutyaccount.connectors.FinancialDataConnector
 import uk.gov.hmrc.alcoholdutyaccount.models.ReturnPeriod
 import uk.gov.hmrc.alcoholdutyaccount.models.hods.FinancialTransactionDocument
-import uk.gov.hmrc.alcoholdutyaccount.models.payments._
+import uk.gov.hmrc.alcoholdutyaccount.models.payments.*
 import uk.gov.hmrc.alcoholdutyaccount.utils.payments.PaymentsValidator
 
 import scala.concurrent.Future
@@ -268,7 +269,8 @@ class HistoricPaymentsServiceSpec extends SpecBase {
 
   class SetUp {
     val mockFinancialDataConnector: FinancialDataConnector = mock[FinancialDataConnector]
-    val paymentsValidator: PaymentsValidator               = new PaymentsValidator()
+    private val mockAppConfig                              = mock[AppConfig]
+    val paymentsValidator: PaymentsValidator               = new PaymentsValidator(mockAppConfig)
     val paymentsService                                    = new HistoricPaymentsService(mockFinancialDataConnector, paymentsValidator)
     val year                                               = 2024
 

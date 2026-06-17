@@ -49,14 +49,19 @@ object TransactionType extends Enum[TransactionType] with PlayJsonEnum[Transacti
     val mainTransactionType: String = "6085"
   }
 
+  case object OfficerAssessment extends TransactionType {
+    val mainTransactionType: String = "6086"
+  }
+
   def fromMainTransactionType(mainTransactionType: String): Option[TransactionType] = mainTransactionType match {
-    case Return.mainTransactionType      => Some(Return)
-    case Overpayment.mainTransactionType => Some(Overpayment)
-    case LPI.mainTransactionType         => Some(LPI)
-    case RPI.mainTransactionType         => Some(RPI)
-    case CA.mainTransactionType          => Some(CA)
-    case CAI.mainTransactionType         => Some(CAI)
-    case _                               => None
+    case Return.mainTransactionType            => Some(Return)
+    case Overpayment.mainTransactionType       => Some(Overpayment)
+    case LPI.mainTransactionType               => Some(LPI)
+    case RPI.mainTransactionType               => Some(RPI)
+    case CA.mainTransactionType                => Some(CA)
+    case CAI.mainTransactionType               => Some(CAI)
+    case OfficerAssessment.mainTransactionType => Some(OfficerAssessment)
+    case _                                     => None
   }
 
   def toMainTransactionType(transactionType: TransactionType): String = transactionType.mainTransactionType
@@ -68,4 +73,7 @@ object TransactionType extends Enum[TransactionType] with PlayJsonEnum[Transacti
 
   def isOverpayment(mainTransactionType: String): Boolean =
     mainTransactionType == Overpayment.mainTransactionType
+
+  def isOfficerAssessment(mainTransactionType: String): Boolean =
+    mainTransactionType == OfficerAssessment.mainTransactionType
 }

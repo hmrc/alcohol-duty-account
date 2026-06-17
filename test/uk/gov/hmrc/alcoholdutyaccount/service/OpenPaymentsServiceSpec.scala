@@ -19,6 +19,7 @@ package uk.gov.hmrc.alcoholdutyaccount.service
 import org.mockito.Mockito.when
 import org.scalactic.Prettifier.default
 import uk.gov.hmrc.alcoholdutyaccount.base.SpecBase
+import uk.gov.hmrc.alcoholdutyaccount.config.AppConfig
 import uk.gov.hmrc.alcoholdutyaccount.connectors.FinancialDataConnector
 import uk.gov.hmrc.alcoholdutyaccount.models.hods.FinancialTransactionDocument
 import uk.gov.hmrc.alcoholdutyaccount.models.payments.*
@@ -423,6 +424,32 @@ class OpenPaymentsServiceSpec extends SpecBase {
         }
 
         "when processing a single fully outstanding Central Assessment Interest charge" in new SetUp {
+          when(mockFinancialDataConnector.getOnlyOpenFinancialData(appaId))
+            .thenReturn(Future.successful(Right(singleCAI)))
+
+          whenReady(paymentsService.getOpenPayments(appaId).value) {
+            _ mustBe Right(
+              OpenPayments(
+                outstandingPayments = Seq(
+                  OutstandingPayment(
+                    taxPeriodFrom = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).periodFromDate()),
+                    taxPeriodTo = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).periodToDate()),
+                    transactionType = TransactionType.CAI,
+                    dueDate = singleCAI.financialTransactions.head.items.head.dueDate.get,
+                    chargeReference = singleCAI.financialTransactions.head.chargeReference,
+                    remainingAmount = BigDecimal("20")
+                  )
+                ),
+                totalOutstandingPayments = BigDecimal("20"),
+                unallocatedPayments = Seq.empty,
+                totalUnallocatedPayments = BigDecimal("0"),
+                totalOpenPaymentsAmount = BigDecimal("20")
+              )
+            )
+          }
+        }
+
+        "when processing a single fully outstanding Officer Assessment charge" in new SetUp {
           when(mockFinancialDataConnector.getOnlyOpenFinancialData(appaId))
             .thenReturn(Future.successful(Right(singleCAI)))
 
@@ -866,7 +893,8 @@ class OpenPaymentsServiceSpec extends SpecBase {
 
   class SetUp {
     val mockFinancialDataConnector                = mock[FinancialDataConnector]
-    val paymentsValidator: PaymentsValidator      = new PaymentsValidator()
+    private val mockAppConfig                     = mock[AppConfig]
+    val paymentsValidator: PaymentsValidator      = new PaymentsValidator(mockAppConfig)
     val paymentsService                           = new OpenPaymentsService(mockFinancialDataConnector, paymentsValidator)
     val year                                      = 2024
     val singlePartiallyOutstandingReturnOpen      = singlePartiallyOutstandingReturn(onlyOpenItems = true)
