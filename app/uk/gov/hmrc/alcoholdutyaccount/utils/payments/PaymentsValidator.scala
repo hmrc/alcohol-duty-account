@@ -52,7 +52,11 @@ class PaymentsValidator @Inject() (appConfig: AppConfig) extends Logging {
                                              maybeChargeReference,
                                              dueDate
                                            )
-      transactionType                   <- getTransactionType(sapDocumentNumber, mainTransactionType)
+      transactionType                   <- if (appConfig.isOfficerAssessment) {
+                                             getTransactionTypeWithOA(sapDocumentNumber, mainTransactionType)
+                                           } else {
+                                             getTransactionType(sapDocumentNumber, mainTransactionType)
+                                           }
     } yield FinancialTransactionData(
       transactionType,
       maybePeriodKey,
@@ -63,6 +67,21 @@ class PaymentsValidator @Inject() (appConfig: AppConfig) extends Logging {
     )
 
   private def getTransactionType(
+    sapDocumentNumber: String,
+    mainTransactionType: String
+  ): Either[ErrorResponse, TransactionType] =
+    TransactionType
+      .fromMainTransactionType(mainTransactionType)
+      .fold[Either[ErrorResponse, TransactionType]] {
+        logger.warn(
+          s"[PaymentsValidator] [getTransactionType] Unexpected transaction type $mainTransactionType on financial transaction $sapDocumentNumber."
+        )
+        Left(ErrorCodes.unexpectedResponse)
+      } { transactionType =>
+        Right(transactionType)
+      }
+
+  private def getTransactionTypeWithOA(
     sapDocumentNumber: String,
     mainTransactionType: String
   ): Either[ErrorResponse, TransactionType] =
