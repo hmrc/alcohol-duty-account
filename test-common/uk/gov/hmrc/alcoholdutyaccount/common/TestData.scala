@@ -872,6 +872,18 @@ trait TestData extends ModelGenerators {
         createFinancialDocument(
           onlyOpenItems = onlyOpenItems,
           sapDocumentNumber = sapDocumentNumberGen.sample.get,
+          originalAmount = BigDecimal("777.44"),
+          maybeOutstandingAmount = Some(BigDecimal("77.44")),
+          dueDate = ReturnPeriod.fromPeriodKeyOrThrow("24AB").periodFromDate(),
+          transactionType = TransactionType.OfficerAssessment,
+          maybePeriodKey = None,
+          maybeTaxPeriodFrom = Some(ReturnPeriod.fromPeriodKeyOrThrow("24AB").periodFromDate()),
+          maybeTaxPeriodTo = Some(ReturnPeriod.fromPeriodKeyOrThrow("24AB").periodToDate()),
+          maybeChargeReference = Some(chargeReferenceGen.sample.get)
+        ),
+        createFinancialDocument(
+          onlyOpenItems = onlyOpenItems,
+          sapDocumentNumber = sapDocumentNumberGen.sample.get,
           originalAmount = BigDecimal("-1000.00"),
           maybeOutstandingAmount = Some(BigDecimal("-1000.00")),
           dueDate = ReturnPeriod.fromPeriodKeyOrThrow("24AH").periodFromDate(),
