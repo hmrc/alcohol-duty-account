@@ -215,6 +215,14 @@ class HistoricPaymentsServiceSpec extends SpecBase {
                   ReturnPeriod.fromPeriodKeyOrThrow("24AB"),
                   ReturnPeriod.fromPeriodKeyOrThrow("24AB").periodFromDate(),
                   ReturnPeriod.fromPeriodKeyOrThrow("24AB").periodToDate(),
+                  TransactionType.OfficerAssessment,
+                  Some("ChargeRef"),
+                  BigDecimal("700")
+                ),
+                HistoricPayment(
+                  ReturnPeriod.fromPeriodKeyOrThrow("24AB"),
+                  ReturnPeriod.fromPeriodKeyOrThrow("24AB").periodFromDate(),
+                  ReturnPeriod.fromPeriodKeyOrThrow("24AB").periodToDate(),
                   TransactionType.LPI,
                   Some("ChargeRef"),
                   BigDecimal("10")
@@ -271,7 +279,7 @@ class HistoricPaymentsServiceSpec extends SpecBase {
     val mockFinancialDataConnector: FinancialDataConnector = mock[FinancialDataConnector]
     private val mockAppConfig                              = mock[AppConfig]
     val paymentsValidator: PaymentsValidator               = new PaymentsValidator(mockAppConfig)
-    val paymentsService                                    = new HistoricPaymentsService(mockFinancialDataConnector, paymentsValidator)
+    val paymentsService                                    = new HistoricPaymentsService(mockFinancialDataConnector, paymentsValidator)(ec, mockAppConfig)
     val year                                               = 2024
 
     val singlePositiveRPI: FinancialTransactionDocument = {

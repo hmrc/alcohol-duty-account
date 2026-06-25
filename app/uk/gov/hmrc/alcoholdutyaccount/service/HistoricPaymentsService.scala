@@ -17,8 +17,9 @@
 package uk.gov.hmrc.alcoholdutyaccount.service
 
 import cats.data.EitherT
-import cats.implicits._
+import cats.implicits.*
 import play.api.Logging
+import uk.gov.hmrc.alcoholdutyaccount.config.AppConfig
 import uk.gov.hmrc.alcoholdutyaccount.connectors.FinancialDataConnector
 import uk.gov.hmrc.alcoholdutyaccount.models.ReturnPeriod
 import uk.gov.hmrc.alcoholdutyaccount.models.hods.{FinancialTransaction, FinancialTransactionDocument}
@@ -35,7 +36,7 @@ import scala.concurrent.{ExecutionContext, Future}
 class HistoricPaymentsService @Inject() (
   financialDataConnector: FinancialDataConnector,
   financialDataValidator: PaymentsValidator
-)(implicit ec: ExecutionContext)
+)(implicit ec: ExecutionContext, appConfig: AppConfig)
     extends Logging {
 
   def getHistoricPayments(
@@ -53,8 +54,14 @@ class HistoricPaymentsService @Inject() (
     EitherT.fromEither(
       financialTransactionDocument.financialTransactions
         .filter(transaction =>
-          TransactionType.isRPI(transaction.mainTransaction) ||
+          if (appConfig.isOfficerAssessment) {
+            TransactionType.isRPI(transaction.mainTransaction) ||
+            !(TransactionType.isOverpayment(transaction.mainTransaction) || isTransactionFullyOpen(transaction)) ||
+            TransactionType.isOfficerAssessment(transaction.mainTransaction)
+          } else {
+            TransactionType.isRPI(transaction.mainTransaction) ||
             !(TransactionType.isOverpayment(transaction.mainTransaction) || isTransactionFullyOpen(transaction))
+          }
         )
         .groupBy(_.sapDocumentNumber)
         .map { case (sapDocumentNumber, financialTransactionsForDocument) =>
