@@ -52,11 +52,7 @@ class PaymentsValidator @Inject() (appConfig: AppConfig) extends Logging {
                                              maybeChargeReference,
                                              dueDate
                                            )
-      transactionType                   <- if (appConfig.isOfficerAssessment) {
-                                             getTransactionTypeWithOA(sapDocumentNumber, mainTransactionType)
-                                           } else {
-                                             getTransactionType(sapDocumentNumber, mainTransactionType)
-                                           }
+      transactionType                   <- getTransactionType(sapDocumentNumber, mainTransactionType)
     } yield FinancialTransactionData(
       transactionType,
       maybePeriodKey,
@@ -67,21 +63,6 @@ class PaymentsValidator @Inject() (appConfig: AppConfig) extends Logging {
     )
 
   private def getTransactionType(
-    sapDocumentNumber: String,
-    mainTransactionType: String
-  ): Either[ErrorResponse, TransactionType] =
-    TransactionType
-      .fromMainTransactionType(mainTransactionType)
-      .fold[Either[ErrorResponse, TransactionType]] {
-        logger.warn(
-          s"[PaymentsValidator] [getTransactionType] Unexpected transaction type $mainTransactionType on financial transaction $sapDocumentNumber."
-        )
-        Left(ErrorCodes.unexpectedResponse)
-      } { transactionType =>
-        Right(transactionType)
-      }
-
-  private def getTransactionTypeWithOA(
     sapDocumentNumber: String,
     mainTransactionType: String
   ): Either[ErrorResponse, TransactionType] =
@@ -128,10 +109,7 @@ class PaymentsValidator @Inject() (appConfig: AppConfig) extends Logging {
                 maybeTaxPeriodTo == financialTransaction.taxPeriodTo &&
                 maybeChargeReference == financialTransaction.chargeReference
             )
-          } else if (
-            appConfig.isOfficerAssessment && TransactionType.isOfficerAssessment(mainTransactionType) ||
-            appConfig.isOfficerAssessment && TransactionType.isOfficerAssessmentLPI(mainTransactionType)
-          ) {
+          } else if (appConfig.isOfficerAssessment && TransactionType.isOfficerAssessment(mainTransactionType)) {
             Right(
               maybePeriodKey == financialTransaction.periodKey &&
                 maybeTaxPeriodFrom == financialTransaction.taxPeriodFrom &&
