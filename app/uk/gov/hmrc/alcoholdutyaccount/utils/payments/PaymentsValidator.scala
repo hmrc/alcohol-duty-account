@@ -18,6 +18,7 @@ package uk.gov.hmrc.alcoholdutyaccount.utils.payments
 
 import cats.implicits.*
 import play.api.Logging
+import uk.gov.hmrc.alcoholdutyaccount.config.AppConfig
 import uk.gov.hmrc.alcoholdutyaccount.models.ErrorCodes
 import uk.gov.hmrc.alcoholdutyaccount.models.hods.{FinancialTransaction, FinancialTransactionItem}
 import uk.gov.hmrc.alcoholdutyaccount.models.payments.{FinancialTransactionData, TransactionType}
@@ -26,7 +27,7 @@ import uk.gov.hmrc.play.bootstrap.http.ErrorResponse
 import java.time.LocalDate
 import javax.inject.Inject
 
-class PaymentsValidator @Inject() () extends Logging {
+class PaymentsValidator @Inject() (appConfig: AppConfig) extends Logging {
 
   def validateAndGetFinancialTransactionData(
     sapDocumentNumber: String,
@@ -102,6 +103,13 @@ class PaymentsValidator @Inject() () extends Logging {
             TransactionType.isLPIorRPI(mainTransactionType) &&
             TransactionType.isLPIorRPI(financialTransaction.mainTransaction)
           ) {
+            Right(
+              maybePeriodKey == financialTransaction.periodKey &&
+                maybeTaxPeriodFrom == financialTransaction.taxPeriodFrom &&
+                maybeTaxPeriodTo == financialTransaction.taxPeriodTo &&
+                maybeChargeReference == financialTransaction.chargeReference
+            )
+          } else if (appConfig.isOfficerAssessment && TransactionType.isOfficerAssessment(mainTransactionType)) {
             Right(
               maybePeriodKey == financialTransaction.periodKey &&
                 maybeTaxPeriodFrom == financialTransaction.taxPeriodFrom &&

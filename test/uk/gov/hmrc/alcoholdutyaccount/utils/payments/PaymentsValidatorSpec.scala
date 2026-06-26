@@ -17,6 +17,7 @@
 package uk.gov.hmrc.alcoholdutyaccount.utils.payments
 
 import uk.gov.hmrc.alcoholdutyaccount.base.SpecBase
+import uk.gov.hmrc.alcoholdutyaccount.config.AppConfig
 import uk.gov.hmrc.alcoholdutyaccount.models.ErrorCodes
 
 class PaymentsValidatorSpec extends SpecBase {
@@ -38,6 +39,7 @@ class PaymentsValidatorSpec extends SpecBase {
   }
 
   class SetUp {
-    val paymentsValidator: PaymentsValidator = new PaymentsValidator()
+    private val mockAppConfig                = mock[AppConfig]
+    val paymentsValidator: PaymentsValidator = new PaymentsValidator(mockAppConfig)
   }
 }
