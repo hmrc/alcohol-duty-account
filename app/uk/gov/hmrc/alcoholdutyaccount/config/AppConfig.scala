@@ -88,4 +88,7 @@ class AppConfig @Inject() (config: Configuration, servicesConfig: ServicesConfig
     config.get[FiniteDuration]("microservice.services.circuit-breaker.call-timeout")
   lazy val resetTimeout: FiniteDuration =
     config.get[FiniteDuration]("microservice.services.circuit-breaker.reset-timeout")
+
+  // officer assessment
+  val isOfficerAssessment: Boolean = config.get[Boolean]("toggle.isOfficerAssessment")
 }
