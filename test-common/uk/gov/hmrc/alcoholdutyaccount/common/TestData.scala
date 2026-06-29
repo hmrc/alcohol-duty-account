@@ -794,6 +794,23 @@ trait TestData extends ModelGenerators {
     )
   }
 
+  val singleOfficerAssessmentLPI: FinancialTransactionDocument = {
+    val sapDocumentNumber = sapDocumentNumberGen.sample.get
+    val chargeReference   = chargeReferenceGen.sample.get
+
+    createFinancialDocument(
+      onlyOpenItems = false,
+      sapDocumentNumber = sapDocumentNumber,
+      originalAmount = BigDecimal("20"),
+      maybeOutstandingAmount = Some(BigDecimal("20")),
+      dueDate = ReturnPeriod.fromPeriodKeyOrThrow(periodKey).dueDate(),
+      transactionType = TransactionType.OfficerAssessmentLPI,
+      maybeTaxPeriodFrom = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).periodFromDate()),
+      maybeTaxPeriodTo = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).periodToDate()),
+      maybeChargeReference = Some(chargeReference)
+    )
+  }
+
   def multipleStatuses(onlyOpenItems: Boolean): FinancialTransactionDocument =
     combineFinancialTransactionDocuments(
       Seq(
@@ -917,6 +934,18 @@ trait TestData extends ModelGenerators {
           maybeTaxPeriodTo = None,
           maybeChargeReference = None
         ),
+        createFinancialDocument(
+          onlyOpenItems = onlyOpenItems,
+          sapDocumentNumber = sapDocumentNumberGen.sample.get,
+          originalAmount = BigDecimal("50.00"),
+          maybeOutstandingAmount = Some(BigDecimal("50.00")),
+          dueDate = ReturnPeriod.fromPeriodKeyOrThrow("24AA").periodFromDate(),
+          transactionType = TransactionType.OfficerAssessmentLPI,
+          maybePeriodKey = None,
+          maybeTaxPeriodFrom = None,
+          maybeTaxPeriodTo = None,
+          maybeChargeReference = None
+        ),
         nilReturnLineItemsCancelling
       )
     )
@@ -1019,13 +1048,31 @@ trait TestData extends ModelGenerators {
       amountPaid = amount
     )
 
-  val historicReturnPayment = historicPayment(YearMonth.of(2025, Month.APRIL), Return, BigDecimal(1236.45))
-  val historicLPIPayment    = historicPayment(YearMonth.of(2025, Month.JUNE), LPI, BigDecimal(12.45))
-  val historicCAPayment     = historicPayment(YearMonth.of(2025, Month.MAY), CA, BigDecimal(234.45))
-  val historicCAIPayment    = historicPayment(YearMonth.of(2025, Month.JULY), Return, BigDecimal(123.45))
+  val historicReturnPayment               = historicPayment(YearMonth.of(2025, Month.APRIL), Return, BigDecimal(1236.45))
+  val historicLPIPayment                  = historicPayment(YearMonth.of(2025, Month.JUNE), LPI, BigDecimal(12.45))
+  val historicCAPayment                   = historicPayment(YearMonth.of(2025, Month.MAY), CA, BigDecimal(234.45))
+  val historicCAIPayment                  = historicPayment(YearMonth.of(2025, Month.JULY), Return, BigDecimal(123.45))
+  val historicOfficerAssessmentPayment    =
+    historicPayment(YearMonth.of(2025, Month.AUGUST), OfficerAssessment, BigDecimal(123.45))
+  val historicOfficerAssessmentLPIPayment =
+    historicPayment(YearMonth.of(2025, Month.SEPTEMBER), OfficerAssessmentLPI, BigDecimal(123.45))
 
   val historicPayments2025 =
     HistoricPayments(2025, Seq(historicReturnPayment, historicLPIPayment, historicCAPayment, historicCAIPayment))
+
+  val historicPayments2025WithOfficerAssessment =
+    HistoricPayments(
+      2025,
+      Seq(
+        historicReturnPayment,
+        historicLPIPayment,
+        historicCAPayment,
+        historicCAIPayment,
+        historicOfficerAssessmentPayment,
+        historicOfficerAssessmentLPIPayment
+      )
+    )
+
   val historicPayments2024 = HistoricPayments(
     2024,
     Seq(
