@@ -22,7 +22,7 @@ import play.api.Logging
 import uk.gov.hmrc.alcoholdutyaccount.config.AppConfig
 import uk.gov.hmrc.alcoholdutyaccount.connectors.FinancialDataConnector
 import uk.gov.hmrc.alcoholdutyaccount.models.hods.{FinancialTransaction, FinancialTransactionDocument}
-import uk.gov.hmrc.alcoholdutyaccount.models.payments.TransactionType.Overpayment
+import uk.gov.hmrc.alcoholdutyaccount.models.payments.TransactionType.{Overpayment, RPI}
 import uk.gov.hmrc.alcoholdutyaccount.models.payments.*
 import uk.gov.hmrc.alcoholdutyaccount.utils.payments.PaymentsValidator
 import uk.gov.hmrc.http.HeaderCarrier
@@ -75,8 +75,8 @@ class OpenPaymentsService @Inject() (
     EitherT {
       Future.successful(
         transactions
-          .groupBy(_.sapDocumentNumber)
-          .map { case (sapDocumentNumber, financialTransactionsForDocument) =>
+          .groupBy(transaction => (transaction.sapDocumentNumber, TransactionType.isRPI(transaction.mainTransaction)))
+          .map { case ((sapDocumentNumber, _), financialTransactionsForDocument) =>
             validate(sapDocumentNumber, financialTransactionsForDocument)
           }
           .toList
@@ -150,7 +150,7 @@ class OpenPaymentsService @Inject() (
     outstandingPayments: Seq[OutstandingPayment],
     unallocatedPayments: Seq[UnallocatedPayment]
   ): PaymentTotals = {
-    val totalOutstandingPayments = outstandingPayments.map(_.remainingAmount).sum
+    val totalOutstandingPayments = outstandingPayments.filterNot(_.transactionType == RPI).map(_.remainingAmount).sum
     val totalUnallocatedPayments = unallocatedPayments.map(_.unallocatedAmount).sum
 
     PaymentTotals(

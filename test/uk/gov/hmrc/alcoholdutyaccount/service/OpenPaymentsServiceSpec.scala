@@ -388,12 +388,50 @@ class OpenPaymentsServiceSpec extends SpecBase {
                     remainingAmount = BigDecimal("-50")
                   )
                 ),
-                totalOutstandingPayments = BigDecimal("-50"),
+                totalOutstandingPayments = BigDecimal("0"),
                 unallocatedPayments = Seq.empty,
                 totalUnallocatedPayments = BigDecimal("0"),
-                totalOpenPaymentsAmount = BigDecimal("-50")
+                totalOpenPaymentsAmount = BigDecimal("0")
               )
             )
+          }
+        }
+
+        "when processing an LPI and an RPI on the same SAP document" in new SetUp {
+          val rpiTransaction             = singleRPI.financialTransactions.head
+          val lpiTransaction             = rpiTransaction.copy(
+            mainTransaction = TransactionType.toMainTransactionType(TransactionType.LPI),
+            originalAmount = BigDecimal("100"),
+            outstandingAmount = Some(BigDecimal("100"))
+          )
+          val lpiAndRpiOnSameSapDocument = singleRPI.copy(financialTransactions = Seq(lpiTransaction, rpiTransaction))
+
+          when(mockFinancialDataConnector.getOnlyOpenFinancialData(appaId))
+            .thenReturn(Future.successful(Right(lpiAndRpiOnSameSapDocument)))
+
+          whenReady(paymentsService.getOpenPayments(appaId).value) {
+            case Left(_)             => fail()
+            case Right(openPayments) =>
+              openPayments.outstandingPayments        must contain theSameElementsAs Seq(
+                OutstandingPayment(
+                  taxPeriodFrom = None,
+                  taxPeriodTo = None,
+                  transactionType = TransactionType.LPI,
+                  dueDate = lpiTransaction.items.head.dueDate.get,
+                  chargeReference = lpiTransaction.chargeReference,
+                  remainingAmount = BigDecimal("100")
+                ),
+                OutstandingPayment(
+                  taxPeriodFrom = None,
+                  taxPeriodTo = None,
+                  transactionType = TransactionType.RPI,
+                  dueDate = rpiTransaction.items.head.dueDate.get,
+                  chargeReference = rpiTransaction.chargeReference,
+                  remainingAmount = BigDecimal("-50")
+                )
+              )
+              openPayments.totalOutstandingPayments mustBe BigDecimal("100")
+              openPayments.totalOpenPaymentsAmount  mustBe BigDecimal("100")
           }
         }
 
