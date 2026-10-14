@@ -115,10 +115,7 @@ class PaymentsValidator @Inject() (appConfig: AppConfig) extends Logging {
             ) || TransactionType.isOfficerAssessmentLPI(mainTransactionType))
           ) {
             Right(
-              maybePeriodKey == financialTransaction.periodKey &&
-                maybeTaxPeriodFrom == financialTransaction.taxPeriodFrom &&
-                maybeTaxPeriodTo == financialTransaction.taxPeriodTo &&
-                maybeChargeReference == financialTransaction.chargeReference
+              maybeChargeReference == financialTransaction.chargeReference
             )
           } else {
             Right(
