@@ -547,17 +547,17 @@ class PaymentsIntegrationSpec extends ISpecBase with ConnectorTestHelpers {
     val openPayments       =
       s"""{"outstandingPayments":[
          |  {"taxPeriodFrom":"$year-02-01","taxPeriodTo":"$year-02-28","transactionType":"LPI","dueDate":"$year-02-01","chargeReference":"XA85353805192234","remainingAmount":20.56},
+         |  {"taxPeriodFrom":"$year-02-01","taxPeriodTo":"$year-02-28","transactionType":"LPI","dueDate":"$year-02-01","chargeReference":"XA63139412020838","remainingAmount":10.56},
+         |  {"transactionType":"RPI","dueDate":"$year-03-01","chargeReference":"XA69201353871649","remainingAmount":-50},
          |  {"taxPeriodFrom":"$year-08-01","taxPeriodTo":"$year-08-31","transactionType":"Return","dueDate":"$year-09-25","chargeReference":"XA91104208683855","remainingAmount":237.44},
          |  {"taxPeriodFrom":"$year-05-01","taxPeriodTo":"$year-05-31","transactionType":"Return","dueDate":"$year-06-25","chargeReference":"XA95767883826728","remainingAmount":4577.44},
-         |  {"taxPeriodFrom":"$year-04-01","taxPeriodTo":"$year-04-30","transactionType":"Return","dueDate":"$year-05-25","chargeReference":"XA07406454540955","remainingAmount":2577.44},
-         |  {"transactionType":"RPI","dueDate":"$year-03-01","chargeReference":"XA69201353871649","remainingAmount":-50},
+         |  {"taxPeriodFrom":"$year-10-01","taxPeriodTo":"$year-10-31","transactionType":"CA","dueDate":"$year-11-25","chargeReference":"XA95767883826729","remainingAmount":2345.67},
          |  {"taxPeriodFrom":"$year-03-01","taxPeriodTo":"$year-03-31","transactionType":"Return","dueDate":"$year-04-25","chargeReference":"XA15775952652650","remainingAmount":-2577.44},
-         |  {"taxPeriodFrom":"$year-02-01","taxPeriodTo":"$year-02-28","transactionType":"LPI","dueDate":"$year-02-01","chargeReference":"XA63139412020838","remainingAmount":10.56},
          |  {"taxPeriodFrom":"$year-09-01","taxPeriodTo":"$year-09-30","transactionType":"CAI","dueDate":"$year-11-01","chargeReference":"XA95767883826729","remainingAmount":12.34},
-         |  {"taxPeriodFrom":"$year-10-01","taxPeriodTo":"$year-10-31","transactionType":"CA","dueDate":"$year-11-25","chargeReference":"XA95767883826729","remainingAmount":2345.67}
-         |],"totalOutstandingPayments":7154.01,
+         |  {"taxPeriodFrom":"$year-04-01","taxPeriodTo":"$year-04-30","transactionType":"Return","dueDate":"$year-05-25","chargeReference":"XA07406454540955","remainingAmount":2577.44}
+         |],"totalOutstandingPayments":7204.01,
          |"unallocatedPayments":[{"paymentDate":"$year-08-01","unallocatedAmount":-1000},{"paymentDate":"$year-08-01","unallocatedAmount":-500}],
-         |"totalUnallocatedPayments":-1500,"totalOpenPaymentsAmount":5654.01}""".stripMargin
+         |"totalUnallocatedPayments":-1500,"totalOpenPaymentsAmount":5704.01}""".stripMargin
     val historicPayments   =
       s"""[{"year":${year - 1},"payments":[
          |  {"period":"24AB","taxPeriodFrom":"${year - 1}-02-01","taxPeriodTo":"${year - 1}-02-28","transactionType":"LPI","chargeReference":"XA63139412020838","amountPaid":10},
