@@ -18,9 +18,14 @@ package uk.gov.hmrc.alcoholdutyaccount.utils.payments
 
 import uk.gov.hmrc.alcoholdutyaccount.base.SpecBase
 import uk.gov.hmrc.alcoholdutyaccount.config.AppConfig
-import uk.gov.hmrc.alcoholdutyaccount.models.ErrorCodes
+import uk.gov.hmrc.alcoholdutyaccount.models.{ErrorCodes, ReturnPeriod}
+import uk.gov.hmrc.alcoholdutyaccount.models.hods.FinancialTransaction
+import uk.gov.hmrc.alcoholdutyaccount.common.TestData
+import uk.gov.hmrc.alcoholdutyaccount.models.payments.{FinancialTransactionData, TransactionType}
 
-class PaymentsValidatorSpec extends SpecBase {
+import java.time.LocalDate
+
+class PaymentsValidatorSpec extends SpecBase with TestData {
   "PaymentsValidator" - {
     "when calling validateAndGetFinancialTransactionData" - {
       "and there is no financial transactions for a document which must not be possible" - {
@@ -35,11 +40,55 @@ class PaymentsValidatorSpec extends SpecBase {
           )
         }
       }
+
+      if (appConfig.isOfficerAssessment) {
+        "allows to have multiple tax periods for outstanding payments of officers assessment in diff tax periods" in new SetUp {
+
+          val sapDocumentNumber: String = sapDocumentNumberGen.sample.get
+
+          paymentsValidator.validateAndGetFinancialTransactionData(
+            sapDocumentNumber,
+            createOfficerAssessmentDoc(sapDocumentNumber, periodKey, periodKey2).financialTransactions
+          ) mustBe Right(
+            FinancialTransactionData(
+              transactionType = TransactionType.OfficerAssessment,
+              maybePeriodKey = Option(periodKey),
+              taxPeriodFrom = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).periodFromDate()),
+              taxPeriodTo = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).periodToDate()),
+              dueDate = ReturnPeriod.fromPeriodKeyOrThrow(periodKey).dueDate(),
+              maybeChargeReference = Option(chargeReference)
+            )
+          )
+        }
+
+        "allows to have multiple tax periods for outstanding payments of officers assessment LPI in diff tax peirods" in new SetUp {
+
+          val sapDocumentNumber: String = sapDocumentNumberGen.sample.get
+
+          paymentsValidator.validateAndGetFinancialTransactionData(
+            sapDocumentNumber,
+            createOfficerAssessmentDoc(
+              sapDocumentNumber,
+              periodKey,
+              periodKey2,
+              TransactionType.OfficerAssessmentLPI
+            ).financialTransactions
+          ) mustBe Right(
+            FinancialTransactionData(
+              transactionType = TransactionType.OfficerAssessmentLPI,
+              maybePeriodKey = Option(periodKey),
+              taxPeriodFrom = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).periodFromDate()),
+              taxPeriodTo = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).periodToDate()),
+              dueDate = ReturnPeriod.fromPeriodKeyOrThrow(periodKey).dueDate(),
+              maybeChargeReference = Option(chargeReference)
+            )
+          )
+        }
+      }
     }
   }
 
   class SetUp {
-    private val mockAppConfig                = mock[AppConfig]
-    val paymentsValidator: PaymentsValidator = new PaymentsValidator(mockAppConfig)
+    val paymentsValidator: PaymentsValidator = new PaymentsValidator(appConfig)
   }
 }
