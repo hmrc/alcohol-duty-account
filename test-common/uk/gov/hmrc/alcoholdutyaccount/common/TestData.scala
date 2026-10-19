@@ -777,6 +777,41 @@ trait TestData extends ModelGenerators {
     )
   }
 
+  def createOfficerAssessmentDoc(
+    sapNumber: String,
+    period1: String,
+    period2: String,
+    transactionType: TransactionType = TransactionType.OfficerAssessment
+  ): FinancialTransactionDocument =
+    combineFinancialTransactionDocuments(
+      Seq(
+        createFinancialDocument(
+          onlyOpenItems = true,
+          sapDocumentNumber = sapNumber,
+          originalAmount = BigDecimal("9000"),
+          maybeOutstandingAmount = Some(BigDecimal("5000")),
+          dueDate = ReturnPeriod.fromPeriodKeyOrThrow(period1).dueDate(),
+          transactionType = transactionType,
+          maybePeriodKey = Some(period1),
+          maybeTaxPeriodFrom = Some(ReturnPeriod.fromPeriodKeyOrThrow(period1).periodFromDate()),
+          maybeTaxPeriodTo = Some(ReturnPeriod.fromPeriodKeyOrThrow(period1).periodToDate()),
+          maybeChargeReference = Some(chargeReference)
+        ),
+        createFinancialDocument(
+          onlyOpenItems = true,
+          sapDocumentNumber = sapNumber,
+          originalAmount = BigDecimal("2000"),
+          maybeOutstandingAmount = Some(BigDecimal("2000")),
+          dueDate = ReturnPeriod.fromPeriodKeyOrThrow(period2).dueDate(),
+          transactionType = transactionType,
+          maybePeriodKey = Some(period2),
+          maybeTaxPeriodFrom = Some(ReturnPeriod.fromPeriodKeyOrThrow(period2).periodFromDate()),
+          maybeTaxPeriodTo = Some(ReturnPeriod.fromPeriodKeyOrThrow(period2).periodToDate()),
+          maybeChargeReference = Some(chargeReference)
+        )
+      )
+    )
+
   val singleOfficerAssessment: FinancialTransactionDocument = {
     val sapDocumentNumber = sapDocumentNumberGen.sample.get
     val chargeReference   = chargeReferenceGen.sample.get
