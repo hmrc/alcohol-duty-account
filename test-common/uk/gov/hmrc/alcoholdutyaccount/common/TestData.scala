@@ -224,9 +224,11 @@ trait TestData extends ModelGenerators {
           FinancialTransactionItem(
             subItem = "001",
             dueDate = None,
-            amount = 50.00
+            amount = 50.00,
+            None
           )
-        )
+        ),
+        runningLock = None
       ),
       FinancialTransaction(
         sapDocumentNumber = "123456",
@@ -244,9 +246,11 @@ trait TestData extends ModelGenerators {
           FinancialTransactionItem(
             subItem = "002",
             dueDate = None,
-            amount = 100.00
+            amount = 100.00,
+            runningLock = None
           )
-        )
+        ),
+        runningLock = None
       )
     )
   )
@@ -261,7 +265,8 @@ trait TestData extends ModelGenerators {
     maybePeriodKey: Option[String] = None,
     maybeTaxPeriodFrom: Option[LocalDate] = None,
     maybeTaxPeriodTo: Option[LocalDate] = None,
-    maybeChargeReference: Option[String] = None
+    maybeChargeReference: Option[String] = None,
+    maybeRunningLock: Option[String]
   ) = FinancialTransactionDocument(
     financialTransactions = Seq(
       FinancialTransaction(
@@ -278,12 +283,22 @@ trait TestData extends ModelGenerators {
         ),
         mainTransaction = toMainTransactionType(transactionType),
         subTransaction = "6132",
-        items = if (maybeOutstandingAmount.isEmpty || maybeOutstandingAmount.contains(originalAmount)) {
+        items = if (transactionType == OfficerAssessment) {
           Seq(
             FinancialTransactionItem(
               subItem = "000",
               dueDate = Some(dueDate),
-              amount = originalAmount
+              amount = originalAmount,
+              runningLock = maybeRunningLock
+            )
+          )
+        } else if (maybeOutstandingAmount.isEmpty || maybeOutstandingAmount.contains(originalAmount)) {
+          Seq(
+            FinancialTransactionItem(
+              subItem = "000",
+              dueDate = Some(dueDate),
+              amount = originalAmount,
+              runningLock = None
             )
           )
         } else if (onlyOpenItems) {
@@ -291,7 +306,8 @@ trait TestData extends ModelGenerators {
             FinancialTransactionItem(
               subItem = "000",
               dueDate = Some(dueDate),
-              amount = maybeOutstandingAmount.get
+              amount = maybeOutstandingAmount.get,
+              runningLock = None
             )
           )
         } else {
@@ -299,15 +315,18 @@ trait TestData extends ModelGenerators {
             FinancialTransactionItem(
               subItem = "000",
               dueDate = Some(dueDate),
-              amount = maybeOutstandingAmount.get
+              amount = maybeOutstandingAmount.get,
+              runningLock = None
             ),
             FinancialTransactionItem(
               subItem = "001",
               dueDate = Some(dueDate),
-              amount = originalAmount - maybeOutstandingAmount.get
+              amount = originalAmount - maybeOutstandingAmount.get,
+              runningLock = None
             )
           )
-        }
+        },
+        runningLock = None
       )
     )
   )
@@ -331,7 +350,8 @@ trait TestData extends ModelGenerators {
       maybePeriodKey = Some(periodKey),
       maybeTaxPeriodFrom = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).periodFromDate()),
       maybeTaxPeriodTo = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).periodToDate()),
-      maybeChargeReference = Some(chargeReference)
+      maybeChargeReference = Some(chargeReference),
+      maybeRunningLock = None
     )
   }
 
@@ -349,7 +369,8 @@ trait TestData extends ModelGenerators {
       maybePeriodKey = Some(periodKey),
       maybeTaxPeriodFrom = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).periodFromDate()),
       maybeTaxPeriodTo = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).periodToDate()),
-      maybeChargeReference = Some(chargeReference)
+      maybeChargeReference = Some(chargeReference),
+      maybeRunningLock = None
     )
   }
 
@@ -367,7 +388,8 @@ trait TestData extends ModelGenerators {
       maybePeriodKey = Some(periodKey),
       maybeTaxPeriodFrom = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).periodFromDate()),
       maybeTaxPeriodTo = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).periodToDate()),
-      maybeChargeReference = Some(chargeReference)
+      maybeChargeReference = Some(chargeReference),
+      maybeRunningLock = None
     )
   }
 
@@ -385,7 +407,8 @@ trait TestData extends ModelGenerators {
       maybePeriodKey = Some(periodKey),
       maybeTaxPeriodFrom = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).periodFromDate()),
       maybeTaxPeriodTo = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).periodToDate()),
-      maybeChargeReference = Some(chargeReference)
+      maybeChargeReference = Some(chargeReference),
+      maybeRunningLock = None
     )
   }
 
@@ -405,7 +428,8 @@ trait TestData extends ModelGenerators {
           maybePeriodKey = Some(periodKey),
           maybeTaxPeriodFrom = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).periodFromDate()),
           maybeTaxPeriodTo = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).periodToDate()),
-          maybeChargeReference = Some(chargeReference)
+          maybeChargeReference = Some(chargeReference),
+          maybeRunningLock = None
         ),
         createFinancialDocument(
           onlyOpenItems = onlyOpenItems,
@@ -417,7 +441,8 @@ trait TestData extends ModelGenerators {
           maybePeriodKey = Some(periodKey),
           maybeTaxPeriodFrom = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).periodFromDate()),
           maybeTaxPeriodTo = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).periodToDate()),
-          maybeChargeReference = Some(chargeReference)
+          maybeChargeReference = Some(chargeReference),
+          maybeRunningLock = None
         )
       )
     )
@@ -440,7 +465,8 @@ trait TestData extends ModelGenerators {
           maybePeriodKey = Some(periodKey),
           maybeTaxPeriodFrom = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).periodFromDate()),
           maybeTaxPeriodTo = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).periodToDate()),
-          maybeChargeReference = Some(chargeReference)
+          maybeChargeReference = Some(chargeReference),
+          maybeRunningLock = None
         ),
         createFinancialDocument(
           onlyOpenItems = false,
@@ -452,7 +478,8 @@ trait TestData extends ModelGenerators {
           maybePeriodKey = Some(periodKey),
           maybeTaxPeriodFrom = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).periodFromDate()),
           maybeTaxPeriodTo = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).periodToDate()),
-          maybeChargeReference = Some(chargeReference)
+          maybeChargeReference = Some(chargeReference),
+          maybeRunningLock = None
         )
       )
     )
@@ -476,7 +503,8 @@ trait TestData extends ModelGenerators {
           maybePeriodKey = Some(periodKey),
           maybeTaxPeriodFrom = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).periodFromDate()),
           maybeTaxPeriodTo = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).periodToDate()),
-          maybeChargeReference = Some(chargeReference)
+          maybeChargeReference = Some(chargeReference),
+          maybeRunningLock = None
         ),
         createFinancialDocument(
           onlyOpenItems = onlyOpenItems,
@@ -488,7 +516,8 @@ trait TestData extends ModelGenerators {
           maybePeriodKey = Some(periodKey2),
           maybeTaxPeriodFrom = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey2).periodFromDate()),
           maybeTaxPeriodTo = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey2).periodToDate()),
-          maybeChargeReference = Some(chargeReference2)
+          maybeChargeReference = Some(chargeReference2),
+          maybeRunningLock = None
         )
       )
     )
@@ -512,7 +541,8 @@ trait TestData extends ModelGenerators {
           maybePeriodKey = Some(periodKey),
           maybeTaxPeriodFrom = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).periodFromDate()),
           maybeTaxPeriodTo = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).periodToDate()),
-          maybeChargeReference = Some(chargeReference)
+          maybeChargeReference = Some(chargeReference),
+          maybeRunningLock = None
         ),
         createFinancialDocument(
           onlyOpenItems = false,
@@ -524,7 +554,8 @@ trait TestData extends ModelGenerators {
           maybePeriodKey = Some(periodKey2),
           maybeTaxPeriodFrom = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey2).periodFromDate()),
           maybeTaxPeriodTo = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey2).periodToDate()),
-          maybeChargeReference = Some(chargeReference2)
+          maybeChargeReference = Some(chargeReference2),
+          maybeRunningLock = None
         )
       )
     )
@@ -541,7 +572,8 @@ trait TestData extends ModelGenerators {
       maybeOutstandingAmount = Some(BigDecimal("-9000")),
       dueDate = ReturnPeriod.fromPeriodKeyOrThrow(periodKey).dueDate(),
       transactionType = TransactionType.Overpayment,
-      maybeChargeReference = Some(chargeReference)
+      maybeChargeReference = Some(chargeReference),
+      maybeRunningLock = None
     )
   }
 
@@ -560,7 +592,8 @@ trait TestData extends ModelGenerators {
           maybeOutstandingAmount = Some(BigDecimal("-5000")),
           dueDate = ReturnPeriod.fromPeriodKeyOrThrow(periodKey).dueDate(),
           transactionType = TransactionType.Overpayment,
-          maybeChargeReference = Some(chargeReference)
+          maybeChargeReference = Some(chargeReference),
+          maybeRunningLock = None
         ),
         createFinancialDocument(
           onlyOpenItems = onlyOpenItems,
@@ -569,7 +602,8 @@ trait TestData extends ModelGenerators {
           maybeOutstandingAmount = Some(BigDecimal("-2000")),
           dueDate = ReturnPeriod.fromPeriodKeyOrThrow(periodKey2).dueDate(),
           transactionType = TransactionType.Overpayment,
-          maybeChargeReference = Some(chargeReference2)
+          maybeChargeReference = Some(chargeReference2),
+          maybeRunningLock = None
         )
       )
     )
@@ -591,7 +625,8 @@ trait TestData extends ModelGenerators {
           maybePeriodKey = Some(periodKey),
           maybeTaxPeriodFrom = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).periodFromDate()),
           maybeTaxPeriodTo = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).periodToDate()),
-          maybeChargeReference = None
+          maybeChargeReference = None,
+          maybeRunningLock = None
         ),
         createFinancialDocument(
           onlyOpenItems = onlyOpenItems,
@@ -603,7 +638,8 @@ trait TestData extends ModelGenerators {
           maybePeriodKey = Some(periodKey2),
           maybeTaxPeriodFrom = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey2).periodFromDate()),
           maybeTaxPeriodTo = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey2).periodToDate()),
-          maybeChargeReference = None
+          maybeChargeReference = None,
+          maybeRunningLock = None
         )
       )
     )
@@ -625,7 +661,8 @@ trait TestData extends ModelGenerators {
           maybePeriodKey = Some(periodKey),
           maybeTaxPeriodFrom = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).periodFromDate()),
           maybeTaxPeriodTo = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).periodToDate()),
-          maybeChargeReference = None
+          maybeChargeReference = None,
+          maybeRunningLock = None
         ),
         createFinancialDocument(
           onlyOpenItems = onlyOpenItems,
@@ -637,7 +674,8 @@ trait TestData extends ModelGenerators {
           maybePeriodKey = Some(periodKey2),
           maybeTaxPeriodFrom = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey2).periodFromDate()),
           maybeTaxPeriodTo = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey2).periodToDate()),
-          maybeChargeReference = None
+          maybeChargeReference = None,
+          maybeRunningLock = None
         )
       )
     )
@@ -659,7 +697,8 @@ trait TestData extends ModelGenerators {
           maybePeriodKey = Some(periodKey),
           maybeTaxPeriodFrom = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).periodFromDate()),
           maybeTaxPeriodTo = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).periodToDate()),
-          maybeChargeReference = None
+          maybeChargeReference = None,
+          maybeRunningLock = None
         ),
         createFinancialDocument(
           onlyOpenItems = onlyOpenItems,
@@ -671,7 +710,8 @@ trait TestData extends ModelGenerators {
           maybePeriodKey = Some(periodKey2),
           maybeTaxPeriodFrom = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey2).periodFromDate()),
           maybeTaxPeriodTo = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey2).periodToDate()),
-          maybeChargeReference = None
+          maybeChargeReference = None,
+          maybeRunningLock = None
         )
       )
     )
@@ -693,7 +733,8 @@ trait TestData extends ModelGenerators {
           maybePeriodKey = Some(periodKey),
           maybeTaxPeriodFrom = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).periodFromDate()),
           maybeTaxPeriodTo = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).periodToDate()),
-          maybeChargeReference = None
+          maybeChargeReference = None,
+          maybeRunningLock = None
         ),
         createFinancialDocument(
           onlyOpenItems = onlyOpenItems,
@@ -705,7 +746,8 @@ trait TestData extends ModelGenerators {
           maybePeriodKey = Some(periodKey2),
           maybeTaxPeriodFrom = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey2).periodFromDate()),
           maybeTaxPeriodTo = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey2).periodToDate()),
-          maybeChargeReference = None
+          maybeChargeReference = None,
+          maybeRunningLock = None
         )
       )
     )
@@ -723,7 +765,8 @@ trait TestData extends ModelGenerators {
       transactionType = TransactionType.LPI,
       maybeTaxPeriodFrom = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).periodFromDate()),
       maybeTaxPeriodTo = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).periodToDate()),
-      maybeChargeReference = Some(chargeReference)
+      maybeChargeReference = Some(chargeReference),
+      maybeRunningLock = None
     )
   }
 
@@ -738,7 +781,8 @@ trait TestData extends ModelGenerators {
       maybeOutstandingAmount = Some(BigDecimal("-50")),
       dueDate = ReturnPeriod.fromPeriodKeyOrThrow(periodKey).dueDate(),
       transactionType = TransactionType.RPI,
-      maybeChargeReference = Some(chargeReference)
+      maybeChargeReference = Some(chargeReference),
+      maybeRunningLock = None
     )
   }
 
@@ -756,7 +800,8 @@ trait TestData extends ModelGenerators {
       maybePeriodKey = Some(periodKey),
       maybeTaxPeriodFrom = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).periodFromDate()),
       maybeTaxPeriodTo = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).periodToDate()),
-      maybeChargeReference = Some(chargeReference)
+      maybeChargeReference = Some(chargeReference),
+      maybeRunningLock = None
     )
   }
 
@@ -773,7 +818,62 @@ trait TestData extends ModelGenerators {
       transactionType = TransactionType.CAI,
       maybeTaxPeriodFrom = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).periodFromDate()),
       maybeTaxPeriodTo = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).periodToDate()),
-      maybeChargeReference = Some(chargeReference)
+      maybeChargeReference = Some(chargeReference),
+      maybeRunningLock = None
+    )
+  }
+
+  val singleOfficerAssessment: FinancialTransactionDocument = {
+    val sapDocumentNumber = sapDocumentNumberGen.sample.get
+    val chargeReference   = chargeReferenceGen.sample.get
+
+    createFinancialDocument(
+      onlyOpenItems = false,
+      sapDocumentNumber = sapDocumentNumber,
+      originalAmount = BigDecimal("3000"),
+      maybeOutstandingAmount = Some(BigDecimal("20")),
+      dueDate = ReturnPeriod.fromPeriodKeyOrThrow(periodKey2).dueDate(),
+      transactionType = TransactionType.OfficerAssessment,
+      maybeTaxPeriodFrom = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey2).periodFromDate()),
+      maybeTaxPeriodTo = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey2).periodToDate()),
+      maybeChargeReference = Some(chargeReference),
+      maybeRunningLock = None
+    )
+  }
+
+  val singleOfficerAssessmentLPI: FinancialTransactionDocument = {
+    val sapDocumentNumber = sapDocumentNumberGen.sample.get
+    val chargeReference   = chargeReferenceGen.sample.get
+
+    createFinancialDocument(
+      onlyOpenItems = false,
+      sapDocumentNumber = sapDocumentNumber,
+      originalAmount = BigDecimal("20"),
+      maybeOutstandingAmount = Some(BigDecimal("20")),
+      dueDate = ReturnPeriod.fromPeriodKeyOrThrow(periodKey).dueDate(),
+      transactionType = TransactionType.OfficerAssessmentLPI,
+      maybeTaxPeriodFrom = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).periodFromDate()),
+      maybeTaxPeriodTo = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).periodToDate()),
+      maybeChargeReference = Some(chargeReference),
+      maybeRunningLock = None
+    )
+  }
+
+  val singleOfficerAssessmentStandOver: FinancialTransactionDocument = {
+    val sapDocumentNumber = sapDocumentNumberGen.sample.get
+    val chargeReference   = chargeReferenceGen.sample.get
+
+    createFinancialDocument(
+      onlyOpenItems = false,
+      sapDocumentNumber = sapDocumentNumber,
+      originalAmount = BigDecimal("3000"),
+      maybeOutstandingAmount = Some(BigDecimal("20")),
+      dueDate = ReturnPeriod.fromPeriodKeyOrThrow(periodKey).dueDate(),
+      transactionType = TransactionType.OfficerAssessment,
+      maybeTaxPeriodFrom = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).periodFromDate()),
+      maybeTaxPeriodTo = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).periodToDate()),
+      maybeChargeReference = Some(chargeReference),
+      maybeRunningLock = Some("Stand over order")
     )
   }
 
@@ -795,7 +895,8 @@ trait TestData extends ModelGenerators {
           maybePeriodKey = Some(period1),
           maybeTaxPeriodFrom = Some(ReturnPeriod.fromPeriodKeyOrThrow(period1).periodFromDate()),
           maybeTaxPeriodTo = Some(ReturnPeriod.fromPeriodKeyOrThrow(period1).periodToDate()),
-          maybeChargeReference = Some(chargeReference)
+          maybeChargeReference = Some(chargeReference),
+          maybeRunningLock = None
         ),
         createFinancialDocument(
           onlyOpenItems = true,
@@ -807,44 +908,11 @@ trait TestData extends ModelGenerators {
           maybePeriodKey = Some(period2),
           maybeTaxPeriodFrom = Some(ReturnPeriod.fromPeriodKeyOrThrow(period2).periodFromDate()),
           maybeTaxPeriodTo = Some(ReturnPeriod.fromPeriodKeyOrThrow(period2).periodToDate()),
-          maybeChargeReference = Some(chargeReference)
+          maybeChargeReference = Some(chargeReference),
+          maybeRunningLock = None
         )
       )
     )
-
-  val singleOfficerAssessment: FinancialTransactionDocument = {
-    val sapDocumentNumber = sapDocumentNumberGen.sample.get
-    val chargeReference   = chargeReferenceGen.sample.get
-
-    createFinancialDocument(
-      onlyOpenItems = false,
-      sapDocumentNumber = sapDocumentNumber,
-      originalAmount = BigDecimal("20"),
-      maybeOutstandingAmount = Some(BigDecimal("20")),
-      dueDate = ReturnPeriod.fromPeriodKeyOrThrow(periodKey).dueDate(),
-      transactionType = TransactionType.CAI,
-      maybeTaxPeriodFrom = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).periodFromDate()),
-      maybeTaxPeriodTo = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).periodToDate()),
-      maybeChargeReference = Some(chargeReference)
-    )
-  }
-
-  val singleOfficerAssessmentLPI: FinancialTransactionDocument = {
-    val sapDocumentNumber = sapDocumentNumberGen.sample.get
-    val chargeReference   = chargeReferenceGen.sample.get
-
-    createFinancialDocument(
-      onlyOpenItems = false,
-      sapDocumentNumber = sapDocumentNumber,
-      originalAmount = BigDecimal("20"),
-      maybeOutstandingAmount = Some(BigDecimal("20")),
-      dueDate = ReturnPeriod.fromPeriodKeyOrThrow(periodKey).dueDate(),
-      transactionType = TransactionType.OfficerAssessmentLPI,
-      maybeTaxPeriodFrom = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).periodFromDate()),
-      maybeTaxPeriodTo = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).periodToDate()),
-      maybeChargeReference = Some(chargeReference)
-    )
-  }
 
   def multipleStatuses(onlyOpenItems: Boolean): FinancialTransactionDocument =
     combineFinancialTransactionDocuments(
@@ -859,7 +927,8 @@ trait TestData extends ModelGenerators {
           maybePeriodKey = Some("24AH"),
           maybeTaxPeriodFrom = Some(ReturnPeriod.fromPeriodKeyOrThrow("24AH").periodFromDate()),
           maybeTaxPeriodTo = Some(ReturnPeriod.fromPeriodKeyOrThrow("24AH").periodToDate()),
-          maybeChargeReference = Some(chargeReferenceGen.sample.get)
+          maybeChargeReference = Some(chargeReferenceGen.sample.get),
+          maybeRunningLock = None
         ),
         createFinancialDocument(
           onlyOpenItems = onlyOpenItems,
@@ -871,7 +940,8 @@ trait TestData extends ModelGenerators {
           maybePeriodKey = Some("24AE"),
           maybeTaxPeriodFrom = Some(ReturnPeriod.fromPeriodKeyOrThrow("24AE").periodFromDate()),
           maybeTaxPeriodTo = Some(ReturnPeriod.fromPeriodKeyOrThrow("24AE").periodToDate()),
-          maybeChargeReference = Some(chargeReferenceGen.sample.get)
+          maybeChargeReference = Some(chargeReferenceGen.sample.get),
+          maybeRunningLock = None
         ),
         createFinancialDocument(
           onlyOpenItems = onlyOpenItems,
@@ -883,7 +953,8 @@ trait TestData extends ModelGenerators {
           maybePeriodKey = Some("24AD"),
           maybeTaxPeriodFrom = Some(ReturnPeriod.fromPeriodKeyOrThrow("24AD").periodFromDate()),
           maybeTaxPeriodTo = Some(ReturnPeriod.fromPeriodKeyOrThrow("24AD").periodToDate()),
-          maybeChargeReference = Some(chargeReferenceGen.sample.get)
+          maybeChargeReference = Some(chargeReferenceGen.sample.get),
+          maybeRunningLock = None
         ),
         createFinancialDocument(
           onlyOpenItems = onlyOpenItems,
@@ -895,7 +966,8 @@ trait TestData extends ModelGenerators {
           maybePeriodKey = Some("24AC"),
           maybeTaxPeriodFrom = Some(ReturnPeriod.fromPeriodKeyOrThrow("24AC").periodFromDate()),
           maybeTaxPeriodTo = Some(ReturnPeriod.fromPeriodKeyOrThrow("24AC").periodToDate()),
-          maybeChargeReference = Some(chargeReferenceGen.sample.get)
+          maybeChargeReference = Some(chargeReferenceGen.sample.get),
+          maybeRunningLock = None
         ),
         createFinancialDocument(
           onlyOpenItems = onlyOpenItems,
@@ -907,7 +979,8 @@ trait TestData extends ModelGenerators {
           maybePeriodKey = None,
           maybeTaxPeriodFrom = Some(ReturnPeriod.fromPeriodKeyOrThrow("24AB").periodFromDate()),
           maybeTaxPeriodTo = Some(ReturnPeriod.fromPeriodKeyOrThrow("24AB").periodToDate()),
-          maybeChargeReference = Some(chargeReferenceGen.sample.get)
+          maybeChargeReference = Some(chargeReferenceGen.sample.get),
+          maybeRunningLock = None
         ),
         createFinancialDocument(
           onlyOpenItems = onlyOpenItems,
@@ -919,7 +992,8 @@ trait TestData extends ModelGenerators {
           maybePeriodKey = None,
           maybeTaxPeriodFrom = Some(ReturnPeriod.fromPeriodKeyOrThrow("24AB").periodFromDate()),
           maybeTaxPeriodTo = Some(ReturnPeriod.fromPeriodKeyOrThrow("24AB").periodToDate()),
-          maybeChargeReference = Some(chargeReferenceGen.sample.get)
+          maybeChargeReference = Some(chargeReferenceGen.sample.get),
+          maybeRunningLock = None
         ),
         createFinancialDocument(
           onlyOpenItems = onlyOpenItems,
@@ -931,7 +1005,8 @@ trait TestData extends ModelGenerators {
           maybePeriodKey = None,
           maybeTaxPeriodFrom = Some(ReturnPeriod.fromPeriodKeyOrThrow("24AB").periodFromDate()),
           maybeTaxPeriodTo = Some(ReturnPeriod.fromPeriodKeyOrThrow("24AB").periodToDate()),
-          maybeChargeReference = Some(chargeReferenceGen.sample.get)
+          maybeChargeReference = Some(chargeReferenceGen.sample.get),
+          maybeRunningLock = None
         ),
         createFinancialDocument(
           onlyOpenItems = onlyOpenItems,
@@ -943,7 +1018,8 @@ trait TestData extends ModelGenerators {
           maybePeriodKey = None,
           maybeTaxPeriodFrom = None,
           maybeTaxPeriodTo = None,
-          maybeChargeReference = None
+          maybeChargeReference = None,
+          maybeRunningLock = None
         ),
         createFinancialDocument(
           onlyOpenItems = onlyOpenItems,
@@ -955,7 +1031,8 @@ trait TestData extends ModelGenerators {
           maybePeriodKey = None,
           maybeTaxPeriodFrom = None,
           maybeTaxPeriodTo = None,
-          maybeChargeReference = None
+          maybeChargeReference = None,
+          maybeRunningLock = None
         ),
         createFinancialDocument(
           onlyOpenItems = onlyOpenItems,
@@ -967,7 +1044,8 @@ trait TestData extends ModelGenerators {
           maybePeriodKey = None,
           maybeTaxPeriodFrom = None,
           maybeTaxPeriodTo = None,
-          maybeChargeReference = None
+          maybeChargeReference = None,
+          maybeRunningLock = None
         ),
         createFinancialDocument(
           onlyOpenItems = onlyOpenItems,
@@ -979,7 +1057,8 @@ trait TestData extends ModelGenerators {
           maybePeriodKey = None,
           maybeTaxPeriodFrom = None,
           maybeTaxPeriodTo = None,
-          maybeChargeReference = None
+          maybeChargeReference = None,
+          maybeRunningLock = None
         ),
         nilReturnLineItemsCancelling
       )

@@ -204,7 +204,7 @@ class PaymentsIntegrationSpec extends ISpecBase with ConnectorTestHelpers {
 
     val openParameters = Seq(
       "onlyOpenItems"              -> true.toString,
-      "includeLocks"               -> false.toString,
+      "includeLocks"               -> true.toString,
       "calculateAccruedInterest"   -> false.toString,
       "customerPaymentInformation" -> false.toString
     )

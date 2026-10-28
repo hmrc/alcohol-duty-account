@@ -56,7 +56,8 @@ class PaymentsValidatorSpec extends SpecBase with TestData {
               taxPeriodFrom = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).periodFromDate()),
               taxPeriodTo = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).periodToDate()),
               dueDate = ReturnPeriod.fromPeriodKeyOrThrow(periodKey).dueDate(),
-              maybeChargeReference = Option(chargeReference)
+              maybeChargeReference = Option(chargeReference),
+              maybeRunningLock = None
             )
           )
         }
@@ -80,7 +81,32 @@ class PaymentsValidatorSpec extends SpecBase with TestData {
               taxPeriodFrom = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).periodFromDate()),
               taxPeriodTo = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).periodToDate()),
               dueDate = ReturnPeriod.fromPeriodKeyOrThrow(periodKey).dueDate(),
-              maybeChargeReference = Option(chargeReference)
+              maybeChargeReference = Option(chargeReference),
+              maybeRunningLock = None
+            )
+          )
+        }
+
+        "allows a running Lock to show if present" in new SetUp {
+          val sapDocumentNumber: String = sapDocumentNumberGen.sample.get
+
+          paymentsValidator.validateAndGetFinancialTransactionData(
+            sapDocumentNumber,
+            createOfficerAssessmentDoc(
+              sapDocumentNumber,
+              periodKey,
+              periodKey2,
+              TransactionType.OfficerAssessment
+            ).financialTransactions
+          ) mustBe Right(
+            FinancialTransactionData(
+              transactionType = TransactionType.OfficerAssessment,
+              maybePeriodKey = Option(periodKey),
+              taxPeriodFrom = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).periodFromDate()),
+              taxPeriodTo = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).periodToDate()),
+              dueDate = ReturnPeriod.fromPeriodKeyOrThrow(periodKey).dueDate(),
+              maybeChargeReference = Option(chargeReference),
+              maybeRunningLock = None
             )
           )
         }

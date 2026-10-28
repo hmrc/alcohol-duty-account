@@ -22,7 +22,7 @@ import play.api.Logging
 import uk.gov.hmrc.alcoholdutyaccount.config.AppConfig
 import uk.gov.hmrc.alcoholdutyaccount.connectors.FinancialDataConnector
 import uk.gov.hmrc.alcoholdutyaccount.models.hods.{FinancialTransaction, FinancialTransactionDocument}
-import uk.gov.hmrc.alcoholdutyaccount.models.payments.TransactionType.{Overpayment, RPI}
+import uk.gov.hmrc.alcoholdutyaccount.models.payments.TransactionType.{OfficerAssessment, Overpayment, RPI}
 import uk.gov.hmrc.alcoholdutyaccount.models.payments.*
 import uk.gov.hmrc.alcoholdutyaccount.utils.payments.PaymentsValidator
 import uk.gov.hmrc.http.HeaderCarrier
@@ -118,13 +118,13 @@ class OpenPaymentsService @Inject() (
       openPayments.foldLeft((List.empty[OutstandingPayment], List.empty[UnallocatedPayment])) {
         case ((outstandingPayments, unallocatedPayments), openPayment) =>
           openPayment match {
-            case outstandingPayment @ OutstandingPayment(_, _, _, _, _, _) =>
+            case outstandingPayment @ OutstandingPayment(_, _, _, _, _, _, _) =>
               if (appConfig.isOfficerAssessment) {
                 (outstandingPayment :: outstandingPayments, unallocatedPayments)
               } else {
                 (excludeOfficerAssessmentItems(outstandingPayment :: outstandingPayments), unallocatedPayments)
               }
-            case unallocatedPayment @ UnallocatedPayment(_, _)             =>
+            case unallocatedPayment @ UnallocatedPayment(_, _)                =>
               (outstandingPayments, unallocatedPayment :: unallocatedPayments)
           }
       }
@@ -191,7 +191,8 @@ class OpenPaymentsService @Inject() (
         transactionType = transactionType,
         dueDate = financialTransactionData.dueDate,
         chargeReference = financialTransactionData.maybeChargeReference,
-        remainingAmount = outstandingAmount
+        remainingAmount = outstandingAmount,
+        runningLock = financialTransactionData.maybeRunningLock
       )
     }
   }

@@ -64,7 +64,8 @@ class OpenPaymentsServiceSpec extends SpecBase {
                     transactionType = TransactionType.Return,
                     dueDate = singleFullyOutstandingReturn.financialTransactions.head.items.head.dueDate.get,
                     chargeReference = singleFullyOutstandingReturn.financialTransactions.head.chargeReference,
-                    remainingAmount = BigDecimal("9000")
+                    remainingAmount = BigDecimal("9000"),
+                    runningLock = None
                   )
                 ),
                 totalOutstandingPayments = BigDecimal("9000"),
@@ -92,7 +93,8 @@ class OpenPaymentsServiceSpec extends SpecBase {
                     transactionType = TransactionType.Return,
                     dueDate = financialTransactionDocument.financialTransactions.head.items.head.dueDate.get,
                     chargeReference = financialTransactionDocument.financialTransactions.head.chargeReference,
-                    remainingAmount = BigDecimal("5000")
+                    remainingAmount = BigDecimal("5000"),
+                    runningLock = None
                   )
                 ),
                 totalOutstandingPayments = BigDecimal("5000"),
@@ -120,7 +122,8 @@ class OpenPaymentsServiceSpec extends SpecBase {
                     transactionType = TransactionType.Return,
                     dueDate = financialTransactionDocument.financialTransactions.head.items.head.dueDate.get,
                     chargeReference = financialTransactionDocument.financialTransactions.head.chargeReference,
-                    remainingAmount = BigDecimal("7000")
+                    remainingAmount = BigDecimal("7000"),
+                    runningLock = None
                   )
                 ),
                 totalOutstandingPayments = BigDecimal("7000"),
@@ -148,7 +151,8 @@ class OpenPaymentsServiceSpec extends SpecBase {
                   transactionType = TransactionType.Return,
                   dueDate = financialTransactionDocument.financialTransactions(0).items.head.dueDate.get,
                   chargeReference = financialTransactionDocument.financialTransactions(0).chargeReference,
-                  remainingAmount = BigDecimal("5000")
+                  remainingAmount = BigDecimal("5000"),
+                  runningLock = None
                 ),
                 OutstandingPayment(
                   taxPeriodFrom = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey2).periodFromDate()),
@@ -156,7 +160,8 @@ class OpenPaymentsServiceSpec extends SpecBase {
                   transactionType = TransactionType.Return,
                   dueDate = financialTransactionDocument.financialTransactions(1).items.head.dueDate.get,
                   chargeReference = financialTransactionDocument.financialTransactions(1).chargeReference,
-                  remainingAmount = BigDecimal("2000")
+                  remainingAmount = BigDecimal("2000"),
+                  runningLock = None
                 )
               )
               openPayments.totalOutstandingPayments mustBe BigDecimal("7000")
@@ -180,7 +185,8 @@ class OpenPaymentsServiceSpec extends SpecBase {
                     transactionType = TransactionType.Return,
                     dueDate = singleFullyOutstandingReturn.financialTransactions.head.items.head.dueDate.get,
                     chargeReference = singleFullyOutstandingReturn.financialTransactions.head.chargeReference,
-                    remainingAmount = BigDecimal("9000")
+                    remainingAmount = BigDecimal("9000"),
+                    runningLock = None
                   )
                 ),
                 totalOutstandingPayments = BigDecimal("9000"),
@@ -323,7 +329,8 @@ class OpenPaymentsServiceSpec extends SpecBase {
                       onePartiallyPaidReturnLineItemAndOnePartiallyAllocatedOverpayment.financialTransactions.head.items.head.dueDate.get,
                     chargeReference =
                       onePartiallyPaidReturnLineItemAndOnePartiallyAllocatedOverpayment.financialTransactions.head.chargeReference,
-                    remainingAmount = BigDecimal("5000")
+                    remainingAmount = BigDecimal("5000"),
+                    runningLock = None
                   )
                 ),
                 totalOutstandingPayments = BigDecimal("5000"),
@@ -359,7 +366,8 @@ class OpenPaymentsServiceSpec extends SpecBase {
                     transactionType = TransactionType.LPI,
                     dueDate = singleFullyOutstandingLPI.financialTransactions.head.items.head.dueDate.get,
                     chargeReference = singleFullyOutstandingLPI.financialTransactions.head.chargeReference,
-                    remainingAmount = BigDecimal("50")
+                    remainingAmount = BigDecimal("50"),
+                    runningLock = None
                   )
                 ),
                 totalOutstandingPayments = BigDecimal("50"),
@@ -385,7 +393,8 @@ class OpenPaymentsServiceSpec extends SpecBase {
                     transactionType = TransactionType.RPI,
                     dueDate = singleRPI.financialTransactions.head.items.head.dueDate.get,
                     chargeReference = singleRPI.financialTransactions.head.chargeReference,
-                    remainingAmount = BigDecimal("-50")
+                    remainingAmount = BigDecimal("-50"),
+                    runningLock = None
                   )
                 ),
                 totalOutstandingPayments = BigDecimal("0"),
@@ -419,7 +428,8 @@ class OpenPaymentsServiceSpec extends SpecBase {
                   transactionType = TransactionType.LPI,
                   dueDate = lpiTransaction.items.head.dueDate.get,
                   chargeReference = lpiTransaction.chargeReference,
-                  remainingAmount = BigDecimal("100")
+                  remainingAmount = BigDecimal("100"),
+                  runningLock = None
                 ),
                 OutstandingPayment(
                   taxPeriodFrom = None,
@@ -427,7 +437,8 @@ class OpenPaymentsServiceSpec extends SpecBase {
                   transactionType = TransactionType.RPI,
                   dueDate = rpiTransaction.items.head.dueDate.get,
                   chargeReference = rpiTransaction.chargeReference,
-                  remainingAmount = BigDecimal("-50")
+                  remainingAmount = BigDecimal("-50"),
+                  runningLock = None
                 )
               )
               openPayments.totalOutstandingPayments mustBe BigDecimal("100")
@@ -449,7 +460,8 @@ class OpenPaymentsServiceSpec extends SpecBase {
                     transactionType = TransactionType.CA,
                     dueDate = singleCA.financialTransactions.head.items.head.dueDate.get,
                     chargeReference = singleCA.financialTransactions.head.chargeReference,
-                    remainingAmount = BigDecimal("2000")
+                    remainingAmount = BigDecimal("2000"),
+                    runningLock = None
                   )
                 ),
                 totalOutstandingPayments = BigDecimal("2000"),
@@ -475,7 +487,8 @@ class OpenPaymentsServiceSpec extends SpecBase {
                     transactionType = TransactionType.CAI,
                     dueDate = singleCAI.financialTransactions.head.items.head.dueDate.get,
                     chargeReference = singleCAI.financialTransactions.head.chargeReference,
-                    remainingAmount = BigDecimal("20")
+                    remainingAmount = BigDecimal("20"),
+                    runningLock = None
                   )
                 ),
                 totalOutstandingPayments = BigDecimal("20"),
@@ -489,7 +502,34 @@ class OpenPaymentsServiceSpec extends SpecBase {
 
         "when processing a single fully outstanding Officer Assessment charge" in new SetUp {
           when(mockFinancialDataConnector.getOnlyOpenFinancialData(appaId))
-            .thenReturn(Future.successful(Right(singleCAI)))
+            .thenReturn(Future.successful(Right(singleOfficerAssessment)))
+
+          whenReady(paymentsService.getOpenPayments(appaId).value) {
+            _ mustBe Right(
+              OpenPayments(
+                outstandingPayments = Seq(
+                  OutstandingPayment(
+                    taxPeriodFrom = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey2).periodFromDate()),
+                    taxPeriodTo = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey2).periodToDate()),
+                    transactionType = TransactionType.OfficerAssessment,
+                    dueDate = singleOfficerAssessment.financialTransactions.head.items.head.dueDate.get,
+                    chargeReference = singleOfficerAssessment.financialTransactions.head.chargeReference,
+                    remainingAmount = BigDecimal("20"),
+                    runningLock = None
+                  )
+                ),
+                totalOutstandingPayments = BigDecimal("20"),
+                unallocatedPayments = Seq.empty,
+                totalUnallocatedPayments = BigDecimal("0"),
+                totalOpenPaymentsAmount = BigDecimal("20")
+              )
+            )
+          }
+        }
+
+        "when processing a single fully outstanding Officer Assessment LPI charge" in new SetUp {
+          when(mockFinancialDataConnector.getOnlyOpenFinancialData(appaId))
+            .thenReturn(Future.successful(Right(singleOfficerAssessmentLPI)))
 
           whenReady(paymentsService.getOpenPayments(appaId).value) {
             _ mustBe Right(
@@ -498,10 +538,11 @@ class OpenPaymentsServiceSpec extends SpecBase {
                   OutstandingPayment(
                     taxPeriodFrom = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).periodFromDate()),
                     taxPeriodTo = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).periodToDate()),
-                    transactionType = TransactionType.CAI,
-                    dueDate = singleCAI.financialTransactions.head.items.head.dueDate.get,
-                    chargeReference = singleCAI.financialTransactions.head.chargeReference,
-                    remainingAmount = BigDecimal("20")
+                    transactionType = TransactionType.OfficerAssessmentLPI,
+                    dueDate = singleOfficerAssessmentLPI.financialTransactions.head.items.head.dueDate.get,
+                    chargeReference = singleOfficerAssessmentLPI.financialTransactions.head.chargeReference,
+                    remainingAmount = BigDecimal("20"),
+                    runningLock = None
                   )
                 ),
                 totalOutstandingPayments = BigDecimal("20"),
@@ -968,7 +1009,8 @@ class OpenPaymentsServiceSpec extends SpecBase {
             maybePeriodKey = Some(periodKey),
             maybeTaxPeriodFrom = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).periodFromDate()),
             maybeTaxPeriodTo = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).periodToDate()),
-            maybeChargeReference = Some(chargeReferenceGen.sample.get)
+            maybeChargeReference = Some(chargeReferenceGen.sample.get),
+            maybeRunningLock = None
           ),
           createFinancialDocument(
             onlyOpenItems = true,
@@ -977,7 +1019,8 @@ class OpenPaymentsServiceSpec extends SpecBase {
             maybeOutstandingAmount = Some(BigDecimal("-2000")),
             dueDate = ReturnPeriod.fromPeriodKeyOrThrow(periodKey).dueDate(),
             transactionType = TransactionType.Overpayment,
-            maybeChargeReference = None
+            maybeChargeReference = None,
+            maybeRunningLock = None
           )
         )
       )
@@ -996,7 +1039,8 @@ class OpenPaymentsServiceSpec extends SpecBase {
             maybePeriodKey = Some(periodKey),
             maybeTaxPeriodFrom = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).periodFromDate()),
             maybeTaxPeriodTo = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).periodToDate()),
-            maybeChargeReference = Some(chargeReference)
+            maybeChargeReference = Some(chargeReference),
+            maybeRunningLock = None
           ),
           createFinancialDocument(
             onlyOpenItems = true,
@@ -1007,7 +1051,8 @@ class OpenPaymentsServiceSpec extends SpecBase {
             transactionType = TransactionType.LPI,
             maybeTaxPeriodFrom = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).periodFromDate()),
             maybeTaxPeriodTo = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).periodToDate()),
-            maybeChargeReference = Some(chargeReference)
+            maybeChargeReference = Some(chargeReference),
+            maybeRunningLock = None
           ),
           singleOverpayment
         )

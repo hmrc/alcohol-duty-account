@@ -27,7 +27,7 @@ trait FinancialDataStubs extends WireMockHelper with TestData {
 
   private val queryParams: Seq[(String, String)] = Seq(
     "onlyOpenItems"              -> "true",
-    "includeLocks"               -> "false",
+    "includeLocks"               -> "true",
     "calculateAccruedInterest"   -> "false",
     "customerPaymentInformation" -> "false"
   )

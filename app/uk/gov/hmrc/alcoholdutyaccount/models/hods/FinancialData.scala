@@ -23,7 +23,8 @@ import java.time.LocalDate
 case class FinancialTransactionItem(
   subItem: String,
   dueDate: Option[LocalDate],
-  amount: BigDecimal
+  amount: BigDecimal,
+  runningLock: Option[String]
 )
 
 object FinancialTransactionItem {
@@ -42,7 +43,8 @@ case class FinancialTransaction(
   originalAmount: BigDecimal,
   outstandingAmount: Option[BigDecimal],
   clearedAmount: Option[BigDecimal],
-  items: Seq[FinancialTransactionItem]
+  items: Seq[FinancialTransactionItem],
+  runningLock: Option[String]
 )
 
 object FinancialTransaction {
