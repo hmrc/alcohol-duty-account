@@ -131,6 +131,8 @@ class OpenPaymentsService @Inject() (
 
     val paymentTotals = calculateTotalBalance(outstandingPayments, unallocatedPayments)
 
+    println(outstandingPayments)
+
     OpenPayments(
       outstandingPayments = outstandingPayments,
       totalOutstandingPayments = paymentTotals.totalOutstandingPayments,

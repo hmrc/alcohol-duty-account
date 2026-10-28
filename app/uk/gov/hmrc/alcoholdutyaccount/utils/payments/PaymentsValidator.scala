@@ -120,7 +120,7 @@ class PaymentsValidator @Inject() (appConfig: AppConfig) extends Logging {
           ) {
             Right(
               maybeChargeReference == financialTransaction.chargeReference &&
-                financialTransaction.items.forall(_.runningLock == maybeRunningLock)
+                financialTransaction.items.forall(_.dunningLock == maybeRunningLock)
             )
           } else {
             Right(

@@ -247,7 +247,7 @@ trait TestData extends ModelGenerators {
             subItem = "002",
             dueDate = None,
             amount = 100.00,
-            runningLock = None
+            dunningLock = None
           )
         ),
         runningLock = None
@@ -289,7 +289,7 @@ trait TestData extends ModelGenerators {
               subItem = "000",
               dueDate = Some(dueDate),
               amount = originalAmount,
-              runningLock = maybeRunningLock
+              dunningLock = maybeRunningLock
             )
           )
         } else if (maybeOutstandingAmount.isEmpty || maybeOutstandingAmount.contains(originalAmount)) {
@@ -298,7 +298,7 @@ trait TestData extends ModelGenerators {
               subItem = "000",
               dueDate = Some(dueDate),
               amount = originalAmount,
-              runningLock = None
+              dunningLock = None
             )
           )
         } else if (onlyOpenItems) {
@@ -307,7 +307,7 @@ trait TestData extends ModelGenerators {
               subItem = "000",
               dueDate = Some(dueDate),
               amount = maybeOutstandingAmount.get,
-              runningLock = None
+              dunningLock = None
             )
           )
         } else {
@@ -316,13 +316,13 @@ trait TestData extends ModelGenerators {
               subItem = "000",
               dueDate = Some(dueDate),
               amount = maybeOutstandingAmount.get,
-              runningLock = None
+              dunningLock = None
             ),
             FinancialTransactionItem(
               subItem = "001",
               dueDate = Some(dueDate),
               amount = originalAmount - maybeOutstandingAmount.get,
-              runningLock = None
+              dunningLock = None
             )
           )
         },

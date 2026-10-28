@@ -313,7 +313,7 @@ class AlcoholDutyServiceSpec extends SpecBase {
                     subItem = "001",
                     dueDate = None,
                     amount = 50.00,
-                    runningLock = None
+                    dunningLock = None
                   )
                 ),
                 runningLock = None
@@ -335,7 +335,7 @@ class AlcoholDutyServiceSpec extends SpecBase {
                     subItem = "002",
                     dueDate = None,
                     amount = 50.00,
-                    runningLock = None
+                    dunningLock = None
                   )
                 ),
                 runningLock = None
@@ -357,7 +357,7 @@ class AlcoholDutyServiceSpec extends SpecBase {
                     subItem = "003",
                     dueDate = None,
                     amount = 50.00,
-                    runningLock = None
+                    dunningLock = None
                   )
                 ),
                 runningLock = None
@@ -398,7 +398,7 @@ class AlcoholDutyServiceSpec extends SpecBase {
                       subItem = "001",
                       dueDate = None,
                       amount = 50.00,
-                      runningLock = None
+                      dunningLock = None
                     )
                   ),
                   runningLock = None
@@ -420,7 +420,7 @@ class AlcoholDutyServiceSpec extends SpecBase {
                       subItem = "002",
                       dueDate = None,
                       amount = 50.00,
-                      runningLock = None
+                      dunningLock = None
                     )
                   ),
                   runningLock = None
@@ -442,7 +442,7 @@ class AlcoholDutyServiceSpec extends SpecBase {
                       subItem = "003",
                       dueDate = None,
                       amount = 50.00,
-                      runningLock = None
+                      dunningLock = None
                     )
                   ),
                   runningLock = None
@@ -868,7 +868,7 @@ class AlcoholDutyServiceSpec extends SpecBase {
           subItem = "001",
           dueDate = None,
           amount = 50.00,
-          runningLock = None
+          dunningLock = None
         )
       ),
       runningLock = None

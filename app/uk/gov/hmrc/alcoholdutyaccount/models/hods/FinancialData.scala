@@ -24,7 +24,7 @@ case class FinancialTransactionItem(
   subItem: String,
   dueDate: Option[LocalDate],
   amount: BigDecimal,
-  runningLock: Option[String]
+  dunningLock: Option[String]
 )
 
 object FinancialTransactionItem {
