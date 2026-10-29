@@ -24,5 +24,6 @@ case class FinancialTransactionData(
   taxPeriodFrom: Option[LocalDate],
   taxPeriodTo: Option[LocalDate],
   dueDate: LocalDate,
-  maybeChargeReference: Option[String]
+  maybeChargeReference: Option[String],
+  maybeRunningLock: Option[String]
 )

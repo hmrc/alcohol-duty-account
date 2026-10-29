@@ -28,7 +28,8 @@ case class OutstandingPayment(
   transactionType: TransactionType,
   dueDate: LocalDate,
   chargeReference: Option[String],
-  remainingAmount: BigDecimal
+  remainingAmount: BigDecimal,
+  runningLock: Option[String]
 ) extends OpenPayment
 
 object OutstandingPayment {

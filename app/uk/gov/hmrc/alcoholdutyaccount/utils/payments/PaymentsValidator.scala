@@ -41,6 +41,7 @@ class PaymentsValidator @Inject() (appConfig: AppConfig) extends Logging {
       maybeTaxPeriodFrom                 = firstFinancialTransactionLineItem.taxPeriodFrom
       maybeTaxPeriodTo                   = firstFinancialTransactionLineItem.taxPeriodTo
       maybeChargeReference               = firstFinancialTransactionLineItem.chargeReference
+      maybeRunningLock                   = getRunningLock(firstFinancialTransactionLineItem)
       dueDate                           <- getFirstItemDueDate(sapDocumentNumber, firstFinancialTransactionLineItem)
       _                                 <- validateFinancialLineItems(
                                              sapDocumentNumber,
@@ -50,7 +51,8 @@ class PaymentsValidator @Inject() (appConfig: AppConfig) extends Logging {
                                              maybeTaxPeriodFrom,
                                              maybeTaxPeriodTo,
                                              maybeChargeReference,
-                                             dueDate
+                                             dueDate,
+                                             maybeRunningLock
                                            )
       transactionType                   <- getTransactionType(sapDocumentNumber, mainTransactionType)
     } yield FinancialTransactionData(
@@ -59,7 +61,8 @@ class PaymentsValidator @Inject() (appConfig: AppConfig) extends Logging {
       maybeTaxPeriodFrom,
       maybeTaxPeriodTo,
       dueDate,
-      maybeChargeReference
+      maybeChargeReference,
+      maybeRunningLock
     )
 
   private def getTransactionType(
@@ -85,7 +88,8 @@ class PaymentsValidator @Inject() (appConfig: AppConfig) extends Logging {
     maybeTaxPeriodFrom: Option[LocalDate],
     maybeTaxPeriodTo: Option[LocalDate],
     maybeChargeReference: Option[String],
-    dueDate: LocalDate
+    dueDate: LocalDate,
+    maybeRunningLock: Option[String]
   ): Either[ErrorResponse, Unit] =
     financialTransactionsForDocument
       .map(financialTransaction =>
@@ -110,12 +114,22 @@ class PaymentsValidator @Inject() (appConfig: AppConfig) extends Logging {
                 maybeChargeReference == financialTransaction.chargeReference
             )
           } else if (
+            appConfig.isOfficerAssessment && TransactionType.isOfficerAssessment(
+              mainTransactionType
+            )
+          ) {
+            Right(
+              maybeChargeReference == financialTransaction.chargeReference &&
+                financialTransaction.items.forall(_.dunningLock == maybeRunningLock)
+            )
+          } else if (
             appConfig.isOfficerAssessment && (TransactionType.isOfficerAssessment(
               mainTransactionType
             ) || TransactionType.isOfficerAssessmentLPI(mainTransactionType))
           ) {
             Right(
-              maybeChargeReference == financialTransaction.chargeReference
+              maybeChargeReference == financialTransaction.chargeReference &&
+                financialTransaction.items.forall(_.dunningLock == maybeRunningLock)
             )
           } else {
             Right(
@@ -146,17 +160,26 @@ class PaymentsValidator @Inject() (appConfig: AppConfig) extends Logging {
     financialTransactionLineItem: FinancialTransaction
   ): Either[ErrorResponse, LocalDate] =
     financialTransactionLineItem.items.toList match {
-      case FinancialTransactionItem(_, Some(dueDate), _) :: _ => Right(dueDate)
-      case FinancialTransactionItem(_, None, _) :: _          =>
+      case FinancialTransactionItem(_, Some(dueDate), _, _) :: _ => Right(dueDate)
+      case FinancialTransactionItem(_, None, _, _) :: _          =>
         logger.warn(
           s"[PaymentsValidator] [getFirstItemDueDate] Due date not found on first item of first entry of financial transaction $sapDocumentNumber."
         )
         Left(ErrorCodes.unexpectedResponse)
-      case _                                                  =>
+      case _                                                     =>
         logger.warn(
           s"[PaymentsValidator] [getFirstItemDueDate] Expected at least one item on line items for financial transaction $sapDocumentNumber."
         )
         Left(ErrorCodes.unexpectedResponse)
+    }
+
+  private def getRunningLock(
+    financialTransactionLineItem: FinancialTransaction
+  ): Option[String] =
+    financialTransactionLineItem.items.toList match {
+      case FinancialTransactionItem(_, _, _, Some(lock)) :: _ => Some(lock)
+      case FinancialTransactionItem(_, _, _, None) :: _       => None
+      case _                                                  => None
     }
 
   private def resolvePrimaryFinancialTransaction(

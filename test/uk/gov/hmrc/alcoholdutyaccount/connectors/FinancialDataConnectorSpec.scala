@@ -173,14 +173,14 @@ class FinancialDataConnectorSpec extends SpecBase with ScalaFutures with Connect
 
     val expectedOpenQueryParams: Seq[(String, String)] = Seq(
       "onlyOpenItems"              -> "true",
-      "includeLocks"               -> "false",
+      "includeLocks"               -> "true",
       "calculateAccruedInterest"   -> "false",
       "customerPaymentInformation" -> "false"
     )
 
     val expectedAllQueryParams: Seq[(String, String)] = Seq(
       "onlyOpenItems"              -> "false",
-      "includeLocks"               -> "false",
+      "includeLocks"               -> "true",
       "calculateAccruedInterest"   -> "false",
       "customerPaymentInformation" -> "false",
       "dateFrom"                   -> "2024-01-01",
