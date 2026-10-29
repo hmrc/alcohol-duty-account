@@ -22,8 +22,8 @@ import play.api.Logging
 import uk.gov.hmrc.alcoholdutyaccount.config.AppConfig
 import uk.gov.hmrc.alcoholdutyaccount.connectors.FinancialDataConnector
 import uk.gov.hmrc.alcoholdutyaccount.models.hods.{FinancialTransaction, FinancialTransactionDocument}
-import uk.gov.hmrc.alcoholdutyaccount.models.payments.TransactionType.{OfficerAssessment, Overpayment, RPI}
 import uk.gov.hmrc.alcoholdutyaccount.models.payments.*
+import uk.gov.hmrc.alcoholdutyaccount.models.payments.TransactionType.{Overpayment, RPI}
 import uk.gov.hmrc.alcoholdutyaccount.utils.payments.PaymentsValidator
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.bootstrap.http.ErrorResponse
@@ -130,8 +130,6 @@ class OpenPaymentsService @Inject() (
       }
 
     val paymentTotals = calculateTotalBalance(outstandingPayments, unallocatedPayments)
-
-    println(outstandingPayments)
 
     OpenPayments(
       outstandingPayments = outstandingPayments,

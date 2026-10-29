@@ -114,6 +114,15 @@ class PaymentsValidator @Inject() (appConfig: AppConfig) extends Logging {
                 maybeChargeReference == financialTransaction.chargeReference
             )
           } else if (
+            appConfig.isOfficerAssessment && TransactionType.isOfficerAssessment(
+              mainTransactionType
+            )
+          ) {
+            Right(
+              maybeChargeReference == financialTransaction.chargeReference &&
+                financialTransaction.items.forall(_.dunningLock == maybeRunningLock)
+            )
+          } else if (
             appConfig.isOfficerAssessment && (TransactionType.isOfficerAssessment(
               mainTransactionType
             ) || TransactionType.isOfficerAssessmentLPI(mainTransactionType))

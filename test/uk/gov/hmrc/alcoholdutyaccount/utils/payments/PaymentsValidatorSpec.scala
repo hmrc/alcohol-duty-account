@@ -17,13 +17,9 @@
 package uk.gov.hmrc.alcoholdutyaccount.utils.payments
 
 import uk.gov.hmrc.alcoholdutyaccount.base.SpecBase
-import uk.gov.hmrc.alcoholdutyaccount.config.AppConfig
-import uk.gov.hmrc.alcoholdutyaccount.models.{ErrorCodes, ReturnPeriod}
-import uk.gov.hmrc.alcoholdutyaccount.models.hods.FinancialTransaction
 import uk.gov.hmrc.alcoholdutyaccount.common.TestData
 import uk.gov.hmrc.alcoholdutyaccount.models.payments.{FinancialTransactionData, TransactionType}
-
-import java.time.LocalDate
+import uk.gov.hmrc.alcoholdutyaccount.models.{ErrorCodes, ReturnPeriod}
 
 class PaymentsValidatorSpec extends SpecBase with TestData {
   "PaymentsValidator" - {

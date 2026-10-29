@@ -18,6 +18,7 @@ package uk.gov.hmrc.alcoholdutyaccount.service
 
 import org.mockito.Mockito.when
 import org.scalactic.Prettifier.default
+import play.api.Configuration
 import uk.gov.hmrc.alcoholdutyaccount.base.SpecBase
 import uk.gov.hmrc.alcoholdutyaccount.config.AppConfig
 import uk.gov.hmrc.alcoholdutyaccount.connectors.FinancialDataConnector
@@ -25,6 +26,7 @@ import uk.gov.hmrc.alcoholdutyaccount.models.hods.FinancialTransactionDocument
 import uk.gov.hmrc.alcoholdutyaccount.models.payments.*
 import uk.gov.hmrc.alcoholdutyaccount.models.{ErrorCodes, ReturnPeriod}
 import uk.gov.hmrc.alcoholdutyaccount.utils.payments.PaymentsValidator
+import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 import uk.gov.hmrc.play.bootstrap.http.ErrorResponse
 
 import scala.concurrent.Future
@@ -504,6 +506,12 @@ class OpenPaymentsServiceSpec extends SpecBase {
           when(mockFinancialDataConnector.getOnlyOpenFinancialData(appaId))
             .thenReturn(Future.successful(Right(singleOfficerAssessment)))
 
+          override val paymentsValidator: PaymentsValidator = new PaymentsValidator(mockAppConfigWithOfficerAssessment)
+          override val paymentsService: OpenPaymentsService = new OpenPaymentsService(
+            mockFinancialDataConnector,
+            paymentsValidator
+          )(ec, mockAppConfigWithOfficerAssessment)
+
           whenReady(paymentsService.getOpenPayments(appaId).value) {
             _ mustBe Right(
               OpenPayments(
@@ -514,14 +522,14 @@ class OpenPaymentsServiceSpec extends SpecBase {
                     transactionType = TransactionType.OfficerAssessment,
                     dueDate = singleOfficerAssessment.financialTransactions.head.items.head.dueDate.get,
                     chargeReference = singleOfficerAssessment.financialTransactions.head.chargeReference,
-                    remainingAmount = BigDecimal("20"),
+                    remainingAmount = BigDecimal("1500"),
                     runningLock = None
                   )
                 ),
-                totalOutstandingPayments = BigDecimal("20"),
+                totalOutstandingPayments = BigDecimal("1500"),
                 unallocatedPayments = Seq.empty,
                 totalUnallocatedPayments = BigDecimal("0"),
-                totalOpenPaymentsAmount = BigDecimal("20")
+                totalOpenPaymentsAmount = BigDecimal("1500")
               )
             )
           }
@@ -530,6 +538,12 @@ class OpenPaymentsServiceSpec extends SpecBase {
         "when processing a single fully outstanding Officer Assessment LPI charge" in new SetUp {
           when(mockFinancialDataConnector.getOnlyOpenFinancialData(appaId))
             .thenReturn(Future.successful(Right(singleOfficerAssessmentLPI)))
+
+          override val paymentsValidator: PaymentsValidator = new PaymentsValidator(mockAppConfigWithOfficerAssessment)
+          override val paymentsService: OpenPaymentsService = new OpenPaymentsService(
+            mockFinancialDataConnector,
+            paymentsValidator
+          )(ec, mockAppConfigWithOfficerAssessment)
 
           whenReady(paymentsService.getOpenPayments(appaId).value) {
             _ mustBe Right(
@@ -553,6 +567,40 @@ class OpenPaymentsServiceSpec extends SpecBase {
             )
           }
         }
+
+        "when processing a single Officer Assessment charge with a Stand Over Charge" in new SetUp {
+          when(mockFinancialDataConnector.getOnlyOpenFinancialData(appaId))
+            .thenReturn(Future.successful(Right(singleOfficerAssessmentStandOver)))
+
+          override val paymentsValidator: PaymentsValidator = new PaymentsValidator(mockAppConfigWithOfficerAssessment)
+          override val paymentsService: OpenPaymentsService = new OpenPaymentsService(
+            mockFinancialDataConnector,
+            paymentsValidator
+          )(ec, mockAppConfigWithOfficerAssessment)
+
+          whenReady(paymentsService.getOpenPayments(appaId).value) {
+            _ mustBe Right(
+              OpenPayments(
+                outstandingPayments = Seq(
+                  OutstandingPayment(
+                    taxPeriodFrom = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).periodFromDate()),
+                    taxPeriodTo = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).periodToDate()),
+                    transactionType = TransactionType.OfficerAssessment,
+                    dueDate = singleOfficerAssessmentStandOver.financialTransactions.head.items.head.dueDate.get,
+                    chargeReference = singleOfficerAssessmentStandOver.financialTransactions.head.chargeReference,
+                    remainingAmount = BigDecimal("1500"),
+                    runningLock = Some("Stand over order")
+                  )
+                ),
+                totalOutstandingPayments = BigDecimal("1500"),
+                unallocatedPayments = Seq.empty,
+                totalUnallocatedPayments = BigDecimal("0"),
+                totalOpenPaymentsAmount = BigDecimal("1500")
+              )
+            )
+          }
+        }
+
       }
 
       "an error must be returned" - {
@@ -971,10 +1019,18 @@ class OpenPaymentsServiceSpec extends SpecBase {
   }
 
   class SetUp {
-    val mockFinancialDataConnector                = mock[FinancialDataConnector]
-    private val mockAppConfig                     = mock[AppConfig]
-    val paymentsValidator: PaymentsValidator      = new PaymentsValidator(mockAppConfig)
-    val paymentsService                           = new OpenPaymentsService(mockFinancialDataConnector, paymentsValidator)(ec, mockAppConfig)
+    private val configuration  = mock[Configuration]
+    private val servicesConfig = mock[ServicesConfig]
+
+    private val mockAppConfig              = new AppConfig(configuration, servicesConfig)
+    val mockAppConfigWithOfficerAssessment = new AppConfig(configuration, servicesConfig) {
+      override val isOfficerAssessment: Boolean = true
+    }
+
+    val mockFinancialDataConnector: FinancialDataConnector = mock[FinancialDataConnector]
+    val paymentsValidator: PaymentsValidator               = new PaymentsValidator(mockAppConfig)
+    val paymentsService                                    = new OpenPaymentsService(mockFinancialDataConnector, paymentsValidator)(ec, mockAppConfig)
+
     val year                                      = 2024
     val singlePartiallyOutstandingReturnOpen      = singlePartiallyOutstandingReturn(onlyOpenItems = true)
     val twoLineItemPartiallyOutstandingReturnOpen = twoLineItemPartiallyOutstandingReturn(onlyOpenItems = true)
