@@ -204,14 +204,14 @@ class PaymentsIntegrationSpec extends ISpecBase with ConnectorTestHelpers {
 
     val openParameters = Seq(
       "onlyOpenItems"              -> true.toString,
-      "includeLocks"               -> false.toString,
+      "includeLocks"               -> true.toString,
       "calculateAccruedInterest"   -> false.toString,
       "customerPaymentInformation" -> false.toString
     )
 
     val historicParameters2025 = Seq(
       "onlyOpenItems"              -> false.toString,
-      "includeLocks"               -> false.toString,
+      "includeLocks"               -> true.toString,
       "calculateAccruedInterest"   -> false.toString,
       "customerPaymentInformation" -> false.toString,
       "dateFrom"                   -> "2025-01-01",
@@ -220,7 +220,7 @@ class PaymentsIntegrationSpec extends ISpecBase with ConnectorTestHelpers {
 
     val historicParameters2024 = Seq(
       "onlyOpenItems"              -> false.toString,
-      "includeLocks"               -> false.toString,
+      "includeLocks"               -> true.toString,
       "calculateAccruedInterest"   -> false.toString,
       "customerPaymentInformation" -> false.toString,
       "dateFrom"                   -> "2024-01-01",

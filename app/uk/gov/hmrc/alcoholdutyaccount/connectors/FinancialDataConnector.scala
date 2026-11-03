@@ -136,7 +136,7 @@ class FinancialDataConnector @Inject() (
   private def getBaseQueryParams(onlyOpenItems: Boolean): Seq[(String, String)] =
     Seq(
       "onlyOpenItems"              -> onlyOpenItems.toString,
-      "includeLocks"               -> false.toString,
+      "includeLocks"               -> true.toString,
       "calculateAccruedInterest"   -> false.toString,
       "customerPaymentInformation" -> false.toString
     )

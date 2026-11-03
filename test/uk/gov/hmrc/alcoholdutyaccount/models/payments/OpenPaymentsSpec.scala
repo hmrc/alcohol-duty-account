@@ -30,7 +30,8 @@ class OpenPaymentsSpec extends SpecBase {
           transactionType = TransactionType.Return,
           dueDate = singleFullyOutstandingReturn.financialTransactions.head.items.head.dueDate.get,
           chargeReference = Some(chargeReference),
-          remainingAmount = BigDecimal("9000")
+          remainingAmount = BigDecimal("9000"),
+          runningLock = None
         )
       ),
       totalOutstandingPayments = BigDecimal("9000"),

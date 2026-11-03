@@ -17,13 +17,9 @@
 package uk.gov.hmrc.alcoholdutyaccount.utils.payments
 
 import uk.gov.hmrc.alcoholdutyaccount.base.SpecBase
-import uk.gov.hmrc.alcoholdutyaccount.config.AppConfig
-import uk.gov.hmrc.alcoholdutyaccount.models.{ErrorCodes, ReturnPeriod}
-import uk.gov.hmrc.alcoholdutyaccount.models.hods.FinancialTransaction
 import uk.gov.hmrc.alcoholdutyaccount.common.TestData
 import uk.gov.hmrc.alcoholdutyaccount.models.payments.{FinancialTransactionData, TransactionType}
-
-import java.time.LocalDate
+import uk.gov.hmrc.alcoholdutyaccount.models.{ErrorCodes, ReturnPeriod}
 
 class PaymentsValidatorSpec extends SpecBase with TestData {
   "PaymentsValidator" - {
@@ -56,7 +52,8 @@ class PaymentsValidatorSpec extends SpecBase with TestData {
               taxPeriodFrom = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).periodFromDate()),
               taxPeriodTo = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).periodToDate()),
               dueDate = ReturnPeriod.fromPeriodKeyOrThrow(periodKey).dueDate(),
-              maybeChargeReference = Option(chargeReference)
+              maybeChargeReference = Option(chargeReference),
+              maybeRunningLock = None
             )
           )
         }
@@ -80,7 +77,32 @@ class PaymentsValidatorSpec extends SpecBase with TestData {
               taxPeriodFrom = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).periodFromDate()),
               taxPeriodTo = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).periodToDate()),
               dueDate = ReturnPeriod.fromPeriodKeyOrThrow(periodKey).dueDate(),
-              maybeChargeReference = Option(chargeReference)
+              maybeChargeReference = Option(chargeReference),
+              maybeRunningLock = None
+            )
+          )
+        }
+
+        "allows a running Lock to show if present" in new SetUp {
+          val sapDocumentNumber: String = sapDocumentNumberGen.sample.get
+
+          paymentsValidator.validateAndGetFinancialTransactionData(
+            sapDocumentNumber,
+            createOfficerAssessmentDoc(
+              sapDocumentNumber,
+              periodKey,
+              periodKey2,
+              TransactionType.OfficerAssessment
+            ).financialTransactions
+          ) mustBe Right(
+            FinancialTransactionData(
+              transactionType = TransactionType.OfficerAssessment,
+              maybePeriodKey = Option(periodKey),
+              taxPeriodFrom = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).periodFromDate()),
+              taxPeriodTo = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).periodToDate()),
+              dueDate = ReturnPeriod.fromPeriodKeyOrThrow(periodKey).dueDate(),
+              maybeChargeReference = Option(chargeReference),
+              maybeRunningLock = None
             )
           )
         }

@@ -293,7 +293,8 @@ class HistoricPaymentsServiceSpec extends SpecBase {
         maybeOutstandingAmount = Some(BigDecimal("50")),
         dueDate = ReturnPeriod.fromPeriodKeyOrThrow(periodKey).dueDate(),
         transactionType = TransactionType.RPI,
-        maybeChargeReference = Some(chargeReference)
+        maybeChargeReference = Some(chargeReference),
+        maybeRunningLock = None
       )
     }
   }

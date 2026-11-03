@@ -312,9 +312,11 @@ class AlcoholDutyServiceSpec extends SpecBase {
                   FinancialTransactionItem(
                     subItem = "001",
                     dueDate = None,
-                    amount = 50.00
+                    amount = 50.00,
+                    dunningLock = None
                   )
-                )
+                ),
+                runningLock = None
               ),
               FinancialTransaction(
                 sapDocumentNumber = "123457",
@@ -332,9 +334,11 @@ class AlcoholDutyServiceSpec extends SpecBase {
                   FinancialTransactionItem(
                     subItem = "002",
                     dueDate = None,
-                    amount = 50.00
+                    amount = 50.00,
+                    dunningLock = None
                   )
-                )
+                ),
+                runningLock = None
               ),
               FinancialTransaction(
                 sapDocumentNumber = "123456",
@@ -352,9 +356,11 @@ class AlcoholDutyServiceSpec extends SpecBase {
                   FinancialTransactionItem(
                     subItem = "003",
                     dueDate = None,
-                    amount = 50.00
+                    amount = 50.00,
+                    dunningLock = None
                   )
-                )
+                ),
+                runningLock = None
               )
             )
           )
@@ -391,9 +397,11 @@ class AlcoholDutyServiceSpec extends SpecBase {
                     FinancialTransactionItem(
                       subItem = "001",
                       dueDate = None,
-                      amount = 50.00
+                      amount = 50.00,
+                      dunningLock = None
                     )
-                  )
+                  ),
+                  runningLock = None
                 ),
                 FinancialTransaction(
                   sapDocumentNumber = "123457",
@@ -411,9 +419,11 @@ class AlcoholDutyServiceSpec extends SpecBase {
                     FinancialTransactionItem(
                       subItem = "002",
                       dueDate = None,
-                      amount = 50.00
+                      amount = 50.00,
+                      dunningLock = None
                     )
-                  )
+                  ),
+                  runningLock = None
                 ),
                 FinancialTransaction(
                   sapDocumentNumber = "123456",
@@ -431,9 +441,11 @@ class AlcoholDutyServiceSpec extends SpecBase {
                     FinancialTransactionItem(
                       subItem = "003",
                       dueDate = None,
-                      amount = 50.00
+                      amount = 50.00,
+                      dunningLock = None
                     )
-                  )
+                  ),
+                  runningLock = None
                 )
               )
             )
@@ -855,9 +867,11 @@ class AlcoholDutyServiceSpec extends SpecBase {
         FinancialTransactionItem(
           subItem = "001",
           dueDate = None,
-          amount = 50.00
+          amount = 50.00,
+          dunningLock = None
         )
-      )
+      ),
+      runningLock = None
     )
 
     val singleOverpaymentNoContractObjectType = singleOverpayment.copy(financialTransactions =
