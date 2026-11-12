@@ -277,9 +277,8 @@ class HistoricPaymentsServiceSpec extends SpecBase {
 
   class SetUp {
     val mockFinancialDataConnector: FinancialDataConnector = mock[FinancialDataConnector]
-    private val mockAppConfig                              = mock[AppConfig]
-    val paymentsValidator: PaymentsValidator               = new PaymentsValidator(mockAppConfig)
-    val paymentsService                                    = new HistoricPaymentsService(mockFinancialDataConnector, paymentsValidator)(ec, mockAppConfig)
+    val paymentsValidator: PaymentsValidator               = new PaymentsValidator()
+    val paymentsService                                    = new HistoricPaymentsService(mockFinancialDataConnector, paymentsValidator)(ec)
     val year                                               = 2024
 
     val singlePositiveRPI: FinancialTransactionDocument = {

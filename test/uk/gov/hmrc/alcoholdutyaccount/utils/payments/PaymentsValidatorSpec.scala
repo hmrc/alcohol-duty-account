@@ -37,80 +37,78 @@ class PaymentsValidatorSpec extends SpecBase with TestData {
         }
       }
 
-      if (appConfig.isOfficerAssessment) {
-        "allows to have multiple tax periods for outstanding payments of officers assessment in diff tax periods" in new SetUp {
+      "allows to have multiple tax periods for outstanding payments of officers assessment in diff tax periods" in new SetUp {
 
-          val sapDocumentNumber: String = sapDocumentNumberGen.sample.get
+        val sapDocumentNumber: String = sapDocumentNumberGen.sample.get
 
-          paymentsValidator.validateAndGetFinancialTransactionData(
-            sapDocumentNumber,
-            createOfficerAssessmentDoc(sapDocumentNumber, periodKey, periodKey2).financialTransactions
-          ) mustBe Right(
-            FinancialTransactionData(
-              transactionType = TransactionType.OfficerAssessment,
-              maybePeriodKey = Option(periodKey),
-              taxPeriodFrom = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).periodFromDate()),
-              taxPeriodTo = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).periodToDate()),
-              dueDate = ReturnPeriod.fromPeriodKeyOrThrow(periodKey).dueDate(),
-              maybeChargeReference = Option(chargeReference),
-              maybeRunningLock = None
-            )
+        paymentsValidator.validateAndGetFinancialTransactionData(
+          sapDocumentNumber,
+          createOfficerAssessmentDoc(sapDocumentNumber, periodKey, periodKey2).financialTransactions
+        ) mustBe Right(
+          FinancialTransactionData(
+            transactionType = TransactionType.OfficerAssessment,
+            maybePeriodKey = Option(periodKey),
+            taxPeriodFrom = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).periodFromDate()),
+            taxPeriodTo = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).periodToDate()),
+            dueDate = ReturnPeriod.fromPeriodKeyOrThrow(periodKey).dueDate(),
+            maybeChargeReference = Option(chargeReference),
+            maybeRunningLock = None
           )
-        }
+        )
+      }
 
-        "allows to have multiple tax periods for outstanding payments of officers assessment LPI in diff tax peirods" in new SetUp {
+      "allows to have multiple tax periods for outstanding payments of officers assessment LPI in diff tax peirods" in new SetUp {
 
-          val sapDocumentNumber: String = sapDocumentNumberGen.sample.get
+        val sapDocumentNumber: String = sapDocumentNumberGen.sample.get
 
-          paymentsValidator.validateAndGetFinancialTransactionData(
+        paymentsValidator.validateAndGetFinancialTransactionData(
+          sapDocumentNumber,
+          createOfficerAssessmentDoc(
             sapDocumentNumber,
-            createOfficerAssessmentDoc(
-              sapDocumentNumber,
-              periodKey,
-              periodKey2,
-              TransactionType.OfficerAssessmentLPI
-            ).financialTransactions
-          ) mustBe Right(
-            FinancialTransactionData(
-              transactionType = TransactionType.OfficerAssessmentLPI,
-              maybePeriodKey = Option(periodKey),
-              taxPeriodFrom = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).periodFromDate()),
-              taxPeriodTo = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).periodToDate()),
-              dueDate = ReturnPeriod.fromPeriodKeyOrThrow(periodKey).dueDate(),
-              maybeChargeReference = Option(chargeReference),
-              maybeRunningLock = None
-            )
+            periodKey,
+            periodKey2,
+            TransactionType.OfficerAssessmentLPI
+          ).financialTransactions
+        ) mustBe Right(
+          FinancialTransactionData(
+            transactionType = TransactionType.OfficerAssessmentLPI,
+            maybePeriodKey = Option(periodKey),
+            taxPeriodFrom = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).periodFromDate()),
+            taxPeriodTo = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).periodToDate()),
+            dueDate = ReturnPeriod.fromPeriodKeyOrThrow(periodKey).dueDate(),
+            maybeChargeReference = Option(chargeReference),
+            maybeRunningLock = None
           )
-        }
+        )
+      }
 
-        "allows a running Lock to show if present" in new SetUp {
-          val sapDocumentNumber: String = sapDocumentNumberGen.sample.get
+      "allows a running Lock to show if present" in new SetUp {
+        val sapDocumentNumber: String = sapDocumentNumberGen.sample.get
 
-          paymentsValidator.validateAndGetFinancialTransactionData(
+        paymentsValidator.validateAndGetFinancialTransactionData(
+          sapDocumentNumber,
+          createOfficerAssessmentDoc(
             sapDocumentNumber,
-            createOfficerAssessmentDoc(
-              sapDocumentNumber,
-              periodKey,
-              periodKey2,
-              TransactionType.OfficerAssessment
-            ).financialTransactions
-          ) mustBe Right(
-            FinancialTransactionData(
-              transactionType = TransactionType.OfficerAssessment,
-              maybePeriodKey = Option(periodKey),
-              taxPeriodFrom = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).periodFromDate()),
-              taxPeriodTo = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).periodToDate()),
-              dueDate = ReturnPeriod.fromPeriodKeyOrThrow(periodKey).dueDate(),
-              maybeChargeReference = Option(chargeReference),
-              maybeRunningLock = None
-            )
+            periodKey,
+            periodKey2,
+            TransactionType.OfficerAssessment
+          ).financialTransactions
+        ) mustBe Right(
+          FinancialTransactionData(
+            transactionType = TransactionType.OfficerAssessment,
+            maybePeriodKey = Option(periodKey),
+            taxPeriodFrom = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).periodFromDate()),
+            taxPeriodTo = Some(ReturnPeriod.fromPeriodKeyOrThrow(periodKey).periodToDate()),
+            dueDate = ReturnPeriod.fromPeriodKeyOrThrow(periodKey).dueDate(),
+            maybeChargeReference = Option(chargeReference),
+            maybeRunningLock = None
           )
-        }
+        )
       }
     }
   }
 
   class SetUp {
-    val paymentsValidator: PaymentsValidator = new PaymentsValidator(appConfig)
+    val paymentsValidator: PaymentsValidator = new PaymentsValidator()
   }
 }

@@ -18,7 +18,6 @@ package uk.gov.hmrc.alcoholdutyaccount.utils.payments
 
 import cats.implicits.*
 import play.api.Logging
-import uk.gov.hmrc.alcoholdutyaccount.config.AppConfig
 import uk.gov.hmrc.alcoholdutyaccount.models.ErrorCodes
 import uk.gov.hmrc.alcoholdutyaccount.models.hods.{FinancialTransaction, FinancialTransactionItem}
 import uk.gov.hmrc.alcoholdutyaccount.models.payments.{FinancialTransactionData, TransactionType}
@@ -27,7 +26,7 @@ import uk.gov.hmrc.play.bootstrap.http.ErrorResponse
 import java.time.LocalDate
 import javax.inject.Inject
 
-class PaymentsValidator @Inject() (appConfig: AppConfig) extends Logging {
+class PaymentsValidator @Inject() () extends Logging {
 
   def validateAndGetFinancialTransactionData(
     sapDocumentNumber: String,
@@ -114,7 +113,7 @@ class PaymentsValidator @Inject() (appConfig: AppConfig) extends Logging {
                 maybeChargeReference == financialTransaction.chargeReference
             )
           } else if (
-            appConfig.isOfficerAssessment && TransactionType.isOfficerAssessment(
+            TransactionType.isOfficerAssessment(
               mainTransactionType
             )
           ) {
@@ -123,9 +122,9 @@ class PaymentsValidator @Inject() (appConfig: AppConfig) extends Logging {
                 financialTransaction.items.forall(_.dunningLock == maybeRunningLock)
             )
           } else if (
-            appConfig.isOfficerAssessment && (TransactionType.isOfficerAssessment(
+            TransactionType.isOfficerAssessment(
               mainTransactionType
-            ) || TransactionType.isOfficerAssessmentLPI(mainTransactionType))
+            ) || TransactionType.isOfficerAssessmentLPI(mainTransactionType)
           ) {
             Right(
               maybeChargeReference == financialTransaction.chargeReference &&
