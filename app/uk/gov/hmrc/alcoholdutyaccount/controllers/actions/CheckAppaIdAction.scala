@@ -35,7 +35,7 @@ class CheckAppaIdActionImpl private[actions] (appaId: String)(implicit val execu
   private def checkRequestedAppaId(identifiedAppaId: String, appaIdToCheck: String): Either[Result, Unit] =
     if (appaIdToCheck != identifiedAppaId) {
       logger.error(
-        s"[CheckAppaIdAction] [checkRequestedAppaId] Manual call of endpoint or bug (using unauthorised appaId): Endpoint appaId requested $appaIdToCheck, enrolment appaId was $identifiedAppaId"
+        s"Manual call of endpoint or bug (using unauthorised appaId): Endpoint appaId requested $appaIdToCheck, enrolment appaId was $identifiedAppaId"
       )
       Left(
         Unauthorized(
