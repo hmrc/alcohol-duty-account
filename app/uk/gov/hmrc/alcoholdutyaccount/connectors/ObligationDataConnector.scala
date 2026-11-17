@@ -63,7 +63,7 @@ class ObligationDataConnector @Inject() (
       delay = config.retryAttemptsDelay
     ).recoverWith { error =>
       logger.error(
-        s"[ObligationDataConnector] [getObligationDetails] An exception was returned while trying to fetch obligation data for appaId $appaId: $error"
+        s"An exception was returned while trying to fetch obligation data for appaId $appaId: $error"
       )
       Future.successful(Left(ErrorCodes.unexpectedResponse))
     }
@@ -78,7 +78,7 @@ class ObligationDataConnector @Inject() (
         "Environment"             -> config.obligationDataEnv
       )
       logger.info(
-        s"[ObligationDataConnector] [getObligationDetails] Fetching all open obligation data for appaId $appaId"
+        s"Fetching all open obligation data for appaId $appaId"
       )
 
       httpClient
@@ -93,29 +93,29 @@ class ObligationDataConnector @Inject() (
               } match {
                 case Success(doc)       =>
                   logger.info(
-                    s"[ObligationDataConnector] [getObligationDetails] Retrieved obligation data for appaId $appaId"
+                    s"Retrieved obligation data for appaId $appaId"
                   )
                   Future.successful(Right(filterOutFutureObligations(doc)))
                 case Failure(exception) =>
                   logger.error(
-                    s"[ObligationDataConnector] [getObligationDetails] Unable to parse obligation data for appaId $appaId",
+                    s"Unable to parse obligation data for appaId $appaId",
                     exception
                   )
                   Future.successful(Left(ErrorResponse(INTERNAL_SERVER_ERROR, "Unable to parse obligation data")))
               }
             case NOT_FOUND            =>
               logger.info(
-                s"[ObligationDataConnector] [getObligationDetails] No obligation data found for appaId $appaId"
+                s"No obligation data found for appaId $appaId"
               )
               Future.successful(Right(ObligationData.noObligations))
             case BAD_REQUEST          =>
               logger.warn(
-                s"[ObligationDataConnector] [getObligationDetails] Bad request sent to get obligation for appaId $appaId"
+                s"Bad request sent to get obligation for appaId $appaId"
               )
               Future.successful(Left(ErrorResponse(BAD_REQUEST, "Bad request")))
             case UNPROCESSABLE_ENTITY =>
               logger.warn(
-                s"[ObligationDataConnector] [getObligationDetails] Obligation data request unprocessable for appaId $appaId"
+                s"Obligation data request unprocessable for appaId $appaId"
               )
               Future.successful(Left(ErrorResponse(UNPROCESSABLE_ENTITY, "Unprocessable entity")))
             // Retry and log on final fail for the following transient errors
